@@ -14,7 +14,7 @@ llm:
     summarize_model: "qwen2.5:14b"
 
 agent:
-  max_tool_rounds:  8
+  max_tool_rounds:  20
   history_messages: 20
 
 channel:

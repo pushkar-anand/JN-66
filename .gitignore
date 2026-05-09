@@ -27,5 +27,6 @@ go.work.sum
 
 .idea/
 JN-66.iml
+bin/
 
 
