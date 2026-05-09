@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -13,12 +14,13 @@ import (
 
 // GetSpendingBreakdown returns per-category spending totals for a date range.
 type GetSpendingBreakdown struct {
-	txns *store.TransactionStore
+	userID string
+	txns   *store.TransactionStore
 }
 
-// NewGetSpendingBreakdown creates the tool.
-func NewGetSpendingBreakdown(txns *store.TransactionStore) *GetSpendingBreakdown {
-	return &GetSpendingBreakdown{txns: txns}
+// NewGetSpendingBreakdown creates the tool bound to the current user.
+func NewGetSpendingBreakdown(userID string, txns *store.TransactionStore) *GetSpendingBreakdown {
+	return &GetSpendingBreakdown{userID: userID, txns: txns}
 }
 
 // Definition returns the tool descriptor.
@@ -67,7 +69,7 @@ func (t *GetSpendingBreakdown) Execute(ctx context.Context, _ string, argsJSON s
 		accountID = &args.AccountID
 	}
 
-	rows, err := t.txns.GetSpendingByCategory(ctx, args.UserID, from, to, accountID)
+	rows, err := t.txns.GetSpendingByCategory(ctx, cmp.Or(args.UserID, t.userID), from, to, accountID)
 	if err != nil {
 		return "", fmt.Errorf("get spending breakdown: %w", err)
 	}

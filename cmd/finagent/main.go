@@ -82,11 +82,11 @@ func run() error {
 
 	// Tool registry
 	registry := tools.NewRegistry()
-	registry.Register(tools.NewQueryTransactions(txnStore))
-	registry.Register(tools.NewGetAccountSummary(accountStore))
-	registry.Register(tools.NewGetSpendingBreakdown(txnStore))
+	registry.Register(tools.NewQueryTransactions(userID, txnStore))
+	registry.Register(tools.NewGetAccountSummary(userID, accountStore))
+	registry.Register(tools.NewGetSpendingBreakdown(userID, txnStore))
 	registry.Register(tools.NewManageLabels(labelStore))
-	registry.Register(tools.NewListRecurring(recurringStore))
+	registry.Register(tools.NewListRecurring(userID, recurringStore))
 	registry.Register(tools.NewRememberFact(userID, memoryStore))
 	registry.Register(tools.NewRecallFacts(userID, memoryStore))
 
