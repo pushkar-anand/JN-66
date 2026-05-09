@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -14,12 +15,13 @@ import (
 
 // QueryTransactions filters transactions by various criteria.
 type QueryTransactions struct {
-	txns *store.TransactionStore
+	userID string
+	txns   *store.TransactionStore
 }
 
-// NewQueryTransactions creates the tool.
-func NewQueryTransactions(txns *store.TransactionStore) *QueryTransactions {
-	return &QueryTransactions{txns: txns}
+// NewQueryTransactions creates the tool bound to the current user.
+func NewQueryTransactions(userID string, txns *store.TransactionStore) *QueryTransactions {
+	return &QueryTransactions{userID: userID, txns: txns}
 }
 
 // Definition returns the tool descriptor.
@@ -75,7 +77,7 @@ func (t *QueryTransactions) Execute(ctx context.Context, _ string, argsJSON stri
 	}
 
 	p := store.ListTransactionsParams{
-		UserID:    args.UserID,
+		UserID:    cmp.Or(args.UserID, t.userID),
 		MinAmount: args.MinAmount,
 		MaxAmount: args.MaxAmount,
 		Limit:     limit,

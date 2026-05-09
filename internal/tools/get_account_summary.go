@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -12,12 +13,13 @@ import (
 
 // GetAccountSummary returns all accounts the user has access to.
 type GetAccountSummary struct {
+	userID   string
 	accounts *store.AccountStore
 }
 
-// NewGetAccountSummary creates the tool.
-func NewGetAccountSummary(accounts *store.AccountStore) *GetAccountSummary {
-	return &GetAccountSummary{accounts: accounts}
+// NewGetAccountSummary creates the tool bound to the current user.
+func NewGetAccountSummary(userID string, accounts *store.AccountStore) *GetAccountSummary {
+	return &GetAccountSummary{userID: userID, accounts: accounts}
 }
 
 // Definition returns the tool descriptor.
@@ -45,7 +47,7 @@ func (t *GetAccountSummary) Execute(ctx context.Context, _ string, argsJSON stri
 		return "", fmt.Errorf("parse args: %w", err)
 	}
 
-	accounts, err := t.accounts.ListByUser(ctx, args.UserID)
+	accounts, err := t.accounts.ListByUser(ctx, cmp.Or(args.UserID, t.userID))
 	if err != nil {
 		return "", fmt.Errorf("get accounts: %w", err)
 	}

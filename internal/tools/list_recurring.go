@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -12,12 +13,13 @@ import (
 
 // ListRecurring returns active recurring payments for the user.
 type ListRecurring struct {
+	userID    string
 	recurring *store.RecurringStore
 }
 
-// NewListRecurring creates the tool.
-func NewListRecurring(recurring *store.RecurringStore) *ListRecurring {
-	return &ListRecurring{recurring: recurring}
+// NewListRecurring creates the tool bound to the current user.
+func NewListRecurring(userID string, recurring *store.RecurringStore) *ListRecurring {
+	return &ListRecurring{userID: userID, recurring: recurring}
 }
 
 // Definition returns the tool descriptor.
@@ -45,7 +47,7 @@ func (t *ListRecurring) Execute(ctx context.Context, _ string, argsJSON string) 
 		return "", fmt.Errorf("parse args: %w", err)
 	}
 
-	rows, err := t.recurring.List(ctx, args.UserID)
+	rows, err := t.recurring.List(ctx, cmp.Or(args.UserID, t.userID))
 	if err != nil {
 		return "", fmt.Errorf("list recurring: %w", err)
 	}
