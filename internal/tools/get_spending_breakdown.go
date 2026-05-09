@@ -9,17 +9,16 @@ import (
 	"time"
 
 	"github.com/pushkaranand/finagent/internal/llm"
-	"github.com/pushkaranand/finagent/internal/store"
 )
 
 // GetSpendingBreakdown returns per-category spending totals for a date range.
 type GetSpendingBreakdown struct {
 	userID string
-	txns   *store.TransactionStore
+	txns   transactionQuerier
 }
 
 // NewGetSpendingBreakdown creates the tool bound to the current user.
-func NewGetSpendingBreakdown(userID string, txns *store.TransactionStore) *GetSpendingBreakdown {
+func NewGetSpendingBreakdown(userID string, txns transactionQuerier) *GetSpendingBreakdown {
 	return &GetSpendingBreakdown{userID: userID, txns: txns}
 }
 

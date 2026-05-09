@@ -16,11 +16,11 @@ import (
 // QueryTransactions filters transactions by various criteria.
 type QueryTransactions struct {
 	userID string
-	txns   *store.TransactionStore
+	txns   transactionQuerier
 }
 
 // NewQueryTransactions creates the tool bound to the current user.
-func NewQueryTransactions(userID string, txns *store.TransactionStore) *QueryTransactions {
+func NewQueryTransactions(userID string, txns transactionQuerier) *QueryTransactions {
 	return &QueryTransactions{userID: userID, txns: txns}
 }
 

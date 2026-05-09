@@ -8,17 +8,16 @@ import (
 	"strings"
 
 	"github.com/pushkaranand/finagent/internal/llm"
-	"github.com/pushkaranand/finagent/internal/store"
 )
 
 // ListRecurring returns active recurring payments for the user.
 type ListRecurring struct {
 	userID    string
-	recurring *store.RecurringStore
+	recurring recurringQuerier
 }
 
 // NewListRecurring creates the tool bound to the current user.
-func NewListRecurring(userID string, recurring *store.RecurringStore) *ListRecurring {
+func NewListRecurring(userID string, recurring recurringQuerier) *ListRecurring {
 	return &ListRecurring{userID: userID, recurring: recurring}
 }
 

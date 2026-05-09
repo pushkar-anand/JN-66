@@ -1,7 +1,13 @@
-.PHONY: generate fmt migrate-up migrate-down seed build run
+.PHONY: generate mocks test fmt migrate-up migrate-down seed build run
 
 generate:
 	go tool sqlc generate
+
+mocks:
+	go generate ./internal/tools/...
+
+test:
+	go test ./...
 
 fmt:
 	gofmt -w .
