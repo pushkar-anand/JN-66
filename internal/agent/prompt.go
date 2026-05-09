@@ -1,0 +1,39 @@
+package agent
+
+import (
+	"fmt"
+	"strings"
+	"time"
+)
+
+// systemPrompt builds the system prompt for a given user and context.
+func systemPrompt(userName, userID string, memories []string) string {
+	var sb strings.Builder
+
+	sb.WriteString("You are finagent, a personal financial intelligence assistant for a household. ")
+	sb.WriteString("You are talking to ")
+	sb.WriteString(userName)
+	sb.WriteString(". ")
+	fmt.Fprintf(&sb, "Today is %s. All monetary amounts are in Indian Rupees (INR).\n\n", time.Now().Format("2006-01-02"))
+
+	sb.WriteString("Key rules:\n")
+	sb.WriteString("- Money is stored as paise (INR × 100). ₹100 = 10000 paise. Always display in rupees.\n")
+	sb.WriteString("- Transactions are immutable bank records. Enrichments (category, notes, labels) are mutable.\n")
+	sb.WriteString("- VPA (like zomato@axisbank) is the stable merchant identity — more reliable than description strings.\n")
+	sb.WriteString("- Use tools to answer financial questions. Do not guess transaction data.\n")
+	sb.WriteString("- If the user asks you to remember something, use the remember_fact tool.\n")
+	sb.WriteString("- Be concise and specific. Show rupee amounts, dates, and counts.\n\n")
+
+	if len(memories) > 0 {
+		sb.WriteString("Relevant facts you know about this user:\n")
+		for _, m := range memories {
+			sb.WriteString("- ")
+			sb.WriteString(m)
+			sb.WriteString("\n")
+		}
+		sb.WriteString("\n")
+	}
+
+	sb.WriteString("Answer in plain text or Markdown. Prefer tables for comparisons and lists for multiple items.")
+	return sb.String()
+}

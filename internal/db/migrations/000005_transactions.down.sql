@@ -1,0 +1,14 @@
+DROP INDEX IF EXISTS idx_enr_tagging;
+DROP INDEX IF EXISTS idx_enr_recurring;
+DROP INDEX IF EXISTS idx_enr_transfer;
+DROP INDEX IF EXISTS idx_enr_category;
+DROP INDEX IF EXISTS idx_txn_counterparty;
+DROP INDEX IF EXISTS idx_txn_payment_mode;
+DROP INDEX IF EXISTS idx_txn_date;
+DROP INDEX IF EXISTS idx_txn_user_id;
+DROP INDEX IF EXISTS idx_txn_account_id;
+DROP TABLE IF EXISTS transaction_split_labels;
+DROP TABLE IF EXISTS transaction_splits;
+DROP TABLE IF EXISTS transaction_labels;
+DROP TABLE IF EXISTS transaction_enrichments;
+DROP TABLE IF EXISTS transactions;

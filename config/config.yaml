@@ -1,0 +1,25 @@
+database:
+  url: "postgres://finagent:secret@localhost:5432/finagent?sslmode=disable"
+  max_connections: 10
+  auto_migrate: true
+
+llm:
+  base_url: "http://localhost:11434/v1"
+  api_key: ""           # set via FINAGENT_LLM_API_KEY env var or fill here
+  routing:
+    chat_model:      "qwen2.5:14b"
+    analysis_model:  "qwen2.5:14b"
+    tagging_model:   "qwen2.5:14b"
+    embed_model:     "nomic-embed-text"
+    summarize_model: "qwen2.5:14b"
+
+agent:
+  max_tool_rounds:  8
+  history_messages: 20
+
+channel:
+  cli:
+    default_user: "alice"
+
+api:
+  listen: ":8082"
