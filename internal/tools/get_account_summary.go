@@ -8,17 +8,16 @@ import (
 	"strings"
 
 	"github.com/pushkaranand/finagent/internal/llm"
-	"github.com/pushkaranand/finagent/internal/store"
 )
 
 // GetAccountSummary returns all accounts the user has access to.
 type GetAccountSummary struct {
 	userID   string
-	accounts *store.AccountStore
+	accounts accountQuerier
 }
 
 // NewGetAccountSummary creates the tool bound to the current user.
-func NewGetAccountSummary(userID string, accounts *store.AccountStore) *GetAccountSummary {
+func NewGetAccountSummary(userID string, accounts accountQuerier) *GetAccountSummary {
 	return &GetAccountSummary{userID: userID, accounts: accounts}
 }
 

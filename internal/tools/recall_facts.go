@@ -7,17 +7,16 @@ import (
 	"strings"
 
 	"github.com/pushkaranand/finagent/internal/llm"
-	"github.com/pushkaranand/finagent/internal/store"
 )
 
 // RecallFacts searches agent_memories by topic tags.
 type RecallFacts struct {
 	userID   string
-	memories *store.MemoryStore
+	memories memoryQuerier
 }
 
 // NewRecallFacts creates the tool bound to the current user.
-func NewRecallFacts(userID string, memories *store.MemoryStore) *RecallFacts {
+func NewRecallFacts(userID string, memories memoryQuerier) *RecallFacts {
 	return &RecallFacts{userID: userID, memories: memories}
 }
 

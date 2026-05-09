@@ -7,17 +7,16 @@ import (
 
 	"github.com/pushkaranand/finagent/internal/llm"
 	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
-	"github.com/pushkaranand/finagent/internal/store"
 )
 
 // RememberFact stores a fact in agent_memories.
 type RememberFact struct {
 	userID   string
-	memories *store.MemoryStore
+	memories memoryQuerier
 }
 
 // NewRememberFact creates the tool bound to the current user.
-func NewRememberFact(userID string, memories *store.MemoryStore) *RememberFact {
+func NewRememberFact(userID string, memories memoryQuerier) *RememberFact {
 	return &RememberFact{userID: userID, memories: memories}
 }
 

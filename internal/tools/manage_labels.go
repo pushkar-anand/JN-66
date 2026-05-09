@@ -6,16 +6,15 @@ import (
 	"fmt"
 
 	"github.com/pushkaranand/finagent/internal/llm"
-	"github.com/pushkaranand/finagent/internal/store"
 )
 
 // ManageLabels adds or removes labels on a transaction.
 type ManageLabels struct {
-	labels *store.LabelStore
+	labels labelQuerier
 }
 
 // NewManageLabels creates the tool.
-func NewManageLabels(labels *store.LabelStore) *ManageLabels {
+func NewManageLabels(labels labelQuerier) *ManageLabels {
 	return &ManageLabels{labels: labels}
 }
 
