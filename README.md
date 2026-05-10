@@ -112,7 +112,11 @@ See [CLAUDE.md](CLAUDE.md) for architecture details, conventions, and what's def
 
 ## Eval results
 
-The behavioural eval suite (`make eval`) fires fixed prompts at the real agent with a seeded database and asserts on which tools were called and what the output contains. Failures always print a full trace of LLM rounds, tool calls, args, and results. Pass `--verbose` to print traces for all scenarios.
+`make eval` runs two suites back-to-back against the real LLM and a seeded database. Pass `--verbose` to print full LLM round traces for failed agent scenarios, or `--only-enrich` to run just the enrichment suite.
+
+### Agent evals
+
+Fixed natural-language prompts fired at the full ReAct agent. Assertions check which tools were called, in what order, and what the final response contains.
 
 | Scenario | What it checks |
 |---|---|
@@ -129,10 +133,15 @@ The behavioural eval suite (`make eval`) fires fixed prompts at the real agent w
 
 **Latest: 10 / 10 passed**
 
+### Enrichment evals
+
+Raw transaction descriptions sent directly to the enrichment pipeline. Asserts the correct `category_slug` is returned. Covers the previously misclassified cases (credit card payments, bank charges, SIP) and golden-path categories.
+
+**Latest: 23 / 23 passed**
+
 ```
-model:    qwen3:14b via Ollama
-hardware: RTX 3060 12 GB VRAM
-total:    ~6 min (10 scenarios, real LLM calls)
+model:    qwen3:14b (OpenAI-compatible deployment)
+total:    ~6 min (33 cases, real LLM calls)
 ```
 
 ---
