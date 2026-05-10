@@ -114,11 +114,11 @@ func runImport(args []string) error {
 	if !*noEnrich {
 		llmProvider := openai.New(cfg.LLM.BaseURL, cfg.LLM.APIKey)
 		cats, _ := catStore.List(ctx)
-		slugs := make([]string, len(cats))
+		catInfos := make([]importer.CategoryInfo, len(cats))
 		for i, c := range cats {
-			slugs[i] = c.Slug
+			catInfos[i] = importer.CategoryInfo{Slug: c.Slug, Description: c.Description}
 		}
-		enricher = importer.NewEnricher(llmProvider, cfg.LLM.Routing.TaggingModel, slugs)
+		enricher = importer.NewEnricher(llmProvider, cfg.LLM.Routing.TaggingModel, catInfos)
 	}
 
 	imp := importer.NewImporter(txnStore, runStore, catStore, enricher)

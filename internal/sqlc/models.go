@@ -1015,6 +1015,7 @@ type TxnDirectionEnum string
 const (
 	TxnDirectionEnumDebit  TxnDirectionEnum = "debit"
 	TxnDirectionEnumCredit TxnDirectionEnum = "credit"
+	TxnDirectionEnumBoth   TxnDirectionEnum = "both"
 )
 
 func (e *TxnDirectionEnum) Scan(src interface{}) error {
@@ -1055,7 +1056,8 @@ func (ns NullTxnDirectionEnum) Value() (driver.Value, error) {
 func (e TxnDirectionEnum) Valid() bool {
 	switch e {
 	case TxnDirectionEnumDebit,
-		TxnDirectionEnumCredit:
+		TxnDirectionEnumCredit,
+		TxnDirectionEnumBoth:
 		return true
 	}
 	return false
@@ -1065,6 +1067,7 @@ func AllTxnDirectionEnumValues() []TxnDirectionEnum {
 	return []TxnDirectionEnum{
 		TxnDirectionEnumDebit,
 		TxnDirectionEnumCredit,
+		TxnDirectionEnumBoth,
 	}
 }
 
@@ -1119,16 +1122,17 @@ type AgentMemory struct {
 }
 
 type Category struct {
-	ID        uuid.UUID          `json:"id"`
-	Slug      string             `json:"slug"`
-	Name      string             `json:"name"`
-	Direction *TxnDirectionEnum  `json:"direction"`
-	ParentID  pgtype.UUID        `json:"parent_id"`
-	Depth     int16              `json:"depth"`
-	Color     *string            `json:"color"`
-	Icon      *string            `json:"icon"`
-	IsSystem  bool               `json:"is_system"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	ID          uuid.UUID          `json:"id"`
+	Slug        string             `json:"slug"`
+	Name        string             `json:"name"`
+	Direction   TxnDirectionEnum   `json:"direction"`
+	Description string             `json:"description"`
+	ParentID    pgtype.UUID        `json:"parent_id"`
+	Depth       int16              `json:"depth"`
+	Color       *string            `json:"color"`
+	Icon        *string            `json:"icon"`
+	IsSystem    bool               `json:"is_system"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 }
 
 type ConversationMessage struct {

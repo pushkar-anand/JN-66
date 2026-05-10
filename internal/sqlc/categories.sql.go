@@ -13,7 +13,7 @@ import (
 )
 
 const getCategoryByID = `-- name: GetCategoryByID :one
-SELECT id, slug, name, direction, parent_id, depth, color, icon, is_system, created_at FROM categories WHERE id = $1
+SELECT id, slug, name, direction, description, parent_id, depth, color, icon, is_system, created_at FROM categories WHERE id = $1
 `
 
 func (q *Queries) GetCategoryByID(ctx context.Context, id uuid.UUID) (Category, error) {
@@ -24,6 +24,7 @@ func (q *Queries) GetCategoryByID(ctx context.Context, id uuid.UUID) (Category, 
 		&i.Slug,
 		&i.Name,
 		&i.Direction,
+		&i.Description,
 		&i.ParentID,
 		&i.Depth,
 		&i.Color,
@@ -35,7 +36,7 @@ func (q *Queries) GetCategoryByID(ctx context.Context, id uuid.UUID) (Category, 
 }
 
 const getCategoryBySlug = `-- name: GetCategoryBySlug :one
-SELECT id, slug, name, direction, parent_id, depth, color, icon, is_system, created_at FROM categories WHERE slug = $1
+SELECT id, slug, name, direction, description, parent_id, depth, color, icon, is_system, created_at FROM categories WHERE slug = $1
 `
 
 func (q *Queries) GetCategoryBySlug(ctx context.Context, slug string) (Category, error) {
@@ -46,6 +47,7 @@ func (q *Queries) GetCategoryBySlug(ctx context.Context, slug string) (Category,
 		&i.Slug,
 		&i.Name,
 		&i.Direction,
+		&i.Description,
 		&i.ParentID,
 		&i.Depth,
 		&i.Color,
@@ -57,7 +59,7 @@ func (q *Queries) GetCategoryBySlug(ctx context.Context, slug string) (Category,
 }
 
 const listCategories = `-- name: ListCategories :many
-SELECT id, slug, name, direction, parent_id, depth, color, icon, is_system, created_at FROM categories ORDER BY depth, slug
+SELECT id, slug, name, direction, description, parent_id, depth, color, icon, is_system, created_at FROM categories ORDER BY depth, slug
 `
 
 func (q *Queries) ListCategories(ctx context.Context) ([]Category, error) {
@@ -74,6 +76,7 @@ func (q *Queries) ListCategories(ctx context.Context) ([]Category, error) {
 			&i.Slug,
 			&i.Name,
 			&i.Direction,
+			&i.Description,
 			&i.ParentID,
 			&i.Depth,
 			&i.Color,
@@ -92,7 +95,7 @@ func (q *Queries) ListCategories(ctx context.Context) ([]Category, error) {
 }
 
 const listSubCategories = `-- name: ListSubCategories :many
-SELECT id, slug, name, direction, parent_id, depth, color, icon, is_system, created_at FROM categories WHERE parent_id = $1 ORDER BY slug
+SELECT id, slug, name, direction, description, parent_id, depth, color, icon, is_system, created_at FROM categories WHERE parent_id = $1 ORDER BY slug
 `
 
 func (q *Queries) ListSubCategories(ctx context.Context, parentID pgtype.UUID) ([]Category, error) {
@@ -109,6 +112,7 @@ func (q *Queries) ListSubCategories(ctx context.Context, parentID pgtype.UUID) (
 			&i.Slug,
 			&i.Name,
 			&i.Direction,
+			&i.Description,
 			&i.ParentID,
 			&i.Depth,
 			&i.Color,
@@ -127,7 +131,7 @@ func (q *Queries) ListSubCategories(ctx context.Context, parentID pgtype.UUID) (
 }
 
 const listTopLevelCategories = `-- name: ListTopLevelCategories :many
-SELECT id, slug, name, direction, parent_id, depth, color, icon, is_system, created_at FROM categories WHERE depth = 0 ORDER BY slug
+SELECT id, slug, name, direction, description, parent_id, depth, color, icon, is_system, created_at FROM categories WHERE depth = 0 ORDER BY slug
 `
 
 func (q *Queries) ListTopLevelCategories(ctx context.Context) ([]Category, error) {
@@ -144,6 +148,7 @@ func (q *Queries) ListTopLevelCategories(ctx context.Context) ([]Category, error
 			&i.Slug,
 			&i.Name,
 			&i.Direction,
+			&i.Description,
 			&i.ParentID,
 			&i.Depth,
 			&i.Color,

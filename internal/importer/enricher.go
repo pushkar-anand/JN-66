@@ -11,6 +11,12 @@ import (
 	"github.com/pushkaranand/finagent/internal/llm"
 )
 
+// CategoryInfo carries a category slug and its human-readable description for the LLM prompt.
+type CategoryInfo struct {
+	Slug        string
+	Description string
+}
+
 // EnrichmentResult holds the LLM-derived metadata for a single transaction.
 type EnrichmentResult struct {
 	DescriptionNormalized string `json:"description_normalized"`
@@ -21,31 +27,43 @@ type EnrichmentResult struct {
 
 // Enricher calls the LLM to classify and normalise a raw transaction.
 type Enricher struct {
-	llm      llm.Provider
-	model    string
-	catSlugs string // comma-separated list of valid category slugs for the prompt
+	llm     llm.Provider
+	model   string
+	catList string // pre-rendered "slug: description\n..." list injected into the prompt
 }
 
-// NewEnricher creates an Enricher with the given LLM provider, model, and category slug list.
-func NewEnricher(provider llm.Provider, model string, categorySlugs []string) *Enricher {
+// NewEnricher creates an Enricher with the given LLM provider, model, and category list.
+func NewEnricher(provider llm.Provider, model string, categories []CategoryInfo) *Enricher {
+	var b strings.Builder
+	for _, c := range categories {
+		fmt.Fprintf(&b, "%s: %s\n", c.Slug, c.Description)
+	}
 	return &Enricher{
-		llm:      provider,
-		model:    model,
-		catSlugs: strings.Join(categorySlugs, "|"),
+		llm:     provider,
+		model:   model,
+		catList: b.String(),
 	}
 }
 
 const enrichSystemPrompt = `You are classifying Indian bank transactions for a personal finance app.
-Given a raw transaction, respond ONLY with a JSON object — no markdown, no explanation.
+Given a raw transaction, respond ONLY with valid JSON — no markdown, no explanation.
 
-Valid category slugs: %s
+## Categories (slug: when to use)
+%s
+## Normalization
+description_normalized: Clean merchant name, max 40 chars. Strip ref numbers, txn IDs, account numbers, dates.
+Examples:
+- "NEFT/IDFBH25093/Mr John Doe/IDFC FIRST" → "John Doe"
+- "DCARDFEE2615DEC25-NOV26+GST" → "Debit Card Annual Fee"
+- "046301004351:Int.Pd:29-03-2025 to 29-06-2025" → "Interest Paid"
+- "SMSChgsJan25-Mar25+GST" → "SMS Charges"
 
-JSON format:
+## Output
 {
-  "description_normalized": "clean merchant or payee name, max 60 chars",
-  "category_slug": "one of the valid slugs above",
+  "description_normalized": "...",
+  "category_slug": "one valid slug from the list above",
   "counterparty_name": "human-readable payee name or empty string",
-  "counterparty_identifier": "VPA (e.g. merchant@bank) or account+IFSC if detectable, else empty string"
+  "counterparty_identifier": "VPA like merchant@bank, or empty string"
 }`
 
 // Enrich calls the LLM to classify a single transaction. Returns an error if the LLM fails
@@ -68,7 +86,7 @@ func (e *Enricher) Enrich(ctx context.Context, tx parser.RawTransaction) (*Enric
 	resp, err := e.llm.Chat(ctx, llm.ChatRequest{
 		Model: e.model,
 		Messages: []llm.Message{
-			{Role: llm.RoleSystem, Content: fmt.Sprintf(enrichSystemPrompt, e.catSlugs)},
+			{Role: llm.RoleSystem, Content: fmt.Sprintf(enrichSystemPrompt, e.catList)},
 			{Role: llm.RoleUser, Content: userMsg},
 		},
 	})

@@ -74,13 +74,13 @@ func runEnrich(args []string) error {
 	if err != nil {
 		return fmt.Errorf("list categories: %w", err)
 	}
-	slugs := make([]string, len(cats))
+	catInfos := make([]importer.CategoryInfo, len(cats))
 	for i, c := range cats {
-		slugs[i] = c.Slug
+		catInfos[i] = importer.CategoryInfo{Slug: c.Slug, Description: c.Description}
 	}
 
 	llmProvider := openai.New(cfg.LLM.BaseURL, cfg.LLM.APIKey)
-	enricher := importer.NewEnricher(llmProvider, cfg.LLM.Routing.TaggingModel, slugs)
+	enricher := importer.NewEnricher(llmProvider, cfg.LLM.Routing.TaggingModel, catInfos)
 
 	tx := parser.RawTransaction{
 		Date:        txnDate,
@@ -118,8 +118,8 @@ func runEnrich(args []string) error {
 
 	// Warn if the assigned category isn't in the valid list.
 	valid := false
-	for _, s := range slugs {
-		if s == result.CategorySlug {
+	for _, c := range catInfos {
+		if c.Slug == result.CategorySlug {
 			valid = true
 			break
 		}

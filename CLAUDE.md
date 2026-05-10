@@ -71,7 +71,9 @@ internal/
 
 **transfer_id** is a shared UUID on `transaction_enrichments` that groups related records: own-account transfers, household transfers, or bank→investment links. `transfer_type` on the same row says which kind.
 
-**Categories vs Labels**: categories are system-defined, direction-constrained, two-level hierarchy (depth 0=category, 1=sub-category). Labels are flat, user-defined, no direction constraint.
+**Categories vs Labels**: categories are system-defined, direction-constrained (`debit`, `credit`, or `both`), two-level hierarchy (depth 0=category, 1=sub-category). `direction` is `NOT NULL` on the categories table. Labels are flat, user-defined, no direction constraint.
+
+**Category descriptions**: every system category has a `description TEXT` field seeded in migration 000011. The LLM enrichment prompt is built from these descriptions at runtime — no category guidance is hardcoded in Go. To adjust classification behaviour, update the seed descriptions and rebuild the DB.
 
 **User scoping**: every tool scopes by `user_id` by default. Tools accept an optional `user_id` argument to query another household member's data.
 

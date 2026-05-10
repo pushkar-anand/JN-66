@@ -12,7 +12,7 @@ CREATE TYPE account_class_enum AS ENUM ('asset', 'liability');
 
 CREATE TYPE member_role_enum AS ENUM ('owner', 'joint');
 
-CREATE TYPE txn_direction_enum AS ENUM ('debit', 'credit');
+CREATE TYPE txn_direction_enum AS ENUM ('debit', 'credit', 'both');
 
 CREATE TYPE payment_mode_enum AS ENUM (
     'upi', 'neft', 'rtgs', 'imps', 'nach',
