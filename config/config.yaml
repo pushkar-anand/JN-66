@@ -5,7 +5,7 @@ database:
 
 llm:
   base_url: "http://localhost:11434/v1"
-  api_key: ""           # set via FINAGENT_LLM_API_KEY env var or fill here
+  api_key: ""           # set via FINAGENT_LLM__API_KEY env var or fill here
   routing:
     chat_model:      "qwen3.5:9b"
     analysis_model:  "qwen3.5:9b"

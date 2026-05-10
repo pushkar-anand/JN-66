@@ -72,9 +72,12 @@ func Load(configPath string) (*Config, error) {
 		return nil, fmt.Errorf("load config file: %w", err)
 	}
 
-	// ENV override: FINAGENT_DATABASE_URL → database.url
+	// ENV override: FINAGENT_LLM__API_KEY → llm.api_key (double-underscore = dot separator)
 	if err := k.Load(env.Provider("FINAGENT_", ".", func(s string) string {
-		return strings.ReplaceAll(strings.ToLower(strings.TrimPrefix(s, "FINAGENT_")), "_", ".")
+		s = strings.TrimPrefix(s, "FINAGENT_")
+		s = strings.ToLower(s)
+		s = strings.ReplaceAll(s, "__", ".")
+		return s
 	}), nil); err != nil {
 		return nil, fmt.Errorf("load env config: %w", err)
 	}
