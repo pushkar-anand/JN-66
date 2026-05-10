@@ -107,8 +107,8 @@ func (p *HDFCV1) ParsePath(path string) (ParseResult, error) {
 			continue
 		}
 
-		desc := strings.TrimSpace(row.Col(colDesc))
-		ref := strings.TrimSpace(row.Col(colRef))
+		desc := sanitizeXLSCell(row.Col(colDesc))
+		ref := sanitizeXLSCell(row.Col(colRef))
 		withdrawStr := cleanAmount(row.Col(colWithdraw))
 		depositStr := cleanAmount(row.Col(colDeposit))
 

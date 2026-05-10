@@ -56,6 +56,12 @@ func safeXLSRow(sheet *xlslib.WorkSheet, idx int) (row *xlslib.Row) {
 	return sheet.Row(idx)
 }
 
+// sanitizeXLSCell trims whitespace and strips null bytes that extrame/xls
+// embeds in some cell strings from certain bank-generated XLS files.
+func sanitizeXLSCell(s string) string {
+	return strings.TrimSpace(strings.ReplaceAll(s, "\x00", ""))
+}
+
 // detectPaymentMode guesses the payment mode from the raw transaction description.
 func DetectPaymentMode(desc string) *sqlcgen.PaymentModeEnum {
 	u := strings.ToUpper(desc)
