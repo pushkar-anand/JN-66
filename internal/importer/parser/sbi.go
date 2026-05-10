@@ -81,9 +81,10 @@ func (p *SBIV1) Parse(r io.Reader) (ParseResult, error) {
 
 // extractSBIMeta reads account-level info from the pre-header metadata rows.
 // SBI XLSX layout (0-indexed rows):
-//   row 1 col A: "Mr. Pushkar  Anand\n..." — account holder name (first line only)
-//   row 8 col B: "Account Number  :  40393193313"
-//   row 10 col B: "IFSC Code  :  SBIN0001222"
+//
+//	row 1 col A: "Mr. Pushkar  Anand\n..." — account holder name (first line only)
+//	row 8 col B: "Account Number  :  40393193313"
+//	row 10 col B: "IFSC Code  :  SBIN0001222"
 func extractSBIMeta(rows [][]string) StatementMeta {
 	var meta StatementMeta
 	extract := func(cell, prefix string) string {
