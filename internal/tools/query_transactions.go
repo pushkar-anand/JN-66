@@ -28,7 +28,7 @@ func NewQueryTransactions(userID string, txns transactionQuerier) *QueryTransact
 func (t *QueryTransactions) Definition() llm.ToolDefinition {
 	return llm.ToolDefinition{
 		Name:        "query_transactions",
-		Description: "Filter and list bank transactions. Returns up to 50 results. All amounts in paise (INR × 100). Dates in YYYY-MM-DD.",
+		Description: "Filter and list bank transactions for spending, income, investments, or any transaction history. Returns up to 50 results. Use this directly for investment/spending queries without needing account info first. All amounts in paise (INR × 100). Dates in YYYY-MM-DD.",
 		Parameters: map[string]any{
 			"type": "object",
 			"properties": map[string]any{
@@ -108,7 +108,9 @@ func (t *QueryTransactions) Execute(ctx context.Context, _ string, argsJSON stri
 		p.CounterpartyIdentifier = &args.CounterpartyIdentifier
 	}
 	if args.PaymentMode != "" {
-		mode := sqlcgen.PaymentModeEnum(args.PaymentMode)
+		// Take only the first value — model sometimes passes comma-separated modes.
+		raw := strings.SplitN(args.PaymentMode, ",", 2)[0]
+		mode := sqlcgen.PaymentModeEnum(strings.TrimSpace(raw))
 		p.PaymentMode = &mode
 	}
 	if args.Direction != "" {
@@ -132,7 +134,7 @@ func (t *QueryTransactions) Execute(ctx context.Context, _ string, argsJSON stri
 		if r.Direction == sqlcgen.TxnDirectionEnumCredit {
 			dir = "↑"
 		}
-		fmt.Fprintf(&sb, "id:%s  %s %s %s ₹%.2f",
+		fmt.Fprintf(&sb, "%s  %s %s %s ₹%.2f",
 			r.ID,
 			r.TxnDate.Time.Format("2006-01-02"),
 			dir,

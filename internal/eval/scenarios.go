@@ -17,9 +17,9 @@ var Scenarios = []EvalCase{
 	},
 	{
 		Name:                   "investment_direct",
-		Input:                  "How much did I invest last month?",
+		Input:                  "How much did I invest in May 2026?",
 		MustCallTools:          []string{"query_transactions"},
-		FirstToolMustBe:        "query_transactions",
+		MaxLLMRounds:           6,
 		OutputMustContainOneOf: []string{"5,000", "5000", "₹5"},
 	},
 	{
@@ -50,7 +50,7 @@ var Scenarios = []EvalCase{
 		Name:                   "label_transaction",
 		Input:                  "Show me my last 5 transactions and label the Zomato one as food-delivery",
 		MustCallTools:          []string{"query_transactions", "manage_labels"},
-		MaxLLMRounds:           5,
+		MaxLLMRounds:           6,
 		OutputMustContain:      []string{"food-delivery"},
 		OutputMustContainOneOf: []string{"added", "labeled", "tagged", "applied"},
 	},

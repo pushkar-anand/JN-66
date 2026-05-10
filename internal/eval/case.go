@@ -42,14 +42,16 @@ type EvalCase struct {
 
 // EvalResult holds the outcome of a single EvalCase run.
 type EvalResult struct {
-	Case      *EvalCase
-	Passed    bool
-	Failures  []string
-	ToolCalls []string
-	LLMRounds int
-	Output    string
-	Duration  time.Duration
-	Err       error
+	Case        *EvalCase
+	Passed      bool
+	Failures    []string
+	ToolCalls   []string
+	Invocations []ToolInvocation
+	LLMTurns    []LLMTurn
+	LLMRounds   int
+	Output      string
+	Duration    time.Duration
+	Err         error
 }
 
 // Run executes the scenario against the given agent HandleMessage function.
@@ -90,12 +92,14 @@ func (c *EvalCase) Run(ctx context.Context, handle channel.MessageHandler, llmRe
 	dur := time.Since(t0)
 
 	res := EvalResult{
-		Case:      c,
-		ToolCalls: regRec.Calls(),
-		LLMRounds: llmRec.Rounds(),
-		Output:    resp.Text,
-		Duration:  dur,
-		Err:       err,
+		Case:        c,
+		ToolCalls:   regRec.Calls(),
+		Invocations: regRec.Invocations(),
+		LLMTurns:    llmRec.Turns(),
+		LLMRounds:   llmRec.Rounds(),
+		Output:      resp.Text,
+		Duration:    dur,
+		Err:         err,
 	}
 
 	if err != nil {
