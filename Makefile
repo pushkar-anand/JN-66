@@ -1,3 +1,6 @@
+-include .env
+export
+
 .PHONY: generate mocks test fmt migrate-up migrate-down seed build run eval
 
 generate:
