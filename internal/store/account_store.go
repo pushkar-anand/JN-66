@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -75,6 +76,7 @@ func (s *AccountStore) Create(ctx context.Context, p CreateAccountParams, userID
 		AccountType:       p.AccountType,
 		Currency:          p.Currency,
 		IsActive:          p.IsActive,
+		Metadata:          []byte("{}"),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("create account: %w", err)
@@ -89,6 +91,70 @@ func (s *AccountStore) Create(ctx context.Context, p CreateAccountParams, userID
 	}
 
 	return &a, nil
+}
+
+// AccountMetaParams holds optional metadata extracted from a statement file.
+type AccountMetaParams struct {
+	AccountNumber string
+	IFSC          string
+}
+
+// FindOrCreate finds the user's single account for the given institution, or creates one.
+// Returns the account and true if it was newly created.
+// Returns an error if the user has multiple accounts for that institution — the caller
+// should ask the user to pass an explicit --account flag.
+func (s *AccountStore) FindOrCreate(ctx context.Context, userID, institution string, meta AccountMetaParams) (*sqlcgen.Account, bool, error) {
+	accounts, err := s.ListByUser(ctx, userID)
+	if err != nil {
+		return nil, false, err
+	}
+
+	var matches []sqlcgen.Account
+	for _, a := range accounts {
+		if strings.EqualFold(a.Institution, institution) {
+			matches = append(matches, a)
+		}
+	}
+
+	switch len(matches) {
+	case 0:
+		// Auto-create.
+		name := strings.ToUpper(institution) + " Savings"
+		if len(meta.AccountNumber) >= 4 {
+			name += " ****" + meta.AccountNumber[len(meta.AccountNumber)-4:]
+		}
+		a, err := s.Create(ctx, CreateAccountParams{
+			Institution: institution,
+			Name:        name,
+			AccountType: sqlcgen.AccountTypeEnumBankSavings,
+			Currency:    "INR",
+			IsActive:    true,
+		}, userID)
+		if err != nil {
+			return nil, false, err
+		}
+		if meta.AccountNumber != "" || meta.IFSC != "" {
+			var acctNum, ifsc *string
+			if meta.AccountNumber != "" {
+				acctNum = &meta.AccountNumber
+			}
+			if meta.IFSC != "" {
+				ifsc = &meta.IFSC
+			}
+			_ = s.q.UpsertAccountDetails(ctx, sqlcgen.UpsertAccountDetailsParams{
+				AccountID:     a.ID,
+				AccountNumber: acctNum,
+				IfscCode:      ifsc,
+			})
+		}
+		return a, true, nil
+
+	case 1:
+		return &matches[0], false, nil
+
+	default:
+		return nil, false, fmt.Errorf("found %d %s accounts for this user — pass --account <uuid> to disambiguate", len(matches), institution)
+	}
 }
 
 // AddMember adds an additional user to an existing account.

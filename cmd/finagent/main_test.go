@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
 )
@@ -42,34 +43,54 @@ func testStub() *stubUsers {
 	}
 }
 
-func TestResolveUser_EmptyIdentifier(t *testing.T) {
-	got := resolveUser(context.Background(), testStub(), "")
-	assert.Equal(t, "", got)
+func TestResolveUser_EmptyIdentifier_SingleUser(t *testing.T) {
+	// No identifier — falls back to the sole user in the DB.
+	u, err := resolveUser(context.Background(), testStub(), "", "")
+	require.NoError(t, err)
+	assert.Equal(t, knownUID, u.ID)
+}
+
+func TestResolveUser_EmptyIdentifier_MultipleUsers(t *testing.T) {
+	stub := &stubUsers{
+		byEmail: map[string]sqlcgen.User{},
+		all: []sqlcgen.User{
+			{ID: knownUID, Name: "Alice", Email: "alice@example.com"},
+			{ID: uuid.MustParse("22222222-2222-2222-2222-222222222222"), Name: "Bob", Email: "bob@example.com"},
+		},
+	}
+	_, err := resolveUser(context.Background(), stub, "", "")
+	assert.Error(t, err)
+}
+
+func TestResolveUser_EmptyIdentifier_NoUsers(t *testing.T) {
+	stub := &stubUsers{byEmail: map[string]sqlcgen.User{}, all: []sqlcgen.User{}}
+	_, err := resolveUser(context.Background(), stub, "", "")
+	assert.Error(t, err)
 }
 
 func TestResolveUser_ByEmail(t *testing.T) {
-	got := resolveUser(context.Background(), testStub(), "alice@example.com")
-	assert.Equal(t, knownUID.String(), got)
+	u, err := resolveUser(context.Background(), testStub(), "alice@example.com", "")
+	require.NoError(t, err)
+	assert.Equal(t, knownUID, u.ID)
 }
 
 func TestResolveUser_ByName(t *testing.T) {
-	stub := testStub()
-	// GetByEmail will fail (wrong key), List will return the user by name.
-	got := resolveUser(context.Background(), stub, "Alice")
-	assert.Equal(t, knownUID.String(), got)
+	u, err := resolveUser(context.Background(), testStub(), "Alice", "")
+	require.NoError(t, err)
+	assert.Equal(t, knownUID, u.ID)
 }
 
-func TestResolveUser_DirectUUID(t *testing.T) {
-	stub := &stubUsers{byEmail: map[string]sqlcgen.User{}}
-	got := resolveUser(context.Background(), stub, knownUID.String())
-	assert.Equal(t, knownUID.String(), got)
+func TestResolveUser_NotFound(t *testing.T) {
+	stub := &stubUsers{byEmail: map[string]sqlcgen.User{}, all: []sqlcgen.User{}}
+	_, err := resolveUser(context.Background(), stub, "unknown@example.com", "")
+	assert.Error(t, err)
 }
 
-func TestResolveUser_NotFoundNotUUID(t *testing.T) {
-	stub := &stubUsers{byEmail: map[string]sqlcgen.User{}}
-	got := resolveUser(context.Background(), stub, "unknown@example.com")
-	// Must NOT return the raw email — must return "".
-	assert.Equal(t, "", got)
+func TestResolveUser_DefaultIdentifier(t *testing.T) {
+	// No explicit identifier — falls back to defaultIdentifier.
+	u, err := resolveUser(context.Background(), testStub(), "", "alice@example.com")
+	require.NoError(t, err)
+	assert.Equal(t, knownUID, u.ID)
 }
 
 func TestCmp(t *testing.T) {

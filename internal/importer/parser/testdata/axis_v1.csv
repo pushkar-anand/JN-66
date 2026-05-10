@@ -1,0 +1,29 @@
+Name :- RAHUL SHARMA
+Joint Holder :- -
+123 SAMPLE STREET, SECTOR 4
+BENGALURU-560001
+KARNATAKA-INDIA
+Currency :- INR
+Customer ID :- 900000001
+IFSC Code :- UTIB0001000
+MICR Code :- 560211001
+Nominee Registered :- Y
+Registered Mobile No :- XXXXXX0000
+Registered Email ID :- RAXXXXXX@GMAIL.COM
+PAN :- XXXXX0000X
+CKYC NUMBER :- XXXXXXXXXX0000
+
+Statement of Account No - 900000000000001 for the period (From : 01-04-2025 To : 31-03-2026)
+
+Tran Date,CHQNO,PARTICULARS,DR,CR,BAL,SOL
+03-04-2025,-,CreditCard Payment XXXX 0001 Ref#TESTREF0000001A,              5000.00, ,            20000.00,1000
+03-04-2025,-,NEFT/IDFBH25093000001/Ms Priya Sharma/IDFC FIRST BANK LTD//ATTN/, ,             15000.00,            35000.00,248
+13-04-2025,-,IMPS/P2A/510300000001/MrRahul/IDFCBank/IMPSTXN/9170530000001, ,             10000.00,            45000.00,1000
+21-04-2025,-,CreditCard Payment XX 0001 Ref#TESTREF0000002B,              8000.00, ,            37000.00,1000
+01-06-2025,-,NEFT/IDFBH25152000001/Ms Priya Sharma/IDFC FIRST BANK LTD//ATTN/, ,             40000.00,            77000.00,248
+01-06-2025,-,CreditCard Payment XX 0001 Ref#TESTREF0000003C,             30000.00, ,            47000.00,1000
+01-07-2025,-,SB:900000000000001:Int.Pd:01-04-2025 to 30-06-2025, ,               200.00,            47200.00,1000
+05-07-2025,-,CreditCard Payment XX 0001 Ref#TESTREF0000004D,             30000.00, ,            17200.00,1000
+05-07-2025,-,NEFT/IDFBH25186000001/Ms Priya Sharma/IDFC FIRST BANK LTD//ATTN/, ,             50000.00,            67200.00,248
+
+"Unless the constituent notifies the bank immediately of any discrepancy found by him/her in this statement of Account, it will be taken that he/she has found the account correct. "

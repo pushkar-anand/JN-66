@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -53,4 +54,48 @@ func (s *UserStore) List(ctx context.Context) ([]sqlcgen.User, error) {
 		return nil, fmt.Errorf("list users: %w", err)
 	}
 	return users, nil
+}
+
+// CreateUserParams holds inputs for creating a new user.
+type CreateUserParams struct {
+	Name     string
+	Email    string
+	Phone    string
+	Timezone string
+}
+
+// Create inserts a new user and returns the created record.
+func (s *UserStore) Create(ctx context.Context, p CreateUserParams) (*sqlcgen.User, error) {
+	tz := p.Timezone
+	if tz == "" {
+		tz = "Asia/Kolkata"
+	}
+	var phone *string
+	if p.Phone != "" {
+		phone = &p.Phone
+	}
+	u, err := s.q.CreateUser(ctx, sqlcgen.CreateUserParams{
+		Name:        p.Name,
+		Email:       p.Email,
+		Phone:       phone,
+		Timezone:    tz,
+		Preferences: []byte("{}"),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("create user: %w", err)
+	}
+	return &u, nil
+}
+
+// UpdateDOB sets the date_of_birth for the given user.
+func (s *UserStore) UpdateDOB(ctx context.Context, userID string, dob time.Time) (*sqlcgen.User, error) {
+	uid, err := parseUUID(userID)
+	if err != nil {
+		return nil, err
+	}
+	u, err := s.q.UpdateUserDOB(ctx, sqlcgen.UpdateUserDOBParams{ID: uid, DateOfBirth: pgDate(dob)})
+	if err != nil {
+		return nil, fmt.Errorf("update user dob: %w", err)
+	}
+	return &u, nil
 }

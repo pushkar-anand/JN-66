@@ -10,8 +10,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/google/uuid"
-
 	"github.com/pushkaranand/finagent/config"
 	"github.com/pushkaranand/finagent/internal/agent"
 	"github.com/pushkaranand/finagent/internal/api"
@@ -24,6 +22,29 @@ import (
 )
 
 func main() {
+	// Subcommand dispatch — must happen before flag.Parse().
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "import":
+			if err := runImport(os.Args[2:]); err != nil {
+				fmt.Fprintf(os.Stderr, "import: %v\n", err)
+				os.Exit(1)
+			}
+			return
+		case "account":
+			if err := runAccount(os.Args[2:]); err != nil {
+				fmt.Fprintf(os.Stderr, "account: %v\n", err)
+				os.Exit(1)
+			}
+			return
+		case "user":
+			if err := runUser(os.Args[2:]); err != nil {
+				fmt.Fprintf(os.Stderr, "user: %v\n", err)
+				os.Exit(1)
+			}
+			return
+		}
+	}
 	if err := run(); err != nil {
 		slog.Error("fatal", "err", err)
 		os.Exit(1)
@@ -78,8 +99,12 @@ func run() error {
 	memoryStore := store.NewMemoryStore(pool)
 	convStore := store.NewConversationStore(pool)
 
-	// Resolve CLI user ID
-	userID := resolveUser(ctx, userStore, cmp(*userFlag, cfg.Channel.CLI.DefaultUser))
+	// Resolve CLI user.
+	u, resolveErr := resolveUser(ctx, userStore, *userFlag, cfg.Channel.CLI.DefaultUser)
+	userID := ""
+	if resolveErr == nil {
+		userID = u.ID.String()
+	}
 
 	// LLM provider
 	llmProvider := openai.New(cfg.LLM.BaseURL, cfg.LLM.APIKey)
@@ -105,7 +130,7 @@ func run() error {
 
 	// CLI mode requires a resolved user.
 	if userID == "" {
-		return fmt.Errorf("user %q not found in database; seed the users table or pass a valid --user flag", cmp(*userFlag, cfg.Channel.CLI.DefaultUser))
+		return resolveErr
 	}
 
 	cliCh := cli.New(userID)
@@ -119,30 +144,41 @@ type userLookup interface {
 	List(ctx context.Context) ([]sqlcgen.User, error)
 }
 
-// resolveUser looks up the user by email or name, returning their UUID.
-func resolveUser(ctx context.Context, users userLookup, identifier string) string {
-	if identifier == "" {
-		slog.Warn("no user specified; use --user <email> or set channel.cli.default_user in config")
-		return ""
-	}
-	u, err := users.GetByEmail(ctx, identifier)
-	if err == nil {
-		return u.ID.String()
-	}
-	all, err := users.List(ctx)
-	if err == nil {
-		for _, candidate := range all {
-			if candidate.Name == identifier {
-				return candidate.ID.String()
+// resolveUser returns the user matching identifier or defaultIdentifier.
+// Falls back to the sole DB user when neither locates a match.
+// Returns an error if identifier is given but not found, or if the
+// single-user fallback finds zero or multiple users.
+func resolveUser(ctx context.Context, users userLookup, identifier, defaultIdentifier string) (*sqlcgen.User, error) {
+	if identifier != "" {
+		if u, err := users.GetByEmail(ctx, identifier); err == nil {
+			return u, nil
+		}
+		all, err := users.List(ctx)
+		if err == nil {
+			for i := range all {
+				if all[i].Name == identifier {
+					return &all[i], nil
+				}
 			}
 		}
+		return nil, fmt.Errorf("user %q not found in database", identifier)
 	}
-	// Accept identifier as-is only if it's already a valid UUID (e.g. passed directly).
-	if _, err := uuid.Parse(identifier); err == nil {
-		return identifier
+	if defaultIdentifier != "" {
+		if u, err := users.GetByEmail(ctx, defaultIdentifier); err == nil {
+			return u, nil
+		}
 	}
-	slog.Warn("user not found in database", "identifier", identifier)
-	return ""
+	all, err := users.List(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list users: %w", err)
+	}
+	if len(all) == 1 {
+		return &all[0], nil
+	}
+	if len(all) == 0 {
+		return nil, fmt.Errorf("no users in database — run: finagent user add")
+	}
+	return nil, fmt.Errorf("multiple users in database — pass --user <email>")
 }
 
 // cmp returns the first non-empty string.

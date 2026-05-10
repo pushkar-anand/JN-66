@@ -86,6 +86,21 @@ func (mr *MockQuerierMockRecorder) CreateAccount(ctx, arg any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateAccount", reflect.TypeOf((*MockQuerier)(nil).CreateAccount), ctx, arg)
 }
 
+// CreateImportRun mocks base method.
+func (m *MockQuerier) CreateImportRun(ctx context.Context, arg sqlcgen.CreateImportRunParams) (sqlcgen.ImportRun, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateImportRun", ctx, arg)
+	ret0, _ := ret[0].(sqlcgen.ImportRun)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateImportRun indicates an expected call of CreateImportRun.
+func (mr *MockQuerierMockRecorder) CreateImportRun(ctx, arg any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateImportRun", reflect.TypeOf((*MockQuerier)(nil).CreateImportRun), ctx, arg)
+}
+
 // CreateLabel mocks base method.
 func (m *MockQuerier) CreateLabel(ctx context.Context, arg sqlcgen.CreateLabelParams) (sqlcgen.Label, error) {
 	m.ctrl.T.Helper()
@@ -187,6 +202,20 @@ func (m *MockQuerier) DeactivateRecurringPayment(ctx context.Context, id uuid.UU
 func (mr *MockQuerierMockRecorder) DeactivateRecurringPayment(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeactivateRecurringPayment", reflect.TypeOf((*MockQuerier)(nil).DeactivateRecurringPayment), ctx, id)
+}
+
+// FinishImportRun mocks base method.
+func (m *MockQuerier) FinishImportRun(ctx context.Context, arg sqlcgen.FinishImportRunParams) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FinishImportRun", ctx, arg)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// FinishImportRun indicates an expected call of FinishImportRun.
+func (mr *MockQuerierMockRecorder) FinishImportRun(ctx, arg any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FinishImportRun", reflect.TypeOf((*MockQuerier)(nil).FinishImportRun), ctx, arg)
 }
 
 // GetAccountByID mocks base method.
@@ -428,6 +457,21 @@ func (mr *MockQuerierMockRecorder) ListCategories(ctx any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListCategories", reflect.TypeOf((*MockQuerier)(nil).ListCategories), ctx)
 }
 
+// ListImportRuns mocks base method.
+func (m *MockQuerier) ListImportRuns(ctx context.Context, userID uuid.UUID) ([]sqlcgen.ImportRun, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListImportRuns", ctx, userID)
+	ret0, _ := ret[0].([]sqlcgen.ImportRun)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListImportRuns indicates an expected call of ListImportRuns.
+func (mr *MockQuerierMockRecorder) ListImportRuns(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListImportRuns", reflect.TypeOf((*MockQuerier)(nil).ListImportRuns), ctx, userID)
+}
+
 // ListLabels mocks base method.
 func (m *MockQuerier) ListLabels(ctx context.Context, userID pgtype.UUID) ([]sqlcgen.Label, error) {
 	m.ctrl.T.Helper()
@@ -665,6 +709,20 @@ func (mr *MockQuerierMockRecorder) UpdateEnrichment(ctx, arg any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEnrichment", reflect.TypeOf((*MockQuerier)(nil).UpdateEnrichment), ctx, arg)
 }
 
+// UpdateImportRunCounts mocks base method.
+func (m *MockQuerier) UpdateImportRunCounts(ctx context.Context, arg sqlcgen.UpdateImportRunCountsParams) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateImportRunCounts", ctx, arg)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateImportRunCounts indicates an expected call of UpdateImportRunCounts.
+func (mr *MockQuerierMockRecorder) UpdateImportRunCounts(ctx, arg any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateImportRunCounts", reflect.TypeOf((*MockQuerier)(nil).UpdateImportRunCounts), ctx, arg)
+}
+
 // UpdateRecurringLastCharged mocks base method.
 func (m *MockQuerier) UpdateRecurringLastCharged(ctx context.Context, arg sqlcgen.UpdateRecurringLastChargedParams) error {
 	m.ctrl.T.Helper()
@@ -691,6 +749,21 @@ func (m *MockQuerier) UpdateSessionTitle(ctx context.Context, arg sqlcgen.Update
 func (mr *MockQuerierMockRecorder) UpdateSessionTitle(ctx, arg any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSessionTitle", reflect.TypeOf((*MockQuerier)(nil).UpdateSessionTitle), ctx, arg)
+}
+
+// UpdateUserDOB mocks base method.
+func (m *MockQuerier) UpdateUserDOB(ctx context.Context, arg sqlcgen.UpdateUserDOBParams) (sqlcgen.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateUserDOB", ctx, arg)
+	ret0, _ := ret[0].(sqlcgen.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateUserDOB indicates an expected call of UpdateUserDOB.
+func (mr *MockQuerierMockRecorder) UpdateUserDOB(ctx, arg any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUserDOB", reflect.TypeOf((*MockQuerier)(nil).UpdateUserDOB), ctx, arg)
 }
 
 // UpdateUserPreferences mocks base method.

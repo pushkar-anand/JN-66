@@ -14,3 +14,6 @@ RETURNING *;
 
 -- name: UpdateUserPreferences :one
 UPDATE users SET preferences = $2, updated_at = NOW() WHERE id = $1 RETURNING *;
+
+-- name: UpdateUserDOB :one
+UPDATE users SET date_of_birth = $2, updated_at = NOW() WHERE id = $1 RETURNING *;
