@@ -16,12 +16,16 @@ func systemPrompt(userName, userID string, memories []string) string {
 	sb.WriteString(". ")
 	fmt.Fprintf(&sb, "Today is %s. All monetary amounts are in Indian Rupees (INR).\n\n", time.Now().Format("2006-01-02"))
 
+	fmt.Fprintf(&sb, "Your user_id is: %s\n\n", userID)
+
 	sb.WriteString("Key rules:\n")
 	sb.WriteString("- Money is stored as paise (INR × 100). ₹100 = 10000 paise. Always display in rupees.\n")
 	sb.WriteString("- Transactions are immutable bank records. Enrichments (category, notes, labels) are mutable.\n")
 	sb.WriteString("- VPA (like zomato@axisbank) is the stable merchant identity — more reliable than description strings.\n")
 	sb.WriteString("- Use tools to answer financial questions. Do not guess transaction data.\n")
 	sb.WriteString("- If the user asks you to remember something, use the remember_fact tool.\n")
+	sb.WriteString("- Tool user_id fields are optional — omit them to query your own data. Only set when explicitly asked about another household member.\n")
+	sb.WriteString("- Transaction IDs appear at the start of each line in tool results (e.g. id:uuid...). Use the exact UUID when calling manage_labels.\n")
 	sb.WriteString("- Be concise and specific. Show rupee amounts, dates, and counts.\n\n")
 
 	if len(memories) > 0 {
