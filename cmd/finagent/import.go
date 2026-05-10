@@ -25,7 +25,6 @@ import (
 func runImport(args []string) error {
 	fs := flag.NewFlagSet("import", flag.ExitOnError)
 	configPath := fs.String("config", "config/config.yaml", "path to config file")
-	bankFlag := fs.String("bank", "", "bank identifier: axis|idfc|sbi|icici (auto-detect if omitted)")
 	fileFlag := fs.String("file", "", "path to bank statement file (required)")
 	userFlag := fs.String("user", "", "user email (required)")
 	accountFlag := fs.String("account", "", "account UUID (optional — auto-detected from statement)")
@@ -38,17 +37,6 @@ func runImport(args []string) error {
 	}
 	if *userFlag == "" {
 		return fmt.Errorf("--user is required")
-	}
-	if *bankFlag == "" {
-		ext := strings.ToLower(filepath.Ext(*fileFlag))
-		switch ext {
-		case ".xls":
-			*bankFlag = "icici"
-		case ".xlsx":
-			*bankFlag = "sbi"
-		default:
-			return fmt.Errorf("--bank is required when file extension is not .xls or .xlsx")
-		}
 	}
 
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn})))
@@ -73,15 +61,21 @@ func runImport(args []string) error {
 		return fmt.Errorf("user %q not found: %w", *userFlag, err)
 	}
 
-	// Parse the statement file — also extracts account metadata.
 	reg := parser.NewRegistry()
-	result, err := parseFile(ctx, reg, *fileFlag, *bankFlag, u)
+
+	// Auto-detect bank from file.
+	bank, err := reg.DetectFile(*fileFlag)
+	if err != nil {
+		return fmt.Errorf("detect bank: %w", err)
+	}
+
+	result, err := parseFile(ctx, reg, *fileFlag, bank, u)
 	if err != nil {
 		return err
 	}
 
 	if *dryRun {
-		printDryRun(*bankFlag, result)
+		printDryRun(bank, result)
 		return nil
 	}
 
@@ -95,7 +89,7 @@ func runImport(args []string) error {
 			return fmt.Errorf("invalid --account UUID: %w", err)
 		}
 	} else {
-		acc, created, err := accountStore.FindOrCreate(ctx, u.ID.String(), *bankFlag, store.AccountMetaParams{
+		acc, created, err := accountStore.FindOrCreate(ctx, u.ID.String(), bank, store.AccountMetaParams{
 			AccountNumber: result.Meta.AccountNumber,
 			IFSC:          result.Meta.IFSC,
 		})
@@ -141,7 +135,7 @@ func runImport(args []string) error {
 		enrichMsg = " (enrichment skipped)"
 	}
 
-	fmt.Printf("\n=== import: %s — %s ===\n\n", strings.ToUpper(*bankFlag), *userFlag)
+	fmt.Printf("\n=== import: %s — %s ===\n\n", strings.ToUpper(bank), *userFlag)
 	fmt.Printf("Parsed:    %d rows\n", res.Parsed)
 	fmt.Printf("Inserted:  %d%s\n", res.Inserted, enrichMsg)
 	fmt.Printf("Duplicate: %d\n", res.Duplicate)
@@ -164,7 +158,7 @@ func parseFile(_ context.Context, reg *parser.Registry, filePath, bank string, u
 	}
 
 	// SBI: password-encrypted XLSX — derive password from user profile.
-	if bank == "sbi" || (bank == "" && ext == ".xlsx") {
+	if bank == "sbi" || ext == ".xlsx" {
 		p, err := reg.ByBank("sbi")
 		if err != nil {
 			return parser.ParseResult{}, err

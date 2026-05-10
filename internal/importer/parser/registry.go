@@ -1,7 +1,11 @@
 package parser
 
 import (
+	"encoding/csv"
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -49,4 +53,48 @@ func (r *Registry) Detect(header []string) (Parser, error) {
 		}
 	}
 	return nil, fmt.Errorf("no parser matched header: %v", header)
+}
+
+// DetectFile infers the bank identifier from a statement file path.
+// For .xls the bank is always "icici"; for .xlsx always "sbi".
+// For .csv it scans rows until one matches a registered parser's CanParse.
+func (r *Registry) DetectFile(path string) (string, error) {
+	ext := strings.ToLower(filepath.Ext(path))
+	switch ext {
+	case ".xls":
+		return "icici", nil
+	case ".xlsx":
+		return "sbi", nil
+	case ".csv":
+		return r.detectCSV(path)
+	default:
+		return "", fmt.Errorf("unsupported file extension %q", ext)
+	}
+}
+
+func (r *Registry) detectCSV(path string) (string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", fmt.Errorf("open for detection: %w", err)
+	}
+	defer f.Close()
+
+	rdr := csv.NewReader(f)
+	rdr.LazyQuotes = true
+	rdr.FieldsPerRecord = -1
+
+	for {
+		record, err := rdr.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			continue
+		}
+		p, err := r.Detect(record)
+		if err == nil {
+			return p.Bank(), nil
+		}
+	}
+	return "", fmt.Errorf("could not detect bank from %q — pass --bank explicitly", path)
 }
