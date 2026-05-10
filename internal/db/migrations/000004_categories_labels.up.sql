@@ -2,12 +2,13 @@ CREATE TABLE categories (
     id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     slug       TEXT NOT NULL UNIQUE,
     name       TEXT NOT NULL,
-    direction  txn_direction_enum,
-    parent_id  UUID REFERENCES categories(id),
-    depth      SMALLINT NOT NULL DEFAULT 0,
-    color      TEXT,
-    icon       TEXT,
-    is_system  BOOLEAN NOT NULL DEFAULT TRUE,
+    direction    txn_direction_enum NOT NULL,
+    description  TEXT NOT NULL DEFAULT '',
+    parent_id    UUID REFERENCES categories(id),
+    depth        SMALLINT NOT NULL DEFAULT 0,
+    color        TEXT,
+    icon         TEXT,
+    is_system    BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
