@@ -59,7 +59,7 @@ func runAccountAdd(configPath, userEmail string) error {
 	userStore := store.NewUserStore(pool)
 	accountStore := store.NewAccountStore(pool)
 
-	u, err := resolveImportUser(ctx, userStore, userEmail, cfg.Channel.CLI.DefaultUser)
+	u, err := resolveUser(ctx, userStore, userEmail, cfg.Channel.CLI.DefaultUser)
 	if err != nil {
 		return err
 	}
@@ -143,7 +143,7 @@ func runAccountList(configPath, userEmail string) error {
 	userStore := store.NewUserStore(pool)
 	accountStore := store.NewAccountStore(pool)
 
-	u, err := resolveImportUser(ctx, userStore, userEmail, cfg.Channel.CLI.DefaultUser)
+	u, err := resolveUser(ctx, userStore, userEmail, cfg.Channel.CLI.DefaultUser)
 	if err != nil {
 		return err
 	}

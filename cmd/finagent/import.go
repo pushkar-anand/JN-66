@@ -53,7 +53,7 @@ func runImport(args []string) error {
 	defer pool.Close()
 
 	userStore := store.NewUserStore(pool)
-	u, err := resolveImportUser(ctx, userStore, *userFlag, cfg.Channel.CLI.DefaultUser)
+	u, err := resolveUser(ctx, userStore, *userFlag, cfg.Channel.CLI.DefaultUser)
 	if err != nil {
 		return err
 	}
@@ -209,36 +209,6 @@ func printDryRun(bank string, result parser.ParseResult) {
 		)
 	}
 	fmt.Println()
-}
-
-// resolveImportUser returns the user to import for. Priority:
-//  1. --user flag (email) — hard error if not found
-//  2. config default_user — silently skipped if not found in DB
-//  3. sole user in the database
-func resolveImportUser(ctx context.Context, users *store.UserStore, flagVal, defaultUser string) (*sqlcgen.User, error) {
-	if flagVal != "" {
-		u, err := users.GetByEmail(ctx, flagVal)
-		if err != nil {
-			return nil, fmt.Errorf("user %q not found: %w", flagVal, err)
-		}
-		return u, nil
-	}
-	if defaultUser != "" {
-		if u, err := users.GetByEmail(ctx, defaultUser); err == nil {
-			return u, nil
-		}
-	}
-	all, err := users.List(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("list users: %w", err)
-	}
-	if len(all) == 1 {
-		return &all[0], nil
-	}
-	if len(all) == 0 {
-		return nil, fmt.Errorf("no users in database — run: finagent user add")
-	}
-	return nil, fmt.Errorf("multiple users in database — pass --user <email>")
 }
 
 func truncate(s string, n int) string {
