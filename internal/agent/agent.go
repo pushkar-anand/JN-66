@@ -182,4 +182,3 @@ func splitWords(s string) func(yield func(string) bool) {
 		}
 	}
 }
-

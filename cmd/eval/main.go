@@ -30,8 +30,8 @@ func main() {
 
 func run() error {
 	configPath := flag.String("config", "config/config.yaml", "path to config file")
-	userEmail  := flag.String("user", "alice@example.com", "seed user email to run evals as")
-	filter     := flag.String("run", "", "run only scenarios whose name contains this substring")
+	userEmail := flag.String("user", "alice@example.com", "seed user email to run evals as")
+	filter := flag.String("run", "", "run only scenarios whose name contains this substring")
 	flag.Parse()
 
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn})))
@@ -51,7 +51,7 @@ func run() error {
 	defer pool.Close()
 
 	// Resolve the eval user.
-	userStore     := store.NewUserStore(pool)
+	userStore := store.NewUserStore(pool)
 	u, err := userStore.GetByEmail(ctx, *userEmail)
 	if err != nil {
 		return fmt.Errorf("user %q not found in database (run make seed first): %w", *userEmail, err)
@@ -59,16 +59,16 @@ func run() error {
 	userID := u.ID.String()
 
 	// Build real stores.
-	accountStore  := store.NewAccountStore(pool)
-	txnStore      := store.NewTransactionStore(pool)
-	labelStore    := store.NewLabelStore(pool)
+	accountStore := store.NewAccountStore(pool)
+	txnStore := store.NewTransactionStore(pool)
+	labelStore := store.NewLabelStore(pool)
 	recurringStore := store.NewRecurringStore(pool)
-	memoryStore   := store.NewMemoryStore(pool)
-	convStore     := store.NewConversationStore(pool)
+	memoryStore := store.NewMemoryStore(pool)
+	convStore := store.NewConversationStore(pool)
 
 	// Build real LLM provider + recording wrapper.
-	realLLM   := openai.New(cfg.LLM.BaseURL, cfg.LLM.APIKey)
-	llmRec    := eval.NewRecordingLLM(realLLM)
+	realLLM := openai.New(cfg.LLM.BaseURL, cfg.LLM.APIKey)
+	llmRec := eval.NewRecordingLLM(realLLM)
 
 	// Build real tool registry + recording wrapper.
 	registry := tools.NewRegistry()
@@ -83,7 +83,7 @@ func run() error {
 
 	// Wire agent with recorders instead of raw LLM + registry.
 	router := agent.NewRouter(cfg.LLM.Routing)
-	ag     := agent.New(llmRec, convStore, memoryStore, userStore, regRec, router)
+	ag := agent.New(llmRec, convStore, memoryStore, userStore, regRec, router)
 
 	// Select scenarios.
 	scenarios := eval.Scenarios

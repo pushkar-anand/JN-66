@@ -33,9 +33,9 @@ func main() {
 func run() error {
 	// Flags
 	configPath := flag.String("config", "config/config.yaml", "path to config file")
-	userFlag   := flag.String("user", "", "user email or name to identify as (CLI mode)")
-	serveFlag  := flag.Bool("serve", false, "start HTTP API server instead of CLI")
-	debugFlag  := flag.Bool("debug", false, "enable debug logging")
+	userFlag := flag.String("user", "", "user email or name to identify as (CLI mode)")
+	serveFlag := flag.Bool("serve", false, "start HTTP API server instead of CLI")
+	debugFlag := flag.Bool("debug", false, "enable debug logging")
 	flag.Parse()
 
 	// Logging
@@ -70,13 +70,13 @@ func run() error {
 	}
 
 	// Stores
-	userStore     := store.NewUserStore(pool)
-	accountStore  := store.NewAccountStore(pool)
-	txnStore      := store.NewTransactionStore(pool)
-	labelStore    := store.NewLabelStore(pool)
+	userStore := store.NewUserStore(pool)
+	accountStore := store.NewAccountStore(pool)
+	txnStore := store.NewTransactionStore(pool)
+	labelStore := store.NewLabelStore(pool)
 	recurringStore := store.NewRecurringStore(pool)
-	memoryStore   := store.NewMemoryStore(pool)
-	convStore     := store.NewConversationStore(pool)
+	memoryStore := store.NewMemoryStore(pool)
+	convStore := store.NewConversationStore(pool)
 
 	// Resolve CLI user ID
 	userID := resolveUser(ctx, userStore, cmp(*userFlag, cfg.Channel.CLI.DefaultUser))
@@ -96,7 +96,7 @@ func run() error {
 
 	// Agent
 	router := agent.NewRouter(cfg.LLM.Routing)
-	ag     := agent.New(llmProvider, convStore, memoryStore, userStore, registry, router)
+	ag := agent.New(llmProvider, convStore, memoryStore, userStore, registry, router)
 
 	if *serveFlag {
 		srv := api.New(cfg.API.Listen, ag.HandleMessage)

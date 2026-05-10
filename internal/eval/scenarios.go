@@ -3,16 +3,16 @@ package eval
 // Scenarios is the full eval suite. UserID is filled by the runner at startup.
 var Scenarios = []EvalCase{
 	{
-		Name:          "account_summary",
-		Input:         "What accounts do I have?",
-		MustCallTools: []string{"get_account_summary"},
+		Name:              "account_summary",
+		Input:             "What accounts do I have?",
+		MustCallTools:     []string{"get_account_summary"},
 		OutputMustContain: []string{"HDFC"},
 	},
 	{
-		Name:          "spending_breakdown",
-		Input:         "How much did I spend in April 2026?",
-		MustCallTools: []string{"get_spending_breakdown"},
-		MaxLLMRounds:  3,
+		Name:              "spending_breakdown",
+		Input:             "How much did I spend in April 2026?",
+		MustCallTools:     []string{"get_spending_breakdown"},
+		MaxLLMRounds:      3,
 		OutputMustContain: []string{"₹"},
 	},
 	{
@@ -23,15 +23,15 @@ var Scenarios = []EvalCase{
 		OutputMustContainOneOf: []string{"5,000", "5000", "₹5"},
 	},
 	{
-		Name:          "transactions_list",
-		Input:         "Show me my last 5 transactions",
-		MustCallTools: []string{"query_transactions"},
+		Name:              "transactions_list",
+		Input:             "Show me my last 5 transactions",
+		MustCallTools:     []string{"query_transactions"},
 		OutputMustContain: []string{"Zomato", "NACH"},
 	},
 	{
-		Name:          "recurring_list",
-		Input:         "What are my active subscriptions?",
-		MustCallTools: []string{"list_recurring"},
+		Name:              "recurring_list",
+		Input:             "What are my active subscriptions?",
+		MustCallTools:     []string{"list_recurring"},
 		OutputMustContain: []string{"Netflix"},
 	},
 	{
@@ -40,23 +40,23 @@ var Scenarios = []EvalCase{
 		MustCallTools: []string{"remember_fact"},
 	},
 	{
-		Name:           "recall_after_remember",
-		PreambleInputs: []string{"Remember that I pay rent of ₹25,000 every month to my landlord"},
-		Input:          "What do you know about my rent from your memory?",
-		MustCallTools:  []string{"recall_facts"},
+		Name:              "recall_after_remember",
+		PreambleInputs:    []string{"Remember that I pay rent of ₹25,000 every month to my landlord"},
+		Input:             "What do you know about my rent from your memory?",
+		MustCallTools:     []string{"recall_facts"},
 		OutputMustContain: []string{"25,000", "rent"},
 	},
 	{
-		Name:          "label_transaction",
-		Input:         "Show me my last 5 transactions and label the Zomato one as food-delivery",
-		MustCallTools: []string{"query_transactions", "manage_labels"},
-		MaxLLMRounds:  5,
+		Name:              "label_transaction",
+		Input:             "Show me my last 5 transactions and label the Zomato one as food-delivery",
+		MustCallTools:     []string{"query_transactions", "manage_labels"},
+		MaxLLMRounds:      5,
 		OutputMustContain: []string{"food-delivery", "added"},
 	},
 	{
-		Name:          "max_rounds_respected",
-		Input:         "Analyse everything about my finances",
-		MaxLLMRounds:  8,
+		Name:         "max_rounds_respected",
+		Input:        "Analyse everything about my finances",
+		MaxLLMRounds: 8,
 		// No tool or output assertions — just verify agent returns without panic.
 	},
 	{

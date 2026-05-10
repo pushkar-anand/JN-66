@@ -29,7 +29,7 @@ type Message struct {
 	Content    string     `json:"content"`
 	ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
 	ToolCallID string     `json:"tool_call_id,omitempty"` // set when Role == RoleTool
-	Name       string     `json:"name,omitempty"`          // tool name when Role == RoleTool
+	Name       string     `json:"name,omitempty"`         // tool name when Role == RoleTool
 }
 
 // ToolCall represents a tool invocation requested by the model.
@@ -55,10 +55,10 @@ type ChatRequest struct {
 
 // ChatResponse is the output from Provider.Chat.
 type ChatResponse struct {
-	Message    Message `json:"message"`
-	StopReason string  `json:"stop_reason"` // "stop" | "tool_calls" | "length"
-	InputTokens  int   `json:"input_tokens"`
-	OutputTokens int   `json:"output_tokens"`
+	Message      Message `json:"message"`
+	StopReason   string  `json:"stop_reason"` // "stop" | "tool_calls" | "length"
+	InputTokens  int     `json:"input_tokens"`
+	OutputTokens int     `json:"output_tokens"`
 }
 
 // EmbedRequest is the input to Provider.Embed.
