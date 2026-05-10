@@ -43,6 +43,12 @@ func main() {
 				os.Exit(1)
 			}
 			return
+		case "enrich":
+			if err := runEnrich(os.Args[2:]); err != nil {
+				fmt.Fprintf(os.Stderr, "enrich: %v\n", err)
+				os.Exit(1)
+			}
+			return
 		}
 	}
 	if err := run(); err != nil {
