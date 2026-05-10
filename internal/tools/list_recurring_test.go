@@ -96,3 +96,9 @@ func TestListRecurring_InvalidJSON(t *testing.T) {
 	_, err := NewListRecurring(boundUser, q).Execute(context.Background(), "", `{bad`)
 	require.Error(t, err)
 }
+
+func TestListRecurring_Definition(t *testing.T) {
+	q := NewMockrecurringQuerier(gomock.NewController(t))
+	def := NewListRecurring(boundUser, q).Definition()
+	assert.Equal(t, "list_recurring", def.Name)
+}

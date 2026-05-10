@@ -190,3 +190,47 @@ func TestQueryTransactions_InvalidJSON(t *testing.T) {
 	_, err := NewQueryTransactions(boundUser, q).Execute(t.Context(), "", `{bad`)
 	require.Error(t, err)
 }
+
+func TestQueryTransactions_InvalidToDate(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	q := NewMocktransactionQuerier(ctrl)
+
+	_, err := NewQueryTransactions(boundUser, q).Execute(t.Context(), "", `{"from":"2025-01-01","to":"not-a-date"}`)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid to date")
+}
+
+func TestQueryTransactions_WithFilters(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	q := NewMocktransactionQuerier(ctrl)
+
+	var gotParams store.ListTransactionsParams
+	q.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(_ context.Context, p store.ListTransactionsParams) ([]sqlcgen.VTransaction, error) {
+			gotParams = p
+			return nil, nil
+		})
+
+	_, err := NewQueryTransactions(boundUser, q).Execute(t.Context(), "", `{
+		"account_id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+		"category_id":"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+		"counterparty_identifier":"zomato@axisbank",
+		"payment_mode":"upi",
+		"direction":"debit"
+	}`)
+	require.NoError(t, err)
+	assert.NotNil(t, gotParams.AccountID)
+	assert.NotNil(t, gotParams.CategoryID)
+	assert.NotNil(t, gotParams.CounterpartyIdentifier)
+	assert.Equal(t, "zomato@axisbank", *gotParams.CounterpartyIdentifier)
+	assert.NotNil(t, gotParams.PaymentMode)
+	assert.Equal(t, sqlcgen.PaymentModeEnumUpi, *gotParams.PaymentMode)
+	assert.NotNil(t, gotParams.Direction)
+	assert.Equal(t, sqlcgen.TxnDirectionEnumDebit, *gotParams.Direction)
+}
+
+func TestQueryTransactions_Definition(t *testing.T) {
+	q := NewMocktransactionQuerier(gomock.NewController(t))
+	def := NewQueryTransactions(boundUser, q).Definition()
+	assert.Equal(t, "query_transactions", def.Name)
+}

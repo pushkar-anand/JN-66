@@ -14,12 +14,16 @@ import (
 // MemoryStore handles agent_memories data access.
 type MemoryStore struct {
 	DB
-	q *sqlcgen.Queries
+	q sqlcgen.Querier
 }
 
 // NewMemoryStore creates a MemoryStore backed by pool.
 func NewMemoryStore(pool *pgxpool.Pool) *MemoryStore {
 	return &MemoryStore{DB: newDB(pool), q: sqlcgen.New(pool)}
+}
+
+func newMemoryStoreForTest(q sqlcgen.Querier) *MemoryStore {
+	return &MemoryStore{q: q}
 }
 
 func toPgtypeUUID(id uuid.UUID) pgtype.UUID {

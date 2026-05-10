@@ -111,3 +111,29 @@ func TestRememberFact_InvalidJSON(t *testing.T) {
 	_, err := NewRememberFact(boundUser, q).Execute(t.Context(), "", `{bad`)
 	require.Error(t, err)
 }
+
+func TestRememberFact_RecurringHintType(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	q := NewMockmemoryQuerier(ctrl)
+	q.EXPECT().Save(gomock.Any(), gomock.Any(), gomock.Any(), sqlcgen.MemoryTypeEnumRecurringHint, gomock.Any()).
+		Return(&sqlcgen.AgentMemory{ID: uuid.New(), Content: "fact"}, nil)
+
+	_, err := NewRememberFact(boundUser, q).Execute(t.Context(), "", `{"content":"fact","memory_type":"recurring_hint"}`)
+	require.NoError(t, err)
+}
+
+func TestRememberFact_PreferenceType(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	q := NewMockmemoryQuerier(ctrl)
+	q.EXPECT().Save(gomock.Any(), gomock.Any(), gomock.Any(), sqlcgen.MemoryTypeEnumPreference, gomock.Any()).
+		Return(&sqlcgen.AgentMemory{ID: uuid.New(), Content: "fact"}, nil)
+
+	_, err := NewRememberFact(boundUser, q).Execute(t.Context(), "", `{"content":"fact","memory_type":"preference"}`)
+	require.NoError(t, err)
+}
+
+func TestRememberFact_Definition(t *testing.T) {
+	q := NewMockmemoryQuerier(gomock.NewController(t))
+	def := NewRememberFact(boundUser, q).Definition()
+	assert.Equal(t, "remember_fact", def.Name)
+}

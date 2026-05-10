@@ -10,12 +10,15 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/google/uuid"
+
 	"github.com/pushkaranand/finagent/config"
 	"github.com/pushkaranand/finagent/internal/agent"
 	"github.com/pushkaranand/finagent/internal/api"
 	"github.com/pushkaranand/finagent/internal/channel/cli"
 	"github.com/pushkaranand/finagent/internal/db"
 	"github.com/pushkaranand/finagent/internal/llm/openai"
+	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
 	"github.com/pushkaranand/finagent/internal/store"
 	"github.com/pushkaranand/finagent/internal/tools"
 )
@@ -105,8 +108,14 @@ func run() error {
 	return cliCh.Start(ctx, ag.HandleMessage)
 }
 
+// userLookup is the subset of store.UserStore used by resolveUser.
+type userLookup interface {
+	GetByEmail(ctx context.Context, email string) (*sqlcgen.User, error)
+	List(ctx context.Context) ([]sqlcgen.User, error)
+}
+
 // resolveUser looks up the user by email or name, returning their UUID.
-func resolveUser(ctx context.Context, users *store.UserStore, identifier string) string {
+func resolveUser(ctx context.Context, users userLookup, identifier string) string {
 	if identifier == "" {
 		slog.Warn("no user specified; use --user <email> or set channel.cli.default_user in config")
 		return ""
@@ -123,8 +132,12 @@ func resolveUser(ctx context.Context, users *store.UserStore, identifier string)
 			}
 		}
 	}
+	// Accept identifier as-is only if it's already a valid UUID (e.g. passed directly).
+	if _, err := uuid.Parse(identifier); err == nil {
+		return identifier
+	}
 	slog.Warn("user not found in database", "identifier", identifier)
-	return identifier
+	return ""
 }
 
 // cmp returns the first non-empty string.

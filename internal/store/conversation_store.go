@@ -13,12 +13,16 @@ import (
 // ConversationStore handles session and message persistence.
 type ConversationStore struct {
 	DB
-	q *sqlcgen.Queries
+	q sqlcgen.Querier
 }
 
 // NewConversationStore creates a ConversationStore backed by pool.
 func NewConversationStore(pool *pgxpool.Pool) *ConversationStore {
 	return &ConversationStore{DB: newDB(pool), q: sqlcgen.New(pool)}
+}
+
+func newConversationStoreForTest(q sqlcgen.Querier) *ConversationStore {
+	return &ConversationStore{q: q}
 }
 
 // GetOrCreateSession returns the existing session by ID, or creates a new one.

@@ -12,12 +12,16 @@ import (
 // CategoryStore handles category lookups.
 type CategoryStore struct {
 	DB
-	q *sqlcgen.Queries
+	q sqlcgen.Querier
 }
 
 // NewCategoryStore creates a CategoryStore backed by pool.
 func NewCategoryStore(pool *pgxpool.Pool) *CategoryStore {
 	return &CategoryStore{DB: newDB(pool), q: sqlcgen.New(pool)}
+}
+
+func newCategoryStoreForTest(q sqlcgen.Querier) *CategoryStore {
+	return &CategoryStore{q: q}
 }
 
 // List returns all categories ordered by depth then slug.

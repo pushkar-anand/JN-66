@@ -5,13 +5,9 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/google/uuid"
-
 	"github.com/pushkaranand/finagent/internal/channel"
 	"github.com/pushkaranand/finagent/internal/llm"
 	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
-	"github.com/pushkaranand/finagent/internal/store"
-	"github.com/pushkaranand/finagent/internal/tools"
 )
 
 const maxToolRounds = 8
@@ -19,21 +15,21 @@ const maxToolRounds = 8
 // Agent is the core ReAct loop. It receives messages from any channel,
 // calls the LLM, dispatches tool calls, and returns a response.
 type Agent struct {
-	llm      llm.Provider
-	conv     *store.ConversationStore
-	memories *store.MemoryStore
-	users    *store.UserStore
-	registry *tools.Registry
+	llm      chatProvider
+	conv     convStore
+	memories memStore
+	users    userStore
+	registry toolRegistry
 	router   *Router
 }
 
 // New creates an Agent with all dependencies wired in.
 func New(
-	provider llm.Provider,
-	conv *store.ConversationStore,
-	memories *store.MemoryStore,
-	users *store.UserStore,
-	registry *tools.Registry,
+	provider chatProvider,
+	conv convStore,
+	memories memStore,
+	users userStore,
+	registry toolRegistry,
 	router *Router,
 ) *Agent {
 	return &Agent{
@@ -179,5 +175,3 @@ func splitWords(s string) func(yield func(string) bool) {
 	}
 }
 
-// ensure uuid import is used (sess.ID is uuid.UUID).
-var _ = uuid.UUID{}

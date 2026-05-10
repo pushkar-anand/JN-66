@@ -1,8 +1,10 @@
 package tools
 
 import (
+	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/pushkaranand/finagent/internal/store"
@@ -86,4 +88,30 @@ func TestGetSpendingBreakdown_InvalidJSON(t *testing.T) {
 
 	_, err := NewGetSpendingBreakdown(boundUser, q).Execute(t.Context(), "", `{bad`)
 	require.Error(t, err)
+}
+
+func TestGetSpendingBreakdown_WithAccountIDFilter(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	q := NewMocktransactionQuerier(ctrl)
+
+	var gotAccountID *string
+	q.EXPECT().GetSpendingByCategory(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+		func(_ context.Context, _ string, _, _ time.Time, aid *string) ([]store.SpendingRow, error) {
+			gotAccountID = aid
+			return nil, nil
+		})
+
+	_, err := NewGetSpendingBreakdown(boundUser, q).Execute(t.Context(), "", `{
+		"from":"2025-01-01","to":"2025-01-31",
+		"account_id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+	}`)
+	require.NoError(t, err)
+	require.NotNil(t, gotAccountID)
+	assert.Equal(t, "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", *gotAccountID)
+}
+
+func TestGetSpendingBreakdown_Definition(t *testing.T) {
+	q := NewMocktransactionQuerier(gomock.NewController(t))
+	def := NewGetSpendingBreakdown(boundUser, q).Definition()
+	assert.Equal(t, "get_spending_breakdown", def.Name)
 }

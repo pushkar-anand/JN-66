@@ -13,12 +13,16 @@ import (
 // LabelStore handles label data access.
 type LabelStore struct {
 	DB
-	q *sqlcgen.Queries
+	q sqlcgen.Querier
 }
 
 // NewLabelStore creates a LabelStore backed by pool.
 func NewLabelStore(pool *pgxpool.Pool) *LabelStore {
 	return &LabelStore{DB: newDB(pool), q: sqlcgen.New(pool)}
+}
+
+func newLabelStoreForTest(q sqlcgen.Querier) *LabelStore {
+	return &LabelStore{q: q}
 }
 
 // List returns all labels visible to the user (personal + shared).

@@ -13,12 +13,16 @@ import (
 // AccountStore handles account and account-member data access.
 type AccountStore struct {
 	DB
-	q *sqlcgen.Queries
+	q sqlcgen.Querier
 }
 
 // NewAccountStore creates an AccountStore backed by pool.
 func NewAccountStore(pool *pgxpool.Pool) *AccountStore {
 	return &AccountStore{DB: newDB(pool), q: sqlcgen.New(pool)}
+}
+
+func newAccountStoreForTest(q sqlcgen.Querier) *AccountStore {
+	return &AccountStore{q: q}
 }
 
 // ListByUser returns all accounts the user is a member of.

@@ -12,12 +12,16 @@ import (
 // RecurringStore handles recurring_payments data access.
 type RecurringStore struct {
 	DB
-	q *sqlcgen.Queries
+	q sqlcgen.Querier
 }
 
 // NewRecurringStore creates a RecurringStore backed by pool.
 func NewRecurringStore(pool *pgxpool.Pool) *RecurringStore {
 	return &RecurringStore{DB: newDB(pool), q: sqlcgen.New(pool)}
+}
+
+func newRecurringStoreForTest(q sqlcgen.Querier) *RecurringStore {
+	return &RecurringStore{q: q}
 }
 
 // List returns all active recurring payments for the user.

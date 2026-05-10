@@ -16,12 +16,16 @@ import (
 // TransactionStore handles transaction and enrichment data access.
 type TransactionStore struct {
 	DB
-	q *sqlcgen.Queries
+	q sqlcgen.Querier
 }
 
 // NewTransactionStore creates a TransactionStore backed by pool.
 func NewTransactionStore(pool *pgxpool.Pool) *TransactionStore {
 	return &TransactionStore{DB: newDB(pool), q: sqlcgen.New(pool)}
+}
+
+func newTransactionStoreForTest(q sqlcgen.Querier) *TransactionStore {
+	return &TransactionStore{q: q}
 }
 
 // IdempotencyKeyExists reports whether a transaction with the given key already exists.

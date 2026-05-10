@@ -12,12 +12,16 @@ import (
 // UserStore handles user lookups.
 type UserStore struct {
 	DB
-	q *sqlcgen.Queries
+	q sqlcgen.Querier
 }
 
 // NewUserStore creates a UserStore backed by pool.
 func NewUserStore(pool *pgxpool.Pool) *UserStore {
 	return &UserStore{DB: newDB(pool), q: sqlcgen.New(pool)}
+}
+
+func newUserStoreForTest(q sqlcgen.Querier) *UserStore {
+	return &UserStore{q: q}
 }
 
 // GetByEmail returns the user with the given email address.

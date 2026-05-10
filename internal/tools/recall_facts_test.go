@@ -65,3 +65,9 @@ func TestRecallFacts_InvalidJSON(t *testing.T) {
 	_, err := NewRecallFacts(boundUser, q).Execute(t.Context(), "", `{bad`)
 	require.Error(t, err)
 }
+
+func TestRecallFacts_Definition(t *testing.T) {
+	q := NewMockmemoryQuerier(gomock.NewController(t))
+	def := NewRecallFacts(boundUser, q).Definition()
+	assert.Equal(t, "recall_facts", def.Name)
+}

@@ -88,3 +88,9 @@ func TestGetAccountSummary_InvalidJSON(t *testing.T) {
 	_, err := NewGetAccountSummary(boundUser, q).Execute(t.Context(), "", `not json`)
 	require.Error(t, err)
 }
+
+func TestGetAccountSummary_Definition(t *testing.T) {
+	q := NewMockaccountQuerier(gomock.NewController(t))
+	def := NewGetAccountSummary(boundUser, q).Definition()
+	assert.Equal(t, "get_account_summary", def.Name)
+}
