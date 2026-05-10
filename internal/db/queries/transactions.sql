@@ -79,3 +79,6 @@ LIMIT sqlc.arg(page_limit) OFFSET sqlc.arg(page_offset);
 
 -- name: GetIdempotencyKeyExists :one
 SELECT EXISTS(SELECT 1 FROM transactions WHERE idempotency_key = @idempotency_key);
+
+-- name: GetTransactionByIdempotencyKey :one
+SELECT id FROM transactions WHERE idempotency_key = @idempotency_key;

@@ -293,6 +293,21 @@ func (mr *MockQuerierMockRecorder) GetIdempotencyKeyExists(ctx, idempotencyKey a
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIdempotencyKeyExists", reflect.TypeOf((*MockQuerier)(nil).GetIdempotencyKeyExists), ctx, idempotencyKey)
 }
 
+// GetTransactionByIdempotencyKey mocks base method.
+func (m *MockQuerier) GetTransactionByIdempotencyKey(ctx context.Context, idempotencyKey string) (uuid.UUID, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTransactionByIdempotencyKey", ctx, idempotencyKey)
+	ret0, _ := ret[0].(uuid.UUID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTransactionByIdempotencyKey indicates an expected call of GetTransactionByIdempotencyKey.
+func (mr *MockQuerierMockRecorder) GetTransactionByIdempotencyKey(ctx, idempotencyKey any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTransactionByIdempotencyKey", reflect.TypeOf((*MockQuerier)(nil).GetTransactionByIdempotencyKey), ctx, idempotencyKey)
+}
+
 // GetLabelBySlug mocks base method.
 func (m *MockQuerier) GetLabelBySlug(ctx context.Context, slug string) (sqlcgen.Label, error) {
 	m.ctrl.T.Helper()

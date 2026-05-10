@@ -37,6 +37,15 @@ func (s *TransactionStore) IdempotencyKeyExists(ctx context.Context, key string)
 	return exists, nil
 }
 
+// GetIDByIdempotencyKey returns the ID of the transaction matching the given key.
+func (s *TransactionStore) GetIDByIdempotencyKey(ctx context.Context, key string) (uuid.UUID, error) {
+	id, err := s.q.GetTransactionByIdempotencyKey(ctx, key)
+	if err != nil {
+		return uuid.UUID{}, fmt.Errorf("get transaction by idempotency key: %w", err)
+	}
+	return id, nil
+}
+
 // InsertTransactionParams groups all inputs for inserting a new transaction.
 type InsertTransactionParams struct {
 	AccountID              uuid.UUID
