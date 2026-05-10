@@ -4,7 +4,7 @@ database:
   auto_migrate: true
 
 llm:
-  base_url: "http://localhost:11434/v1"
+  base_url: "http://localhost:11434/v1"  # OpenAI-compatible endpoint (Ollama default)
   api_key: ""           # set via FINAGENT_LLM__API_KEY env var or fill here
   routing:
     chat_model:      "qwen3:14b"
