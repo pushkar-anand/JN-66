@@ -22,19 +22,22 @@ func NewRecallFacts(userID string, memories memoryQuerier) *RecallFacts {
 
 // Definition returns the tool descriptor.
 func (t *RecallFacts) Definition() llm.ToolDefinition {
+	tagsProp := map[string]any{
+		"type":        "array",
+		"items":       map[string]any{"type": "string"},
+		"description": "Topic tags to search by",
+	}
+	properties := map[string]any{
+		"tags": tagsProp,
+	}
+
 	return llm.ToolDefinition{
 		Name:        "recall_facts",
 		Description: "Retrieve facts previously learned from user conversations (rent amounts, bill dates, payment habits, preferences). Use when the user asks what you know or remember about a topic.",
 		Parameters: map[string]any{
-			"type": "object",
-			"properties": map[string]any{
-				"tags": map[string]any{
-					"type":        "array",
-					"items":       map[string]any{"type": "string"},
-					"description": "Topic tags to search by",
-				},
-			},
-			"required": []string{"tags"},
+			"type":       "object",
+			"properties": properties,
+			"required":   []string{"tags"},
 		},
 	}
 }
