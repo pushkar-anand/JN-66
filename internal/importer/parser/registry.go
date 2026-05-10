@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	xlslib "github.com/extrame/xls"
 )
 
 // Registry holds all registered parsers and selects one based on header auto-detection.
@@ -22,6 +24,7 @@ func NewRegistry() *Registry {
 	r.Register(&IDFCV1{})
 	r.Register(&SBIV1{})
 	r.Register(&ICICIV1{})
+	r.Register(&HDFCV1{})
 	return r
 }
 
@@ -38,7 +41,7 @@ func (r *Registry) ByBank(bank string) (Parser, error) {
 			return p, nil
 		}
 	}
-	return nil, fmt.Errorf("unknown bank %q — supported: axis, idfc, sbi, icici", bank)
+	return nil, fmt.Errorf("unknown bank %q — supported: axis, idfc, sbi, icici, hdfc", bank)
 }
 
 // Detect returns the first parser whose CanParse returns true for the given header row.
@@ -62,7 +65,7 @@ func (r *Registry) DetectFile(path string) (string, error) {
 	ext := strings.ToLower(filepath.Ext(path))
 	switch ext {
 	case ".xls":
-		return "icici", nil
+		return r.detectXLS(path)
 	case ".xlsx":
 		return "sbi", nil
 	case ".csv":
@@ -70,6 +73,33 @@ func (r *Registry) DetectFile(path string) (string, error) {
 	default:
 		return "", fmt.Errorf("unsupported file extension %q", ext)
 	}
+}
+
+// detectXLS peeks at an XLS file's rows and returns the matching bank name.
+func (r *Registry) detectXLS(path string) (string, error) {
+	wb, err := xlslib.Open(path, "utf-8")
+	if err != nil {
+		return "", fmt.Errorf("open xls for detection: %w", err)
+	}
+	sheet := wb.GetSheet(0)
+	if sheet == nil {
+		return "", fmt.Errorf("xls has no sheets: %s", path)
+	}
+	for rowIdx := 0; rowIdx <= int(sheet.MaxRow); rowIdx++ {
+		row := sheet.Row(rowIdx)
+		if row == nil {
+			continue
+		}
+		var cells []string
+		for colIdx := row.FirstCol(); colIdx <= row.LastCol(); colIdx++ {
+			cells = append(cells, strings.ToLower(strings.TrimSpace(row.Col(colIdx))))
+		}
+		p, err := r.Detect(cells)
+		if err == nil {
+			return p.Bank(), nil
+		}
+	}
+	return "", fmt.Errorf("could not detect bank from XLS %q", path)
 }
 
 func (r *Registry) detectCSV(path string) (string, error) {

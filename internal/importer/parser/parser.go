@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	xlslib "github.com/extrame/xls"
 	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
 )
 
@@ -46,6 +47,13 @@ type Parser interface {
 	Bank() string
 	// FormatVersion returns the format version string (e.g. "v1") for diagnostics.
 	FormatVersion() string
+}
+
+// safeXLSRow calls sheet.Row(idx) and recovers from the nil-pointer panic that
+// extrame/xls triggers on certain empty rows in some bank-generated XLS files.
+func safeXLSRow(sheet *xlslib.WorkSheet, idx int) (row *xlslib.Row) {
+	defer func() { recover() }() //nolint:errcheck
+	return sheet.Row(idx)
 }
 
 // detectPaymentMode guesses the payment mode from the raw transaction description.

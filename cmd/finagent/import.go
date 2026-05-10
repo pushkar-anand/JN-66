@@ -151,12 +151,21 @@ func parseFile(_ context.Context, reg *parser.Registry, filePath, bank string, u
 	ext := strings.ToLower(filepath.Ext(filePath))
 
 	// ICICI: binary XLS — must use ParsePath.
-	if bank == "icici" || ext == ".xls" {
+	if bank == "icici" {
 		p, err := reg.ByBank("icici")
 		if err != nil {
 			return parser.ParseResult{}, err
 		}
 		return p.(*parser.ICICIV1).ParsePath(filePath)
+	}
+
+	// HDFC: binary XLS — must use ParsePath.
+	if bank == "hdfc" {
+		p, err := reg.ByBank("hdfc")
+		if err != nil {
+			return parser.ParseResult{}, err
+		}
+		return p.(*parser.HDFCV1).ParsePath(filePath)
 	}
 
 	// SBI: password-encrypted XLSX — derive password from user profile.
