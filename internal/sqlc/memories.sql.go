@@ -113,7 +113,7 @@ SELECT id, user_id, content, memory_type, detection_source, tags, embedding, exp
 WHERE is_active = TRUE
   AND (expires_at IS NULL OR expires_at > NOW())
   AND (user_id = $1 OR user_id IS NULL)
-  AND tags && $2
+  AND (tags = '{}' OR tags && $2)
 ORDER BY created_at DESC
 LIMIT $3
 `

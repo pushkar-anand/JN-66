@@ -8,7 +8,7 @@ SELECT * FROM agent_memories
 WHERE is_active = TRUE
   AND (expires_at IS NULL OR expires_at > NOW())
   AND (user_id = sqlc.narg(user_id) OR user_id IS NULL)
-  AND tags && @tags
+  AND (tags = '{}' OR tags && @tags)
 ORDER BY created_at DESC
 LIMIT sqlc.arg(page_limit);
 
