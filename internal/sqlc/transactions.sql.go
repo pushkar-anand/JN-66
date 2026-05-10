@@ -134,6 +134,17 @@ func (q *Queries) GetTransactionByID(ctx context.Context, id uuid.UUID) (VTransa
 	return i, err
 }
 
+const getTransactionByIdempotencyKey = `-- name: GetTransactionByIdempotencyKey :one
+SELECT id FROM transactions WHERE idempotency_key = $1
+`
+
+func (q *Queries) GetTransactionByIdempotencyKey(ctx context.Context, idempotencyKey string) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, getTransactionByIdempotencyKey, idempotencyKey)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
 const insertTransaction = `-- name: InsertTransaction :one
 INSERT INTO transactions (
     account_id, user_id, idempotency_key, reference_number,

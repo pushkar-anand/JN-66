@@ -34,6 +34,7 @@ type Querier interface {
 	GetSession(ctx context.Context, id uuid.UUID) (ConversationSession, error)
 	GetSpendingByCategory(ctx context.Context, arg GetSpendingByCategoryParams) ([]GetSpendingByCategoryRow, error)
 	GetTransactionByID(ctx context.Context, id uuid.UUID) (VTransaction, error)
+	GetTransactionByIdempotencyKey(ctx context.Context, idempotencyKey string) (uuid.UUID, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
 	InsertTransaction(ctx context.Context, arg InsertTransactionParams) (Transaction, error)

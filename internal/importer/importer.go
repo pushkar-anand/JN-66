@@ -81,6 +81,34 @@ func (imp *Importer) Run(ctx context.Context, p RunParams) (*Result, error) {
 		}
 		if exists {
 			res.Duplicate++
+			if imp.enricher == nil {
+				continue
+			}
+			// Re-enrich the existing transaction so re-importing overwrites stale tags.
+			txnID, err := imp.txnStore.GetIDByIdempotencyKey(ctx, key)
+			if err != nil {
+				slog.Warn("re-enrich: could not fetch existing txn", "err", err)
+				continue
+			}
+			slog.Info("re-enriching", "n", i+1, "total", total, "desc", truncateStr(row.Description, 50))
+			enriched, err := imp.enricher.Enrich(ctx, row)
+			if err != nil {
+				slog.Warn("re-enrichment failed", "err", err, "txn", txnID)
+				continue
+			}
+			slog.Info("re-enriched", "category", enriched.CategorySlug, "normalized", enriched.DescriptionNormalized)
+			ep := store.EnrichmentParams{TransactionID: txnID.String(), DescriptionNormalized: nilIfEmpty(enriched.DescriptionNormalized)}
+			auto := sqlcgen.TaggingStatusEnumAuto
+			ep.TaggingStatus = &auto
+			if enriched.CategorySlug != "" {
+				if cat, err := imp.catStore.GetBySlug(ctx, enriched.CategorySlug); err == nil {
+					id := cat.ID.String()
+					ep.CategoryID = &id
+				}
+			}
+			if err := imp.txnStore.UpdateEnrichment(ctx, ep); err != nil {
+				slog.Warn("re-enrichment update failed", "err", err, "txn", txnID)
+			}
 			continue
 		}
 
