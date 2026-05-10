@@ -7,11 +7,11 @@ llm:
   base_url: "http://localhost:11434/v1"
   api_key: ""           # set via FINAGENT_LLM__API_KEY env var or fill here
   routing:
-    chat_model:      "qwen3.5:9b"
-    analysis_model:  "qwen3.5:9b"
-    tagging_model:   "qwen3.5:9b"
+    chat_model:      "qwen3:14b"
+    analysis_model:  "qwen3:14b"
+    tagging_model:   "qwen3:14b"
     embed_model:     "nomic-embed-text"
-    summarize_model: "qwen3.5:9b"
+    summarize_model: "qwen3:14b"
 
 agent:
   max_tool_rounds:  20

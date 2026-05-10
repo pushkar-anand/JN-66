@@ -50,6 +50,7 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
 	}
+	slog.Debug("llm config", "base_url", cfg.LLM.BaseURL, "api_key_set", cfg.LLM.APIKey != "")
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
@@ -88,7 +89,7 @@ func run() error {
 	registry.Register(tools.NewQueryTransactions(userID, txnStore))
 	registry.Register(tools.NewGetAccountSummary(userID, accountStore))
 	registry.Register(tools.NewGetSpendingBreakdown(userID, txnStore))
-	registry.Register(tools.NewManageLabels(labelStore))
+	registry.Register(tools.NewManageLabels(userID, labelStore))
 	registry.Register(tools.NewListRecurring(userID, recurringStore))
 	registry.Register(tools.NewRememberFact(userID, memoryStore))
 	registry.Register(tools.NewRecallFacts(userID, memoryStore))

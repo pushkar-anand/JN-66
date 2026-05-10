@@ -24,7 +24,7 @@ func NewRememberFact(userID string, memories memoryQuerier) *RememberFact {
 func (t *RememberFact) Definition() llm.ToolDefinition {
 	return llm.ToolDefinition{
 		Name:        "remember_fact",
-		Description: "Store a fact the user has stated so it can be recalled in future conversations. Use for merchant hints, tagging rules, and user preferences.",
+		Description: "Store a fact the user has stated so it can be recalled in future conversations. Use for payment habits (rent, bills, autopay dates), merchant hints, tagging rules, and user preferences.",
 		Parameters: map[string]any{
 			"type": "object",
 			"properties": map[string]any{
@@ -69,7 +69,7 @@ func (t *RememberFact) Execute(ctx context.Context, _ string, argsJSON string) (
 
 	tags := args.Tags
 	if len(tags) == 0 {
-		tags = []string{}
+		tags = autoTags(args.Content)
 	}
 
 	m, err := t.memories.Save(ctx, &userID, args.Content, memType, tags)

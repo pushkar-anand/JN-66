@@ -24,7 +24,7 @@ func NewRecallFacts(userID string, memories memoryQuerier) *RecallFacts {
 func (t *RecallFacts) Definition() llm.ToolDefinition {
 	return llm.ToolDefinition{
 		Name:        "recall_facts",
-		Description: "Search stored memories by topic tags. Use when you need to check if the user has told you something relevant before.",
+		Description: "Retrieve facts previously learned from user conversations (rent amounts, bill dates, payment habits, preferences). Use when the user asks what you know or remember about a topic.",
 		Parameters: map[string]any{
 			"type": "object",
 			"properties": map[string]any{

@@ -56,7 +56,7 @@ func TestGetSpendingBreakdown_Depth0ContributesToTotal(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, got, "Food")
 	assert.Contains(t, got, "Transport")
-	assert.Contains(t, got, "Total: ₹1500.00") // (100000 + 50000) / 100
+	assert.Contains(t, got, "Total: ₹2100.00") // (100000 + 60000 + 50000) / 100 — all rows summed
 	// depth=1 sub-category is indented
 	assert.Contains(t, got, "  • Delivery")
 }

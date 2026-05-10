@@ -2,9 +2,13 @@ package store
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
+	"unicode"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
@@ -69,6 +73,47 @@ func (s *LabelStore) RemoveFromTransaction(ctx context.Context, txnID, labelID s
 		TransactionID: tid,
 		LabelID:       lid,
 	})
+}
+
+// FindOrCreate looks up a label by its slug; creates it as a personal label if not found.
+func (s *LabelStore) FindOrCreate(ctx context.Context, userID, name string) (string, error) {
+	slug := slugify(name)
+	existing, err := s.q.GetLabelBySlug(ctx, slug)
+	if err == nil {
+		return existing.ID.String(), nil
+	}
+	if !errors.Is(err, pgx.ErrNoRows) {
+		return "", fmt.Errorf("find label: %w", err)
+	}
+	uid, err := parseUUID(userID)
+	if err != nil {
+		return "", err
+	}
+	label, err := s.q.CreateLabel(ctx, sqlcgen.CreateLabelParams{
+		UserID: toPgtypeUUID(uid),
+		Name:   name,
+		Slug:   slug,
+	})
+	if err != nil {
+		return "", fmt.Errorf("create label: %w", err)
+	}
+	return label.ID.String(), nil
+}
+
+// slugify converts a human label name to a URL-safe slug.
+func slugify(s string) string {
+	var b strings.Builder
+	prevHyphen := false
+	for _, c := range strings.ToLower(s) {
+		if unicode.IsLetter(c) || unicode.IsDigit(c) {
+			b.WriteRune(c)
+			prevHyphen = false
+		} else if !prevHyphen && b.Len() > 0 {
+			b.WriteRune('-')
+			prevHyphen = true
+		}
+	}
+	return strings.TrimRight(b.String(), "-")
 }
 
 // ListForTransaction returns all labels attached to a transaction.

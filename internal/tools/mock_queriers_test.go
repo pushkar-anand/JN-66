@@ -189,6 +189,21 @@ func (mr *MocklabelQuerierMockRecorder) AddToTransaction(ctx, txnID, labelID any
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddToTransaction", reflect.TypeOf((*MocklabelQuerier)(nil).AddToTransaction), ctx, txnID, labelID)
 }
 
+// FindOrCreate mocks base method.
+func (m *MocklabelQuerier) FindOrCreate(ctx context.Context, userID, name string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindOrCreate", ctx, userID, name)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindOrCreate indicates an expected call of FindOrCreate.
+func (mr *MocklabelQuerierMockRecorder) FindOrCreate(ctx, userID, name any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindOrCreate", reflect.TypeOf((*MocklabelQuerier)(nil).FindOrCreate), ctx, userID, name)
+}
+
 // RemoveFromTransaction mocks base method.
 func (m *MocklabelQuerier) RemoveFromTransaction(ctx context.Context, txnID, labelID string) error {
 	m.ctrl.T.Helper()
