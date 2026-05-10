@@ -134,7 +134,7 @@ func (t *QueryTransactions) Execute(ctx context.Context, _ string, argsJSON stri
 		if r.Direction == sqlcgen.TxnDirectionEnumCredit {
 			dir = "↑"
 		}
-		fmt.Fprintf(&sb, "id:%s  %s %s %s ₹%.2f",
+		fmt.Fprintf(&sb, "%s  %s %s %s ₹%.2f",
 			r.ID,
 			r.TxnDate.Time.Format("2006-01-02"),
 			dir,

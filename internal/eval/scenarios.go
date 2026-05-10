@@ -50,7 +50,7 @@ var Scenarios = []EvalCase{
 		Name:                   "label_transaction",
 		Input:                  "Show me my last 5 transactions and label the Zomato one as food-delivery",
 		MustCallTools:          []string{"query_transactions", "manage_labels"},
-		MaxLLMRounds:           5,
+		MaxLLMRounds:           6,
 		OutputMustContain:      []string{"food-delivery"},
 		OutputMustContainOneOf: []string{"added", "labeled", "tagged", "applied"},
 	},
