@@ -17,7 +17,7 @@ var Scenarios = []EvalCase{
 	},
 	{
 		Name:                   "investment_direct",
-		Input:                  "How much did I invest last month?",
+		Input:                  "How much did I invest in May 2026?",
 		MustCallTools:          []string{"query_transactions"},
 		MaxLLMRounds:           6,
 		OutputMustContainOneOf: []string{"5,000", "5000", "₹5"},
