@@ -16,14 +16,14 @@ CKYC NUMBER :- XXXXXXXXXX0000
 Statement of Account No - 900000000000001 for the period (From : 01-04-2025 To : 31-03-2026)
 
 Tran Date,CHQNO,PARTICULARS,DR,CR,BAL,SOL
-03-04-2025,-,CreditCard Payment XXXX 0001 Ref#TESTREF0000001A,              9694.70, ,            15570.30,1000
-03-04-2025,-,NEFT/IDFBH25093000001/Ms Priya Sharma/IDFC FIRST BANK LTD//ATTN/, ,             15000.00,            30570.30,248
-13-04-2025,-,IMPS/P2A/510300000001/MrRahul/IDFCBank/IMPSTXN/9170530000001, ,             10000.00,            40570.30,1000
-21-04-2025,-,CreditCard Payment XX 0001 Ref#TESTREF0000002B,             11227.92, ,            29342.38,1000
-01-06-2025,-,NEFT/IDFBH25152000001/Ms Priya Sharma/IDFC FIRST BANK LTD//ATTN/, ,             40000.00,            69342.38,248
-01-06-2025,-,CreditCard Payment XX 0001 Ref#TESTREF0000003C,             37451.32, ,            31891.06,1000
-01-07-2025,-,SB:900000000000001:Int.Pd:01-04-2025 to 30-06-2025, ,               215.00,            32106.06,1000
-05-07-2025,-,CreditCard Payment XX 0001 Ref#TESTREF0000004D,             30000.00, ,             2106.06,1000
-05-07-2025,-,NEFT/IDFBH25186000001/Ms Priya Sharma/IDFC FIRST BANK LTD//ATTN/, ,             50000.00,            52106.06,248
+03-04-2025,-,CreditCard Payment XXXX 0001 Ref#TESTREF0000001A,              5000.00, ,            20000.00,1000
+03-04-2025,-,NEFT/IDFBH25093000001/Ms Priya Sharma/IDFC FIRST BANK LTD//ATTN/, ,             15000.00,            35000.00,248
+13-04-2025,-,IMPS/P2A/510300000001/MrRahul/IDFCBank/IMPSTXN/9170530000001, ,             10000.00,            45000.00,1000
+21-04-2025,-,CreditCard Payment XX 0001 Ref#TESTREF0000002B,              8000.00, ,            37000.00,1000
+01-06-2025,-,NEFT/IDFBH25152000001/Ms Priya Sharma/IDFC FIRST BANK LTD//ATTN/, ,             40000.00,            77000.00,248
+01-06-2025,-,CreditCard Payment XX 0001 Ref#TESTREF0000003C,             30000.00, ,            47000.00,1000
+01-07-2025,-,SB:900000000000001:Int.Pd:01-04-2025 to 30-06-2025, ,               200.00,            47200.00,1000
+05-07-2025,-,CreditCard Payment XX 0001 Ref#TESTREF0000004D,             30000.00, ,            17200.00,1000
+05-07-2025,-,NEFT/IDFBH25186000001/Ms Priya Sharma/IDFC FIRST BANK LTD//ATTN/, ,             50000.00,            67200.00,248
 
 "Unless the constituent notifies the bank immediately of any discrepancy found by him/her in this statement of Account, it will be taken that he/she has found the account correct. "

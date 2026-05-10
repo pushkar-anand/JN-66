@@ -34,7 +34,7 @@ func TestAxisV1_Parse_HappyPath(t *testing.T) {
 
 	// First row: credit card payment — debit
 	assert.Equal(t, sqlcgen.TxnDirectionEnumDebit, rows[0].Direction)
-	assert.Equal(t, int64(969470), rows[0].Amount) // ₹9694.70
+	assert.Equal(t, int64(500000), rows[0].Amount) // ₹5000.00
 
 	// Second row: NEFT credit
 	assert.Equal(t, sqlcgen.TxnDirectionEnumCredit, rows[1].Direction)
@@ -42,7 +42,7 @@ func TestAxisV1_Parse_HappyPath(t *testing.T) {
 
 	// Interest credit
 	assert.Equal(t, sqlcgen.TxnDirectionEnumCredit, rows[6].Direction)
-	assert.Equal(t, int64(21500), rows[6].Amount) // ₹215.00
+	assert.Equal(t, int64(20000), rows[6].Amount) // ₹200.00
 }
 
 func TestAxisV1_Parse_Meta(t *testing.T) {

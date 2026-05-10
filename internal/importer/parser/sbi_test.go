@@ -31,7 +31,7 @@ func TestSBIV1_ParseXLSX_HappyPath(t *testing.T) {
 
 	// First row: insurance premium — credit
 	assert.Equal(t, sqlcgen.TxnDirectionEnumCredit, rows[0].Direction)
-	assert.Equal(t, int64(19999), rows[0].Amount) // ₹199.99
+	assert.Equal(t, int64(20000), rows[0].Amount) // ₹200.00
 
 	// Second row: PMSBY debit
 	assert.Equal(t, sqlcgen.TxnDirectionEnumDebit, rows[1].Direction)

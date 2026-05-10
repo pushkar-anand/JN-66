@@ -37,7 +37,7 @@ func TestIDFCV1_Parse_HappyPath(t *testing.T) {
 
 	// Salary credit
 	assert.Equal(t, sqlcgen.TxnDirectionEnumCredit, rows[2].Direction)
-	assert.Equal(t, int64(23645100), rows[2].Amount) // ₹2,36,451.00
+	assert.Equal(t, int64(20000000), rows[2].Amount) // ₹2,00,000.00
 
 	// Interest credit
 	assert.Equal(t, sqlcgen.TxnDirectionEnumCredit, rows[3].Direction)

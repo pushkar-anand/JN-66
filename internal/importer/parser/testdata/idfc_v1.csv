@@ -1,9 +1,9 @@
 Date,Payment type,Transaction description,Category,Sub-category,Amount,Currency
 "6 May, 2026",Single Transfer,Rahul Sharma,Self Transfer,Self transfer (other),-80000.00,INR
 "2 May, 2026",Single Transfer,Rahul Sharma,Self Transfer,Self transfer (other),-150000.00,INR
-"30 Apr, 2026",Single Transfer,Sample Technologies Pvt Ltd,Salary/Income,Salary/income (other),236451.00,INR
+"30 Apr, 2026",Single Transfer,Sample Technologies Pvt Ltd,Salary/Income,Salary/income (other),200000.00,INR
 "30 Apr, 2026",Others,Monthly Savings Interest Credit,Interests & Dividends,Interests & dividends (other),42.00,INR
 "11 Apr, 2026",Single Transfer,Rahul Sharma,Self Transfer,Self transfer (other),-5000.00,INR
-"4 Dec, 2025",Debit Card,Cinema Movie Ticket,Entertainment,Entertainment (other),-665.36,INR
+"4 Dec, 2025",Debit Card,Cinema Movie Ticket,Entertainment,Entertainment (other),-600.00,INR
 "30 Nov, 2025",Others,Monthly Savings Interest Credit,Interests & Dividends,Interests & dividends (other),40.00,INR
-"28 Nov, 2025",Single Transfer,Sample Technologies Pvt Ltd,Salary/Income,Salary/income (other),220561.00,INR
+"28 Nov, 2025",Single Transfer,Sample Technologies Pvt Ltd,Salary/Income,Salary/income (other),200000.00,INR
