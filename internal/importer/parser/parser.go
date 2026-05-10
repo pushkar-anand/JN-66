@@ -19,14 +19,29 @@ type RawTransaction struct {
 	Balance     *int64 // closing balance in paise, optional
 }
 
-// Parser reads a bank statement and returns raw transactions.
+// StatementMeta holds account-level metadata extracted from the statement file.
+// Fields are best-effort; parsers leave fields empty when not present in the file.
+type StatementMeta struct {
+	AccountNumber string // full account number as printed on statement
+	AccountHolder string // name of the account holder
+	IFSC          string // branch IFSC code
+	Currency      string // ISO 4217, e.g. "INR"
+}
+
+// ParseResult is the full output of a parser: account metadata and transactions.
+type ParseResult struct {
+	Meta         StatementMeta
+	Transactions []RawTransaction
+}
+
+// Parser reads a bank statement and returns a ParseResult.
 // Implementations must be registered in the Registry so auto-detection works.
 type Parser interface {
 	// CanParse reports whether this parser handles the given header row.
 	// header is a slice of lowercase, trimmed column names.
 	CanParse(header []string) bool
-	// Parse reads all transactions from r.
-	Parse(r io.Reader) ([]RawTransaction, error)
+	// Parse reads all transactions and any account metadata from r.
+	Parse(r io.Reader) (ParseResult, error)
 	// Bank returns the bank identifier (e.g. "axis", "idfc").
 	Bank() string
 	// FormatVersion returns the format version string (e.g. "v1") for diagnostics.

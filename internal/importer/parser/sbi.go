@@ -34,24 +34,29 @@ func (p *SBIV1) CanParse(header []string) bool {
 }
 
 // ParseXLSX reads an SBI XLSX file using the given decryption password.
-func (p *SBIV1) ParseXLSX(path, password string) ([]RawTransaction, error) {
+func (p *SBIV1) ParseXLSX(path, password string) (ParseResult, error) {
 	f, err := excelize.OpenFile(path, excelize.Options{Password: password})
 	if err != nil {
-		return nil, fmt.Errorf("sbi open xlsx: %w", err)
+		return ParseResult{}, fmt.Errorf("sbi open xlsx: %w", err)
 	}
 	defer f.Close()
 
 	sheet := f.GetSheetName(0)
 	rows, err := f.GetRows(sheet)
 	if err != nil {
-		return nil, fmt.Errorf("sbi get rows: %w", err)
+		return ParseResult{}, fmt.Errorf("sbi get rows: %w", err)
 	}
 
-	return parseSBIRows(rows)
+	meta := extractSBIMeta(rows)
+	txns, err := parseSBIRows(rows)
+	if err != nil {
+		return ParseResult{}, err
+	}
+	return ParseResult{Meta: meta, Transactions: txns}, nil
 }
 
 // Parse implements Parser by treating r as a plain CSV (used in tests with decrypted data).
-func (p *SBIV1) Parse(r io.Reader) ([]RawTransaction, error) {
+func (p *SBIV1) Parse(r io.Reader) (ParseResult, error) {
 	rdr := csv.NewReader(r)
 	rdr.LazyQuotes = true
 	rdr.FieldsPerRecord = -1
@@ -63,11 +68,58 @@ func (p *SBIV1) Parse(r io.Reader) ([]RawTransaction, error) {
 			break
 		}
 		if err != nil {
-			return nil, fmt.Errorf("sbi csv: %w", err)
+			return ParseResult{}, fmt.Errorf("sbi csv: %w", err)
 		}
 		records = append(records, rec)
 	}
-	return parseSBIRows(records)
+	txns, err := parseSBIRows(records)
+	if err != nil {
+		return ParseResult{}, err
+	}
+	return ParseResult{Transactions: txns}, nil
+}
+
+// extractSBIMeta reads account-level info from the pre-header metadata rows.
+// SBI XLSX layout (0-indexed rows):
+//   row 1 col A: "Mr. Pushkar  Anand\n..." — account holder name (first line only)
+//   row 8 col B: "Account Number  :  40393193313"
+//   row 10 col B: "IFSC Code  :  SBIN0001222"
+func extractSBIMeta(rows [][]string) StatementMeta {
+	var meta StatementMeta
+	extract := func(cell, prefix string) string {
+		idx := strings.Index(strings.ToUpper(cell), strings.ToUpper(prefix))
+		if idx < 0 {
+			return ""
+		}
+		val := strings.TrimSpace(cell[idx+len(prefix):])
+		return strings.Fields(val)[0]
+	}
+	for i, row := range rows {
+		if i == 0 {
+			continue
+		}
+		colA := safeCol(row, 0)
+		colB := safeCol(row, 1)
+
+		if i == 1 && meta.AccountHolder == "" && colA != "" {
+			// First line of the cell may contain "\n".
+			meta.AccountHolder = strings.TrimSpace(strings.SplitN(colA, "\n", 2)[0])
+			meta.AccountHolder = strings.TrimPrefix(meta.AccountHolder, "Mr. ")
+			meta.AccountHolder = strings.TrimPrefix(meta.AccountHolder, "Mrs. ")
+			meta.AccountHolder = strings.TrimPrefix(meta.AccountHolder, "Ms. ")
+		}
+		if v := extract(colB, "Account Number  :  "); v != "" && meta.AccountNumber == "" {
+			meta.AccountNumber = v
+		}
+		if v := extract(colB, "IFSC Code  :  "); v != "" && meta.IFSC == "" {
+			meta.IFSC = v
+		}
+		// Stop scanning once we've passed the metadata section.
+		if i > 16 {
+			break
+		}
+	}
+	return meta
 }
 
 func parseSBIRows(rows [][]string) ([]RawTransaction, error) {

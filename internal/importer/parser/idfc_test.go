@@ -25,8 +25,9 @@ func TestIDFCV1_Parse_HappyPath(t *testing.T) {
 	defer f.Close()
 
 	p := &parser.IDFCV1{}
-	rows, err := p.Parse(f)
+	result, err := p.Parse(f)
 	require.NoError(t, err)
+	rows := result.Transactions
 
 	assert.Equal(t, 8, len(rows))
 
@@ -49,8 +50,9 @@ func TestIDFCV1_Parse_DateParsing(t *testing.T) {
 	defer f.Close()
 
 	p := &parser.IDFCV1{}
-	rows, err := p.Parse(f)
+	result, err := p.Parse(f)
 	require.NoError(t, err)
+	rows := result.Transactions
 	require.NotEmpty(t, rows)
 
 	assert.Equal(t, 2026, rows[0].Date.Year())

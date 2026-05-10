@@ -26,8 +26,9 @@ func TestAxisV1_Parse_HappyPath(t *testing.T) {
 	defer f.Close()
 
 	p := &parser.AxisV1{}
-	rows, err := p.Parse(f)
+	result, err := p.Parse(f)
 	require.NoError(t, err)
+	rows := result.Transactions
 
 	assert.Equal(t, 9, len(rows), "expected 9 transactions")
 
@@ -44,6 +45,19 @@ func TestAxisV1_Parse_HappyPath(t *testing.T) {
 	assert.Equal(t, int64(21500), rows[6].Amount) // ₹215.00
 }
 
+func TestAxisV1_Parse_Meta(t *testing.T) {
+	f, err := os.Open("testdata/axis_v1.csv")
+	require.NoError(t, err)
+	defer f.Close()
+
+	p := &parser.AxisV1{}
+	result, err := p.Parse(f)
+	require.NoError(t, err)
+
+	assert.NotEmpty(t, result.Meta.AccountNumber)
+	assert.NotEmpty(t, result.Meta.AccountHolder)
+}
+
 func TestAxisV1_Parse_AmountParsing(t *testing.T) {
 	csv := `Name :- TEST
 Currency :- INR
@@ -54,8 +68,9 @@ Tran Date,CHQNO,PARTICULARS,DR,CR,BAL,SOL
 01-04-2025,-,UPI/merchant@bank/payment,           1,23,456.00, ,            50000.00,1000
 `
 	p := &parser.AxisV1{}
-	rows, err := p.Parse(strings.NewReader(csv))
+	result, err := p.Parse(strings.NewReader(csv))
 	require.NoError(t, err)
+	rows := result.Transactions
 	// Amounts with commas should be handled; note 1,23,456.00 may parse to 123456 or fail gracefully
 	// The parser strips commas, so "1,23,456.00" → "123456.00" → 12345600 paise
 	if len(rows) > 0 {
@@ -69,8 +84,9 @@ func TestAxisV1_Parse_DateParsing(t *testing.T) {
 	defer f.Close()
 
 	p := &parser.AxisV1{}
-	rows, err := p.Parse(f)
+	result, err := p.Parse(f)
 	require.NoError(t, err)
+	rows := result.Transactions
 	require.NotEmpty(t, rows)
 
 	assert.Equal(t, 2025, rows[0].Date.Year())

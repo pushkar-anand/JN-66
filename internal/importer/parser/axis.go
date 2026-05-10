@@ -32,7 +32,7 @@ func (p *AxisV1) CanParse(header []string) bool {
 	return has("particulars") && has("dr") && has("cr") && has("tran date")
 }
 
-func (p *AxisV1) Parse(r io.Reader) ([]RawTransaction, error) {
+func (p *AxisV1) Parse(r io.Reader) (ParseResult, error) {
 	rdr := csv.NewReader(r)
 	rdr.LazyQuotes = true
 	rdr.FieldsPerRecord = -1
@@ -45,6 +45,7 @@ func (p *AxisV1) Parse(r io.Reader) ([]RawTransaction, error) {
 		colCR     int
 		colBAL    int
 		colRef    int
+		meta      StatementMeta
 	)
 
 	var rows []RawTransaction
@@ -56,11 +57,15 @@ func (p *AxisV1) Parse(r io.Reader) ([]RawTransaction, error) {
 			break
 		}
 		if err != nil {
-			return nil, fmt.Errorf("axis csv read line %d: %w", lineNum, err)
+			return ParseResult{}, fmt.Errorf("axis csv read line %d: %w", lineNum, err)
 		}
 		lineNum++
 
 		if headerIdx == -1 {
+			// Extract metadata from pre-header rows.
+			if len(record) > 0 {
+				extractAxisMeta(record, &meta)
+			}
 			// Find header row by looking for known column names.
 			norm := normalise(record)
 			if idx := findCol(norm, "tran date"); idx >= 0 {
@@ -140,7 +145,35 @@ func (p *AxisV1) Parse(r io.Reader) ([]RawTransaction, error) {
 		rows = append(rows, tx)
 	}
 
-	return rows, nil
+	return ParseResult{Meta: meta, Transactions: rows}, nil
+}
+
+// extractAxisMeta picks account number, holder name, and IFSC from a pre-header row.
+func extractAxisMeta(record []string, meta *StatementMeta) {
+	line := strings.Join(record, " ")
+	upper := strings.ToUpper(line)
+
+	// "Name :- PUSHKAR ANAND"
+	if strings.HasPrefix(upper, "NAME :-") && meta.AccountHolder == "" {
+		meta.AccountHolder = strings.TrimSpace(strings.TrimPrefix(line[strings.Index(upper, ":-")+2:], " "))
+	}
+	// "IFSC Code :- UTIB0002628"
+	if strings.Contains(upper, "IFSC CODE :-") && meta.IFSC == "" {
+		if idx := strings.Index(upper, "IFSC CODE :-"); idx >= 0 {
+			meta.IFSC = strings.TrimSpace(line[idx+len("IFSC Code :-"):])
+			meta.IFSC = strings.Fields(meta.IFSC)[0]
+		}
+	}
+	// "Statement of Account No - 925010011516755 for the period..."
+	if strings.Contains(upper, "STATEMENT OF ACCOUNT NO") && meta.AccountNumber == "" {
+		if idx := strings.Index(upper, "ACCOUNT NO -"); idx >= 0 {
+			rest := strings.TrimSpace(line[idx+len("ACCOUNT NO -"):])
+			fields := strings.Fields(rest)
+			if len(fields) > 0 {
+				meta.AccountNumber = fields[0]
+			}
+		}
+	}
 }
 
 func looksLikeAxisDate(s string) bool {

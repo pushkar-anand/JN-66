@@ -28,7 +28,7 @@ func runImport(args []string) error {
 	bankFlag := fs.String("bank", "", "bank identifier: axis|idfc|sbi|icici (auto-detect if omitted)")
 	fileFlag := fs.String("file", "", "path to bank statement file (required)")
 	userFlag := fs.String("user", "", "user email (required)")
-	accountFlag := fs.String("account", "", "account UUID (required)")
+	accountFlag := fs.String("account", "", "account UUID (optional — auto-detected from statement)")
 	dryRun := fs.Bool("dry-run", false, "parse and display rows without inserting")
 	noEnrich := fs.Bool("no-enrich", false, "skip LLM enrichment (insert with tagging_status=pending)")
 	_ = fs.Parse(args)
@@ -39,13 +39,16 @@ func runImport(args []string) error {
 	if *userFlag == "" {
 		return fmt.Errorf("--user is required")
 	}
-	if *accountFlag == "" {
-		return fmt.Errorf("--account is required")
-	}
-
-	accountID, err := uuid.Parse(*accountFlag)
-	if err != nil {
-		return fmt.Errorf("invalid --account UUID: %w", err)
+	if *bankFlag == "" {
+		ext := strings.ToLower(filepath.Ext(*fileFlag))
+		switch ext {
+		case ".xls":
+			*bankFlag = "icici"
+		case ".xlsx":
+			*bankFlag = "sbi"
+		default:
+			return fmt.Errorf("--bank is required when file extension is not .xls or .xlsx")
+		}
 	}
 
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn})))
@@ -70,16 +73,41 @@ func runImport(args []string) error {
 		return fmt.Errorf("user %q not found: %w", *userFlag, err)
 	}
 
-	// Parse the statement file.
+	// Parse the statement file — also extracts account metadata.
 	reg := parser.NewRegistry()
-	rows, err := parseFile(ctx, reg, *fileFlag, *bankFlag, u) //nolint
+	result, err := parseFile(ctx, reg, *fileFlag, *bankFlag, u)
 	if err != nil {
 		return err
 	}
 
 	if *dryRun {
-		printDryRun(rows)
+		printDryRun(*bankFlag, result)
 		return nil
+	}
+
+	// Resolve account: use explicit UUID if provided, otherwise find-or-create.
+	accountStore := store.NewAccountStore(pool)
+	var accountID uuid.UUID
+
+	if *accountFlag != "" {
+		accountID, err = uuid.Parse(*accountFlag)
+		if err != nil {
+			return fmt.Errorf("invalid --account UUID: %w", err)
+		}
+	} else {
+		acc, created, err := accountStore.FindOrCreate(ctx, u.ID.String(), *bankFlag, store.AccountMetaParams{
+			AccountNumber: result.Meta.AccountNumber,
+			IFSC:          result.Meta.IFSC,
+		})
+		if err != nil {
+			return fmt.Errorf("resolve account: %w", err)
+		}
+		accountID = acc.ID
+		if created {
+			fmt.Printf("\nAuto-created account: %s (%s)\n", acc.Name, acc.ID)
+		} else {
+			fmt.Printf("\nUsing account: %s (%s)\n", acc.Name, acc.ID)
+		}
 	}
 
 	txnStore := store.NewTransactionStore(pool)
@@ -102,7 +130,7 @@ func runImport(args []string) error {
 		User:      u,
 		AccountID: accountID,
 		SourceRef: filepath.Base(*fileFlag),
-		Rows:      rows,
+		Rows:      result.Transactions,
 	})
 	if err != nil {
 		return fmt.Errorf("import: %w", err)
@@ -123,14 +151,14 @@ func runImport(args []string) error {
 	return nil
 }
 
-func parseFile(_ context.Context, reg *parser.Registry, filePath, bank string, u *sqlcgen.User) ([]parser.RawTransaction, error) {
+func parseFile(_ context.Context, reg *parser.Registry, filePath, bank string, u *sqlcgen.User) (parser.ParseResult, error) {
 	ext := strings.ToLower(filepath.Ext(filePath))
 
 	// ICICI: binary XLS — must use ParsePath.
 	if bank == "icici" || ext == ".xls" {
 		p, err := reg.ByBank("icici")
 		if err != nil {
-			return nil, err
+			return parser.ParseResult{}, err
 		}
 		return p.(*parser.ICICIV1).ParsePath(filePath)
 	}
@@ -139,7 +167,7 @@ func parseFile(_ context.Context, reg *parser.Registry, filePath, bank string, u
 	if bank == "sbi" || (bank == "" && ext == ".xlsx") {
 		p, err := reg.ByBank("sbi")
 		if err != nil {
-			return nil, err
+			return parser.ParseResult{}, err
 		}
 		password := ""
 		if u.DateOfBirth.Valid {
@@ -151,23 +179,32 @@ func parseFile(_ context.Context, reg *parser.Registry, filePath, bank string, u
 	// CSV parsers (axis, idfc).
 	f, err := os.Open(filePath)
 	if err != nil {
-		return nil, fmt.Errorf("open %s: %w", filePath, err)
+		return parser.ParseResult{}, fmt.Errorf("open %s: %w", filePath, err)
 	}
 	defer f.Close()
 
-	if bank == "" {
-		return nil, fmt.Errorf("--bank is required (supported: axis, idfc, sbi, icici)")
-	}
 	p, err := reg.ByBank(bank)
 	if err != nil {
-		return nil, err
+		return parser.ParseResult{}, err
 	}
 	return p.Parse(f)
 }
 
-func printDryRun(rows []parser.RawTransaction) {
-	fmt.Printf("\n=== dry run — %d rows parsed ===\n\n", len(rows))
-	for i, r := range rows {
+func printDryRun(bank string, result parser.ParseResult) {
+	meta := result.Meta
+	fmt.Printf("\n=== dry run: %s — %d rows ===\n", strings.ToUpper(bank), len(result.Transactions))
+	if meta.AccountNumber != "" {
+		fmt.Printf("Account:  %s", meta.AccountNumber)
+		if meta.AccountHolder != "" {
+			fmt.Printf(" — %s", meta.AccountHolder)
+		}
+		fmt.Println()
+	}
+	if meta.IFSC != "" {
+		fmt.Printf("IFSC:     %s\n", meta.IFSC)
+	}
+	fmt.Println()
+	for i, r := range result.Transactions {
 		dir := "CR"
 		if r.Direction == "debit" {
 			dir = "DR"

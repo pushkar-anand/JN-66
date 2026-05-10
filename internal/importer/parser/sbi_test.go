@@ -23,8 +23,9 @@ func TestSBIV1_CanParse(t *testing.T) {
 func TestSBIV1_ParseXLSX_HappyPath(t *testing.T) {
 	// Uses an unencrypted XLSX fixture (empty password) to test the real XLSX path.
 	p := &parser.SBIV1{}
-	rows, err := p.ParseXLSX("testdata/sbi_v1.xlsx", "")
+	result, err := p.ParseXLSX("testdata/sbi_v1.xlsx", "")
 	require.NoError(t, err)
+	rows := result.Transactions
 
 	assert.Equal(t, 6, len(rows))
 
@@ -39,8 +40,9 @@ func TestSBIV1_ParseXLSX_HappyPath(t *testing.T) {
 
 func TestSBIV1_ParseXLSX_DateParsing(t *testing.T) {
 	p := &parser.SBIV1{}
-	rows, err := p.ParseXLSX("testdata/sbi_v1.xlsx", "")
+	result, err := p.ParseXLSX("testdata/sbi_v1.xlsx", "")
 	require.NoError(t, err)
+	rows := result.Transactions
 	require.NotEmpty(t, rows)
 
 	assert.Equal(t, 2025, rows[0].Date.Year())
@@ -55,9 +57,9 @@ func TestSBIV1_Parse_CSV_FallbackForLogicTest(t *testing.T) {
 	defer f.Close()
 
 	p := &parser.SBIV1{}
-	rows, err := p.Parse(f)
+	result, err := p.Parse(f)
 	require.NoError(t, err)
-	assert.Equal(t, 6, len(rows))
+	assert.Equal(t, 6, len(result.Transactions))
 }
 
 func TestSBIPassword(t *testing.T) {

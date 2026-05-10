@@ -32,7 +32,8 @@ func (p *IDFCV1) CanParse(header []string) bool {
 	return has("payment type") && has("transaction description") && has("amount")
 }
 
-func (p *IDFCV1) Parse(r io.Reader) ([]RawTransaction, error) {
+// Parse implements Parser. IDFC CSV has no account metadata in the file.
+func (p *IDFCV1) Parse(r io.Reader) (ParseResult, error) {
 	rdr := csv.NewReader(r)
 	rdr.LazyQuotes = true
 	rdr.FieldsPerRecord = -1
@@ -53,7 +54,7 @@ func (p *IDFCV1) Parse(r io.Reader) ([]RawTransaction, error) {
 			break
 		}
 		if err != nil {
-			return nil, fmt.Errorf("idfc csv read line %d: %w", lineNum, err)
+			return ParseResult{}, fmt.Errorf("idfc csv read line %d: %w", lineNum, err)
 		}
 		lineNum++
 
@@ -106,7 +107,7 @@ func (p *IDFCV1) Parse(r io.Reader) ([]RawTransaction, error) {
 		})
 	}
 
-	return rows, nil
+	return ParseResult{Transactions: rows}, nil
 }
 
 // parseIDFCDate parses IDFC date strings like "6 May, 2026" or "30 Apr, 2025".

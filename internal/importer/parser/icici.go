@@ -33,22 +33,21 @@ func (p *ICICIV1) CanParse(header []string) bool {
 	return has("transaction remarks") && has("withdrawal amount") && has("deposit amount")
 }
 
-// Parse implements Parser by reading an XLS file from the given path.
-// io.Reader is not used directly because the extrame/xls library requires a file path.
-// In tests, ParsePath is called directly; Parse satisfies the interface for registry detection only.
-func (p *ICICIV1) Parse(r io.Reader) ([]RawTransaction, error) {
-	return nil, fmt.Errorf("icici: use ParsePath to read XLS files directly")
+// Parse implements Parser. ICICI XLS requires a file path; this always returns an error.
+// Use ParsePath when working with real files.
+func (p *ICICIV1) Parse(r io.Reader) (ParseResult, error) {
+	return ParseResult{}, fmt.Errorf("icici: use ParsePath to read XLS files directly")
 }
 
 // ParsePath reads an ICICI XLS statement from a file path.
-func (p *ICICIV1) ParsePath(path string) ([]RawTransaction, error) {
+func (p *ICICIV1) ParsePath(path string) (ParseResult, error) {
 	wb, err := xlslib.Open(path, "utf-8")
 	if err != nil {
-		return nil, fmt.Errorf("icici open xls: %w", err)
+		return ParseResult{}, fmt.Errorf("icici open xls: %w", err)
 	}
 	sheet := wb.GetSheet(0)
 	if sheet == nil {
-		return nil, fmt.Errorf("icici: no sheets found")
+		return ParseResult{}, fmt.Errorf("icici: no sheets found")
 	}
 
 	var (
@@ -59,6 +58,7 @@ func (p *ICICIV1) ParsePath(path string) ([]RawTransaction, error) {
 		colDeposit  int // Deposit Amount
 		colBal      int // Balance
 		colRef      int // Cheque Number
+		meta        StatementMeta
 	)
 
 	var out []RawTransaction
@@ -70,6 +70,15 @@ func (p *ICICIV1) ParsePath(path string) ([]RawTransaction, error) {
 		}
 
 		if !headerFound {
+			// Extract account metadata from pre-header rows.
+			// Row 3 col 3: "046301004351 ( INR )  - PUSHKAR ANAND"
+			if rowIdx == 3 {
+				cell := strings.TrimSpace(row.Col(3))
+				if cell != "" {
+					extractICICIMeta(cell, &meta)
+				}
+			}
+
 			// Collect all cell values from this row.
 			var cells []string
 			for colIdx := row.FirstCol(); colIdx <= row.LastCol(); colIdx++ {
@@ -154,5 +163,21 @@ func (p *ICICIV1) ParsePath(path string) ([]RawTransaction, error) {
 		out = append(out, tx)
 	}
 
-	return out, nil
+	return ParseResult{Meta: meta, Transactions: out}, nil
+}
+
+// extractICICIMeta parses the ICICI account number and holder from the combined cell string.
+// Format: "046301004351 ( INR )  - PUSHKAR ANAND"
+func extractICICIMeta(cell string, meta *StatementMeta) {
+	// Split on " - " to get account part and name.
+	parts := strings.SplitN(cell, " - ", 2)
+	if len(parts) == 2 {
+		// Account part may be "046301004351 ( INR )" — take the first token.
+		meta.AccountNumber = strings.Fields(parts[0])[0]
+		meta.AccountHolder = strings.TrimSpace(parts[1])
+		// Extract currency if present.
+		if strings.Contains(parts[0], "INR") {
+			meta.Currency = "INR"
+		}
+	}
 }
