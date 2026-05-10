@@ -145,3 +145,13 @@ total:    ~6 min (10 scenarios, real LLM calls)
 - Zerodha API and bank connectors
 - Slack / Signal channels
 - Tax assistance
+
+---
+
+## Part of the R2-D2 household swarm
+
+JN-66 is one agent in a larger multi-agent system built to manage a household end-to-end. The system is orchestrated by **R2-D2** — a central manager agent that receives requests, decides which specialist to delegate to, and stitches results together into a coherent response. Each sub-agent owns a distinct domain; JN-66 owns personal finance.
+
+Think of it as a household staff: R2-D2 is the chief of staff who fields every request and routes it to the right person — the finance analyst (JN-66), the calendar keeper, the grocery planner, and so on. No single agent needs to know everything; they each do one thing well, and the orchestrator holds the group together.
+
+Code for R2-D2 and the other sub-agents will be open-sourced soon.
