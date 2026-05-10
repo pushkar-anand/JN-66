@@ -41,7 +41,7 @@ func (t *QueryTransactions) Definition() llm.ToolDefinition {
 				"max_amount":              map[string]any{"type": "integer", "description": "Maximum amount in paise"},
 				"payment_mode":            map[string]any{"type": "string", "description": "upi|neft|rtgs|imps|nach|cheque|atm|pos|emi|online|upi_autopay"},
 				"counterparty_identifier": map[string]any{"type": "string", "description": "VPA or account+IFSC"},
-				"direction":               map[string]any{"type": "string", "description": "debit or credit"},
+				"direction":               map[string]any{"type": "string", "description": "debit (money leaving your account — spending, investments, bills, etc.) or credit (money coming in — salary, refunds, etc.)"},
 				"limit":                   map[string]any{"type": "integer", "description": "Max results (default 20, max 50)"},
 				"offset":                  map[string]any{"type": "integer", "description": "Pagination offset"},
 			},
