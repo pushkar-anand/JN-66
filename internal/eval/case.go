@@ -34,6 +34,8 @@ type EvalCase struct {
 
 	// OutputMustContain: all substrings must appear in the final response (case-insensitive).
 	OutputMustContain []string
+	// OutputMustContainOneOf: at least one substring must appear (OR logic, case-insensitive).
+	OutputMustContainOneOf []string
 	// OutputMustNotContain: none may appear in the final response (case-insensitive).
 	OutputMustNotContain []string
 }
@@ -129,6 +131,18 @@ func (c *EvalCase) Run(ctx context.Context, handle channel.MessageHandler, llmRe
 	for _, sub := range c.OutputMustContain {
 		if !strings.Contains(lower, strings.ToLower(sub)) {
 			res.Failures = append(res.Failures, fmt.Sprintf("output missing %q", sub))
+		}
+	}
+	if len(c.OutputMustContainOneOf) > 0 {
+		found := false
+		for _, sub := range c.OutputMustContainOneOf {
+			if strings.Contains(lower, strings.ToLower(sub)) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			res.Failures = append(res.Failures, fmt.Sprintf("output missing all of %v", c.OutputMustContainOneOf))
 		}
 	}
 	for _, sub := range c.OutputMustNotContain {

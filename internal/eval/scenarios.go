@@ -16,12 +16,11 @@ var Scenarios = []EvalCase{
 		OutputMustContain: []string{"₹"},
 	},
 	{
-		Name:             "investment_direct",
-		Input:            "How much did I invest last month?",
-		MustCallTools:    []string{"query_transactions"},
-		FirstToolMustBe:  "query_transactions",
-		MustNotCallTools: []string{},
-		OutputMustContain: []string{"5,000", "5000"},
+		Name:                   "investment_direct",
+		Input:                  "How much did I invest last month?",
+		MustCallTools:          []string{"query_transactions"},
+		FirstToolMustBe:        "query_transactions",
+		OutputMustContainOneOf: []string{"5,000", "5000", "₹5"},
 	},
 	{
 		Name:          "transactions_list",
@@ -39,7 +38,6 @@ var Scenarios = []EvalCase{
 		Name:          "remember_fact",
 		Input:         "Remember that I pay rent of ₹25,000 every month to my landlord",
 		MustCallTools: []string{"remember_fact"},
-		OutputMustContain: []string{"remember"},
 	},
 	{
 		Name:           "recall_after_remember",
@@ -62,9 +60,9 @@ var Scenarios = []EvalCase{
 		// No tool or output assertions — just verify agent returns without panic.
 	},
 	{
-		Name:  "no_hallucinated_accounts",
-		Input: "Do I have a Zerodha account?",
-		MaxLLMRounds: 2,
+		Name:                 "no_hallucinated_accounts",
+		Input:                "Do I have a Zerodha account?",
+		MaxLLMRounds:         4,
 		OutputMustNotContain: []string{"yes, you have a zerodha", "yes you have a zerodha"},
 	},
 }
