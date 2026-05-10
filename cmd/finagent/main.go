@@ -102,7 +102,11 @@ func run() error {
 		return srv.Start(ctx)
 	}
 
-	// CLI mode
+	// CLI mode requires a resolved user.
+	if userID == "" {
+		return fmt.Errorf("user %q not found in database; seed the users table or pass a valid --user flag", cmp(*userFlag, cfg.Channel.CLI.DefaultUser))
+	}
+
 	cliCh := cli.New(userID)
 	slog.Info("starting cli", "user", userID)
 	return cliCh.Start(ctx, ag.HandleMessage)
