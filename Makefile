@@ -1,4 +1,4 @@
-.PHONY: generate mocks test fmt migrate-up migrate-down seed build run
+.PHONY: generate mocks test fmt migrate-up migrate-down seed build run eval
 
 generate:
 	go tool sqlc generate
@@ -29,3 +29,6 @@ build:
 
 run:
 	go run ./cmd/finagent
+
+eval:
+	go run ./cmd/eval/... --config config/config.yaml
