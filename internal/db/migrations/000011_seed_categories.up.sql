@@ -12,7 +12,7 @@ INSERT INTO categories (slug, name, direction, description, depth, is_system) VA
     ('transport',           'Transport',             'debit',  'Transportation — fuel, cabs, metro, bus.', 0, TRUE),
     ('utilities',           'Utilities',             'debit',  'Utility bills — electricity, internet, gas/LPG.', 0, TRUE),
     ('rent',                'Rent',                  'debit',  'Monthly housing rent. Look for flat/building name + landlord name or "RENT" in description.', 0, TRUE),
-    ('shopping',            'Shopping',              'debit',  'Retail purchases — Amazon, Flipkart, physical stores. Not credit card bill payments.', 0, TRUE),
+    ('shopping',            'Shopping',              'debit',  'Retail and online shopping — purchases from e-commerce platforms, physical stores, and online marketplaces. Covers both direct retailers and marketplace payment entities. Not credit card bill payments.', 0, TRUE),
     ('entertainment',       'Entertainment',         'debit',  'Movies, streaming, events — Netflix, PVR, BookMyShow.', 0, TRUE),
     ('health',              'Health',                'debit',  'Medical expenses — pharmacy, doctor, hospital, diagnostic lab.', 0, TRUE),
     ('education',           'Education',             'debit',  'School/college fees, course payments, EdTech platforms.', 0, TRUE),
