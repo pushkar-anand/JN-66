@@ -140,7 +140,8 @@ Raw transaction descriptions sent directly to the enrichment pipeline. Asserts t
 **Latest: 23 / 23 passed**
 
 ```
-model:    qwen3:14b (OpenAI-compatible deployment)
+model:    qwen3:14b via Ollama
+hardware: RTX 3060 12 GB VRAM
 total:    ~6 min (33 cases, real LLM calls)
 ```
 
