@@ -108,7 +108,9 @@ func (t *QueryTransactions) Execute(ctx context.Context, _ string, argsJSON stri
 		p.CounterpartyIdentifier = &args.CounterpartyIdentifier
 	}
 	if args.PaymentMode != "" {
-		mode := sqlcgen.PaymentModeEnum(args.PaymentMode)
+		// Take only the first value — model sometimes passes comma-separated modes.
+		raw := strings.SplitN(args.PaymentMode, ",", 2)[0]
+		mode := sqlcgen.PaymentModeEnum(strings.TrimSpace(raw))
 		p.PaymentMode = &mode
 	}
 	if args.Direction != "" {
