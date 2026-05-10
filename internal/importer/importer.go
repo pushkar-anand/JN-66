@@ -21,10 +21,10 @@ import (
 
 // Importer runs a full import cycle for a batch of RawTransactions.
 type Importer struct {
-	txnStore    *store.TransactionStore
-	runStore    *store.ImportRunStore
-	catStore    *store.CategoryStore
-	enricher    *Enricher // may be nil if --no-enrich
+	txnStore *store.TransactionStore
+	runStore *store.ImportRunStore
+	catStore *store.CategoryStore
+	enricher *Enricher // may be nil if --no-enrich
 }
 
 // NewImporter creates an Importer wired to the given stores.
@@ -85,16 +85,16 @@ func (imp *Importer) Run(ctx context.Context, p RunParams) (*Result, error) {
 		mode := parser.DetectPaymentMode(row.Description)
 
 		txn, err := imp.txnStore.Insert(ctx, store.InsertTransactionParams{
-			AccountID:      p.AccountID,
-			UserID:         p.User.ID,
-			IdempotencyKey: key,
+			AccountID:       p.AccountID,
+			UserID:          p.User.ID,
+			IdempotencyKey:  key,
 			ReferenceNumber: nilIfEmpty(row.Reference),
-			Amount:         model.Money(row.Amount),
-			Currency:       "INR",
-			Direction:      row.Direction,
-			Description:    row.Description,
-			PaymentMode:    mode,
-			TxnDate:        row.Date,
+			Amount:          model.Money(row.Amount),
+			Currency:        "INR",
+			Direction:       row.Direction,
+			Description:     row.Description,
+			PaymentMode:     mode,
+			TxnDate:         row.Date,
 		})
 		if err != nil {
 			slog.Warn("insert transaction failed", "err", err, "desc", row.Description)
