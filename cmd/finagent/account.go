@@ -21,6 +21,7 @@ import (
 func runAccount(args []string) error {
 	fs := flag.NewFlagSet("account", flag.ExitOnError)
 	configPath := fs.String("config", "config/config.yaml", "path to config file")
+	userFlag := fs.String("user", "", "user email (optional if only one user in DB)")
 	_ = fs.Parse(args)
 
 	sub := ""
@@ -30,15 +31,15 @@ func runAccount(args []string) error {
 
 	switch sub {
 	case "add", "":
-		return runAccountAdd(*configPath)
+		return runAccountAdd(*configPath, *userFlag)
 	case "list":
-		return runAccountList(*configPath, fs.Args()[1:])
+		return runAccountList(*configPath, *userFlag)
 	default:
 		return fmt.Errorf("unknown account subcommand %q — use: add, list", sub)
 	}
 }
 
-func runAccountAdd(configPath string) error {
+func runAccountAdd(configPath, userEmail string) error {
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn})))
 
 	cfg, err := config.Load(configPath)
@@ -58,19 +59,15 @@ func runAccountAdd(configPath string) error {
 	userStore := store.NewUserStore(pool)
 	accountStore := store.NewAccountStore(pool)
 
+	u, err := resolveImportUser(ctx, userStore, userEmail, cfg.Channel.CLI.DefaultUser)
+	if err != nil {
+		return err
+	}
+
 	scanner := bufio.NewScanner(os.Stdin)
 
 	fmt.Println("\n=== Add Account ===")
-	fmt.Println()
-
-	userEmail := prompt(scanner, "User email", "")
-	if userEmail == "" {
-		return fmt.Errorf("user email is required")
-	}
-	u, err := userStore.GetByEmail(ctx, userEmail)
-	if err != nil {
-		return fmt.Errorf("user %q not found: %w", userEmail, err)
-	}
+	fmt.Printf("User: %s (%s)\n\n", u.Name, u.Email)
 
 	// Optionally set DOB if not already set.
 	if !u.DateOfBirth.Valid {
@@ -126,11 +123,7 @@ func runAccountAdd(configPath string) error {
 	return nil
 }
 
-func runAccountList(configPath string, args []string) error {
-	fs := flag.NewFlagSet("account list", flag.ExitOnError)
-	userFlag := fs.String("user", "", "user email")
-	_ = fs.Parse(args)
-
+func runAccountList(configPath, userEmail string) error {
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn})))
 
 	cfg, err := config.Load(configPath)
@@ -150,10 +143,9 @@ func runAccountList(configPath string, args []string) error {
 	userStore := store.NewUserStore(pool)
 	accountStore := store.NewAccountStore(pool)
 
-	email := cmp(*userFlag, cfg.Channel.CLI.DefaultUser)
-	u, err := userStore.GetByEmail(ctx, email)
+	u, err := resolveImportUser(ctx, userStore, userEmail, cfg.Channel.CLI.DefaultUser)
 	if err != nil {
-		return fmt.Errorf("user %q not found: %w", email, err)
+		return err
 	}
 
 	accounts, err := accountStore.ListByUser(ctx, u.ID.String())
