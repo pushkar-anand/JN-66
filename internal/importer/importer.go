@@ -68,7 +68,9 @@ func (imp *Importer) Run(ctx context.Context, p RunParams) (*Result, error) {
 
 	res := &Result{RunID: run.ID, Parsed: len(p.Rows)}
 
-	for _, row := range p.Rows {
+	total := len(p.Rows)
+	for i, row := range p.Rows {
+		slog.Info("processing", "n", i+1, "total", total, "date", row.Date.Format("2006-01-02"), "desc", truncateStr(row.Description, 50))
 		key := idempotencyKey(p.AccountID, row.Date, row.Amount, row.Description)
 
 		exists, err := imp.txnStore.IdempotencyKeyExists(ctx, key)
@@ -107,11 +109,13 @@ func (imp *Importer) Run(ctx context.Context, p RunParams) (*Result, error) {
 			continue
 		}
 
+		slog.Info("enriching", "n", i+1, "total", total, "desc", truncateStr(row.Description, 50))
 		enriched, err := imp.enricher.Enrich(ctx, row)
 		if err != nil {
 			slog.Warn("enrichment failed — leaving pending", "err", err, "txn", txn.ID)
 			continue
 		}
+		slog.Info("enriched", "category", enriched.CategorySlug, "normalized", enriched.DescriptionNormalized)
 
 		ep := store.EnrichmentParams{
 			TransactionID:         txn.ID.String(),
@@ -144,6 +148,13 @@ func (imp *Importer) Run(ctx context.Context, p RunParams) (*Result, error) {
 	_ = imp.runStore.Finish(ctx, run.ID, status, "")
 
 	return res, nil
+}
+
+func truncateStr(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	return s[:n] + "…"
 }
 
 func idempotencyKey(accountID uuid.UUID, date time.Time, amount int64, desc string) string {

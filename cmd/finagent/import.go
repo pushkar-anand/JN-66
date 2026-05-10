@@ -30,13 +30,18 @@ func runImport(args []string) error {
 	accountFlag := fs.String("account", "", "account UUID (optional — auto-detected from statement)")
 	dryRun := fs.Bool("dry-run", false, "parse and display rows without inserting")
 	noEnrich := fs.Bool("no-enrich", false, "skip LLM enrichment (insert with tagging_status=pending)")
+	debugFlag := fs.Bool("debug", false, "enable debug logging (shows LLM request/response detail)")
 	_ = fs.Parse(args)
 
 	if *fileFlag == "" {
 		return fmt.Errorf("--file is required")
 	}
 
-	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn})))
+	level := slog.LevelInfo
+	if *debugFlag {
+		level = slog.LevelDebug
+	}
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level})))
 
 	cfg, err := config.Load(*configPath)
 	if err != nil {

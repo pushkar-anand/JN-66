@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/pushkaranand/finagent/internal/importer/parser"
@@ -62,6 +63,8 @@ func (e *Enricher) Enrich(ctx context.Context, tx parser.RawTransaction) (*Enric
 		tx.Description,
 	)
 
+	slog.Debug("enrich request", "model", e.model, "msg", userMsg)
+
 	resp, err := e.llm.Chat(ctx, llm.ChatRequest{
 		Model: e.model,
 		Messages: []llm.Message{
@@ -74,6 +77,8 @@ func (e *Enricher) Enrich(ctx context.Context, tx parser.RawTransaction) (*Enric
 	}
 
 	raw := strings.TrimSpace(resp.Message.Content)
+	slog.Debug("enrich response", "raw", raw)
+
 	// Strip markdown code fences if the model added them.
 	raw = strings.TrimPrefix(raw, "```json")
 	raw = strings.TrimPrefix(raw, "```")
@@ -82,7 +87,10 @@ func (e *Enricher) Enrich(ctx context.Context, tx parser.RawTransaction) (*Enric
 
 	var result EnrichmentResult
 	if err := json.Unmarshal([]byte(raw), &result); err != nil {
+		slog.Warn("enrich json parse failed", "raw", raw, "err", err)
 		return nil, fmt.Errorf("enrich parse json: %w", err)
 	}
+
+	slog.Info("enrich result", "normalized", result.DescriptionNormalized, "category", result.CategorySlug, "counterparty", result.CounterpartyName)
 	return &result, nil
 }
