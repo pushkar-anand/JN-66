@@ -9,12 +9,13 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (name, email, phone, timezone, preferences)
 VALUES ($1, $2, $3, $4, $5)
-RETURNING id, name, email, phone, timezone, preferences, created_at, updated_at
+RETURNING id, name, email, phone, date_of_birth, timezone, preferences, created_at, updated_at
 `
 
 type CreateUserParams struct {
@@ -39,6 +40,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Name,
 		&i.Email,
 		&i.Phone,
+		&i.DateOfBirth,
 		&i.Timezone,
 		&i.Preferences,
 		&i.CreatedAt,
@@ -48,7 +50,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, name, email, phone, timezone, preferences, created_at, updated_at FROM users WHERE email = $1
+SELECT id, name, email, phone, date_of_birth, timezone, preferences, created_at, updated_at FROM users WHERE email = $1
 `
 
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
@@ -59,6 +61,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.Name,
 		&i.Email,
 		&i.Phone,
+		&i.DateOfBirth,
 		&i.Timezone,
 		&i.Preferences,
 		&i.CreatedAt,
@@ -68,7 +71,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, name, email, phone, timezone, preferences, created_at, updated_at FROM users WHERE id = $1
+SELECT id, name, email, phone, date_of_birth, timezone, preferences, created_at, updated_at FROM users WHERE id = $1
 `
 
 func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
@@ -79,6 +82,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 		&i.Name,
 		&i.Email,
 		&i.Phone,
+		&i.DateOfBirth,
 		&i.Timezone,
 		&i.Preferences,
 		&i.CreatedAt,
@@ -88,7 +92,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, name, email, phone, timezone, preferences, created_at, updated_at FROM users ORDER BY name
+SELECT id, name, email, phone, date_of_birth, timezone, preferences, created_at, updated_at FROM users ORDER BY name
 `
 
 func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
@@ -105,6 +109,7 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 			&i.Name,
 			&i.Email,
 			&i.Phone,
+			&i.DateOfBirth,
 			&i.Timezone,
 			&i.Preferences,
 			&i.CreatedAt,
@@ -120,8 +125,34 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 	return items, nil
 }
 
+const updateUserDOB = `-- name: UpdateUserDOB :one
+UPDATE users SET date_of_birth = $2, updated_at = NOW() WHERE id = $1 RETURNING id, name, email, phone, date_of_birth, timezone, preferences, created_at, updated_at
+`
+
+type UpdateUserDOBParams struct {
+	ID          uuid.UUID   `json:"id"`
+	DateOfBirth pgtype.Date `json:"date_of_birth"`
+}
+
+func (q *Queries) UpdateUserDOB(ctx context.Context, arg UpdateUserDOBParams) (User, error) {
+	row := q.db.QueryRow(ctx, updateUserDOB, arg.ID, arg.DateOfBirth)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Email,
+		&i.Phone,
+		&i.DateOfBirth,
+		&i.Timezone,
+		&i.Preferences,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const updateUserPreferences = `-- name: UpdateUserPreferences :one
-UPDATE users SET preferences = $2, updated_at = NOW() WHERE id = $1 RETURNING id, name, email, phone, timezone, preferences, created_at, updated_at
+UPDATE users SET preferences = $2, updated_at = NOW() WHERE id = $1 RETURNING id, name, email, phone, date_of_birth, timezone, preferences, created_at, updated_at
 `
 
 type UpdateUserPreferencesParams struct {
@@ -137,6 +168,7 @@ func (q *Queries) UpdateUserPreferences(ctx context.Context, arg UpdateUserPrefe
 		&i.Name,
 		&i.Email,
 		&i.Phone,
+		&i.DateOfBirth,
 		&i.Timezone,
 		&i.Preferences,
 		&i.CreatedAt,

@@ -24,6 +24,29 @@ import (
 )
 
 func main() {
+	// Subcommand dispatch — must happen before flag.Parse().
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "import":
+			if err := runImport(os.Args[2:]); err != nil {
+				fmt.Fprintf(os.Stderr, "import: %v\n", err)
+				os.Exit(1)
+			}
+			return
+		case "account":
+			if err := runAccount(os.Args[2:]); err != nil {
+				fmt.Fprintf(os.Stderr, "account: %v\n", err)
+				os.Exit(1)
+			}
+			return
+		case "user":
+			if err := runUser(os.Args[2:]); err != nil {
+				fmt.Fprintf(os.Stderr, "user: %v\n", err)
+				os.Exit(1)
+			}
+			return
+		}
+	}
 	if err := run(); err != nil {
 		slog.Error("fatal", "err", err)
 		os.Exit(1)

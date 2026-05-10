@@ -75,6 +75,7 @@ func (s *AccountStore) Create(ctx context.Context, p CreateAccountParams, userID
 		AccountType:       p.AccountType,
 		Currency:          p.Currency,
 		IsActive:          p.IsActive,
+		Metadata:          []byte("{}"),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("create account: %w", err)

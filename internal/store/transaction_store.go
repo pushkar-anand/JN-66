@@ -205,3 +205,40 @@ func (s *TransactionStore) GetSpendingByCategory(ctx context.Context, userID str
 	}
 	return out, nil
 }
+
+// EnrichmentParams groups the optional fields set during import enrichment.
+type EnrichmentParams struct {
+	TransactionID         string
+	DescriptionNormalized *string
+	CategoryID            *string
+	CounterpartyName      *string
+	CounterpartyID        *string
+	TaggingStatus         *sqlcgen.TaggingStatusEnum
+}
+
+// UpdateEnrichment applies LLM-derived fields to an existing enrichment row.
+func (s *TransactionStore) UpdateEnrichment(ctx context.Context, p EnrichmentParams) error {
+	txnID, err := parseUUID(p.TransactionID)
+	if err != nil {
+		return err
+	}
+
+	var catID pgtype.UUID
+	if p.CategoryID != nil {
+		id, err := parseUUID(*p.CategoryID)
+		if err != nil {
+			return err
+		}
+		catID = toPgtypeUUID(id)
+	}
+
+	if err := s.q.UpdateEnrichment(ctx, sqlcgen.UpdateEnrichmentParams{
+		TransactionID:         txnID,
+		DescriptionNormalized: p.DescriptionNormalized,
+		CategoryID:            catID,
+		TaggingStatus:         p.TaggingStatus,
+	}); err != nil {
+		return fmt.Errorf("update enrichment: %w", err)
+	}
+	return nil
+}

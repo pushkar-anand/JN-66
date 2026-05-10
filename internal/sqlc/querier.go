@@ -15,6 +15,7 @@ type Querier interface {
 	AddAccountMember(ctx context.Context, arg AddAccountMemberParams) error
 	AddTransactionLabel(ctx context.Context, arg AddTransactionLabelParams) error
 	CreateAccount(ctx context.Context, arg CreateAccountParams) (Account, error)
+	CreateImportRun(ctx context.Context, arg CreateImportRunParams) (ImportRun, error)
 	CreateLabel(ctx context.Context, arg CreateLabelParams) (Label, error)
 	CreateMemory(ctx context.Context, arg CreateMemoryParams) (AgentMemory, error)
 	CreateRecurringPayment(ctx context.Context, arg CreateRecurringPaymentParams) (RecurringPayment, error)
@@ -22,6 +23,7 @@ type Querier interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeactivateMemory(ctx context.Context, id uuid.UUID) error
 	DeactivateRecurringPayment(ctx context.Context, id uuid.UUID) error
+	FinishImportRun(ctx context.Context, arg FinishImportRunParams) error
 	GetAccountByID(ctx context.Context, id uuid.UUID) (Account, error)
 	GetAccountDetails(ctx context.Context, accountID uuid.UUID) (AccountDetail, error)
 	GetCategoryByID(ctx context.Context, id uuid.UUID) (Category, error)
@@ -38,6 +40,7 @@ type Querier interface {
 	InsertTransactionEnrichment(ctx context.Context, transactionID uuid.UUID) error
 	ListAccountsByUser(ctx context.Context, userID uuid.UUID) ([]Account, error)
 	ListCategories(ctx context.Context) ([]Category, error)
+	ListImportRuns(ctx context.Context, userID uuid.UUID) ([]ImportRun, error)
 	ListLabels(ctx context.Context, userID pgtype.UUID) ([]Label, error)
 	ListMemories(ctx context.Context, arg ListMemoriesParams) ([]AgentMemory, error)
 	ListRecentMessages(ctx context.Context, arg ListRecentMessagesParams) ([]ConversationMessage, error)
@@ -54,8 +57,10 @@ type Querier interface {
 	SaveMessage(ctx context.Context, arg SaveMessageParams) (ConversationMessage, error)
 	TouchSession(ctx context.Context, id uuid.UUID) error
 	UpdateEnrichment(ctx context.Context, arg UpdateEnrichmentParams) error
+	UpdateImportRunCounts(ctx context.Context, arg UpdateImportRunCountsParams) error
 	UpdateRecurringLastCharged(ctx context.Context, arg UpdateRecurringLastChargedParams) error
 	UpdateSessionTitle(ctx context.Context, arg UpdateSessionTitleParams) error
+	UpdateUserDOB(ctx context.Context, arg UpdateUserDOBParams) (User, error)
 	UpdateUserPreferences(ctx context.Context, arg UpdateUserPreferencesParams) (User, error)
 	UpsertAccountDetails(ctx context.Context, arg UpsertAccountDetailsParams) error
 }
