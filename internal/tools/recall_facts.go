@@ -22,10 +22,9 @@ func NewRecallFacts(userID string, memories memoryQuerier) *RecallFacts {
 
 // Definition returns the tool descriptor.
 func (t *RecallFacts) Definition() llm.ToolDefinition {
-	tagsItem := map[string]any{"type": "string"}
 	tagsProp := map[string]any{
 		"type":        "array",
-		"items":       tagsItem,
+		"items":       map[string]any{"type": "string"},
 		"description": "Topic tags to search by",
 	}
 	properties := map[string]any{
