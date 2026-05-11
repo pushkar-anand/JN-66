@@ -58,7 +58,17 @@ func runImport(args []string) error {
 	}
 	defer pool.Close()
 
+	if cfg.Database.AutoMigrate {
+		if err := db.Migrate(cfg.Database.URL); err != nil {
+			return fmt.Errorf("migrate: %w", err)
+		}
+	}
+
 	userStore := store.NewUserStore(pool)
+	if err := bootstrapUsers(ctx, userStore, cfg); err != nil {
+		return fmt.Errorf("bootstrap users: %w", err)
+	}
+
 	u, err := resolveUser(ctx, userStore, *userFlag, cfg.Channel.CLI.DefaultUser)
 	if err != nil {
 		return err
