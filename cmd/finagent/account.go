@@ -20,7 +20,7 @@ import (
 
 func runAccount(args []string) error {
 	fs := flag.NewFlagSet("account", flag.ExitOnError)
-	configPath := fs.String("config", "config/config.yaml", "path to config file")
+	configPath := fs.String("config", "config.yaml", "path to config file")
 	userFlag := fs.String("user", "", "user email (optional if only one user in DB)")
 	_ = fs.Parse(args)
 
@@ -67,7 +67,11 @@ func runAccountAdd(configPath, userEmail string) error {
 	scanner := bufio.NewScanner(os.Stdin)
 
 	fmt.Println("\n=== Add Account ===")
-	fmt.Printf("User: %s (%s)\n\n", u.Name, u.Email)
+	email := ""
+	if u.Email != nil {
+		email = *u.Email
+	}
+	fmt.Printf("User: %s (%s)\n\n", u.Name, email)
 
 	// Optionally set DOB if not already set.
 	if !u.DateOfBirth.Valid {
@@ -118,7 +122,11 @@ func runAccountAdd(configPath, userEmail string) error {
 	fmt.Printf("Name:            %s\n", acc.Name)
 	fmt.Printf("Type:            %s\n", acc.AccountType)
 	fmt.Printf("Class:           %s\n", acc.AccountClass)
-	fmt.Printf("Owner:           %s\n\n", u.Email)
+	ownerEmail := ""
+	if u.Email != nil {
+		ownerEmail = *u.Email
+	}
+	fmt.Printf("Owner:           %s\n\n", ownerEmail)
 
 	return nil
 }

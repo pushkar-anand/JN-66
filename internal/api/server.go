@@ -9,23 +9,37 @@ import (
 
 	"github.com/gorilla/mux"
 
+	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
+
 	"github.com/pushkaranand/finagent/internal/channel"
 )
 
+// userLookup is the store interface required for API authentication.
+type userLookup interface {
+	GetByAPIKeyPrefix(context.Context, string) (*sqlcgen.User, error)
+}
+
 // Server is the HTTP API server.
 type Server struct {
-	handler channel.MessageHandler
-	srv     *http.Server
+	handler   channel.MessageHandler
+	userStore userLookup
+	srv       *http.Server
 }
 
 // New creates a Server that dispatches chat requests to handler.
-func New(listen string, handler channel.MessageHandler) *Server {
-	s := &Server{handler: handler}
+// userStore is used for Bearer token authentication; pass nil to disable auth (tests).
+func New(listen string, handler channel.MessageHandler, userStore userLookup) *Server {
+	s := &Server{handler: handler, userStore: userStore}
 
 	r := mux.NewRouter()
 	r.Use(loggingMiddleware)
 	r.HandleFunc("/api/health", s.handleHealth).Methods(http.MethodGet)
-	r.HandleFunc("/api/chat", s.handleChat).Methods(http.MethodPost)
+
+	protected := r.NewRoute().Subrouter()
+	if s.userStore != nil {
+		protected.Use(s.authMiddleware)
+	}
+	protected.HandleFunc("/api/chat", s.handleChat).Methods(http.MethodPost)
 
 	s.srv = &http.Server{
 		Addr:         listen,

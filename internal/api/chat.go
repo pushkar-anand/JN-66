@@ -11,7 +11,6 @@ import (
 )
 
 type chatRequest struct {
-	UserID    string `json:"user_id"`
 	SessionID string `json:"session_id"`
 	Text      string `json:"text"`
 }
@@ -32,7 +31,8 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "text is required", http.StatusBadRequest)
 		return
 	}
-	if req.UserID == "" {
+	userID := UserIDFromContext(r.Context())
+	if userID == "" {
 		http.Error(w, "user_id is required", http.StatusBadRequest)
 		return
 	}
@@ -45,7 +45,7 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 	msg := channel.Message{
 		ID:        uuid.New().String(),
 		SessionID: sessionID,
-		UserID:    req.UserID,
+		UserID:    userID,
 		Text:      req.Text,
 		Timestamp: time.Now(),
 	}

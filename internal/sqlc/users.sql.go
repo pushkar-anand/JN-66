@@ -13,36 +13,69 @@ import (
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (name, email, phone, timezone, preferences)
-VALUES ($1, $2, $3, $4, $5)
-RETURNING id, name, email, phone, date_of_birth, timezone, preferences, created_at, updated_at
+INSERT INTO users (username, name, email, phone, timezone, preferences, api_key_prefix, api_key_hash)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+RETURNING id, username, name, email, phone, date_of_birth, timezone, preferences, api_key_prefix, api_key_hash, created_at, updated_at
 `
 
 type CreateUserParams struct {
-	Name        string  `json:"name"`
-	Email       string  `json:"email"`
-	Phone       *string `json:"phone"`
-	Timezone    string  `json:"timezone"`
-	Preferences []byte  `json:"preferences"`
+	Username     string  `json:"username"`
+	Name         string  `json:"name"`
+	Email        *string `json:"email"`
+	Phone        *string `json:"phone"`
+	Timezone     string  `json:"timezone"`
+	Preferences  []byte  `json:"preferences"`
+	ApiKeyPrefix string  `json:"api_key_prefix"`
+	ApiKeyHash   string  `json:"api_key_hash"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
 	row := q.db.QueryRow(ctx, createUser,
+		arg.Username,
 		arg.Name,
 		arg.Email,
 		arg.Phone,
 		arg.Timezone,
 		arg.Preferences,
+		arg.ApiKeyPrefix,
+		arg.ApiKeyHash,
 	)
 	var i User
 	err := row.Scan(
 		&i.ID,
+		&i.Username,
 		&i.Name,
 		&i.Email,
 		&i.Phone,
 		&i.DateOfBirth,
 		&i.Timezone,
 		&i.Preferences,
+		&i.ApiKeyPrefix,
+		&i.ApiKeyHash,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getUserByAPIKeyPrefix = `-- name: GetUserByAPIKeyPrefix :one
+SELECT id, username, name, email, phone, date_of_birth, timezone, preferences, api_key_prefix, api_key_hash, created_at, updated_at FROM users WHERE api_key_prefix = $1 LIMIT 1
+`
+
+func (q *Queries) GetUserByAPIKeyPrefix(ctx context.Context, apiKeyPrefix string) (User, error) {
+	row := q.db.QueryRow(ctx, getUserByAPIKeyPrefix, apiKeyPrefix)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Name,
+		&i.Email,
+		&i.Phone,
+		&i.DateOfBirth,
+		&i.Timezone,
+		&i.Preferences,
+		&i.ApiKeyPrefix,
+		&i.ApiKeyHash,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -50,20 +83,23 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, name, email, phone, date_of_birth, timezone, preferences, created_at, updated_at FROM users WHERE email = $1
+SELECT id, username, name, email, phone, date_of_birth, timezone, preferences, api_key_prefix, api_key_hash, created_at, updated_at FROM users WHERE email = $1 LIMIT 1
 `
 
-func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
+func (q *Queries) GetUserByEmail(ctx context.Context, email *string) (User, error) {
 	row := q.db.QueryRow(ctx, getUserByEmail, email)
 	var i User
 	err := row.Scan(
 		&i.ID,
+		&i.Username,
 		&i.Name,
 		&i.Email,
 		&i.Phone,
 		&i.DateOfBirth,
 		&i.Timezone,
 		&i.Preferences,
+		&i.ApiKeyPrefix,
+		&i.ApiKeyHash,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -71,7 +107,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, name, email, phone, date_of_birth, timezone, preferences, created_at, updated_at FROM users WHERE id = $1
+SELECT id, username, name, email, phone, date_of_birth, timezone, preferences, api_key_prefix, api_key_hash, created_at, updated_at FROM users WHERE id = $1 LIMIT 1
 `
 
 func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
@@ -79,12 +115,39 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 	var i User
 	err := row.Scan(
 		&i.ID,
+		&i.Username,
 		&i.Name,
 		&i.Email,
 		&i.Phone,
 		&i.DateOfBirth,
 		&i.Timezone,
 		&i.Preferences,
+		&i.ApiKeyPrefix,
+		&i.ApiKeyHash,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getUserByUsername = `-- name: GetUserByUsername :one
+SELECT id, username, name, email, phone, date_of_birth, timezone, preferences, api_key_prefix, api_key_hash, created_at, updated_at FROM users WHERE username = $1 LIMIT 1
+`
+
+func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User, error) {
+	row := q.db.QueryRow(ctx, getUserByUsername, username)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Name,
+		&i.Email,
+		&i.Phone,
+		&i.DateOfBirth,
+		&i.Timezone,
+		&i.Preferences,
+		&i.ApiKeyPrefix,
+		&i.ApiKeyHash,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -92,7 +155,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, name, email, phone, date_of_birth, timezone, preferences, created_at, updated_at FROM users ORDER BY name
+SELECT id, username, name, email, phone, date_of_birth, timezone, preferences, api_key_prefix, api_key_hash, created_at, updated_at FROM users ORDER BY name
 `
 
 func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
@@ -106,12 +169,15 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 		var i User
 		if err := rows.Scan(
 			&i.ID,
+			&i.Username,
 			&i.Name,
 			&i.Email,
 			&i.Phone,
 			&i.DateOfBirth,
 			&i.Timezone,
 			&i.Preferences,
+			&i.ApiKeyPrefix,
+			&i.ApiKeyHash,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -126,7 +192,7 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 }
 
 const updateUserDOB = `-- name: UpdateUserDOB :one
-UPDATE users SET date_of_birth = $2, updated_at = NOW() WHERE id = $1 RETURNING id, name, email, phone, date_of_birth, timezone, preferences, created_at, updated_at
+UPDATE users SET date_of_birth = $2, updated_at = NOW() WHERE id = $1 RETURNING id, username, name, email, phone, date_of_birth, timezone, preferences, api_key_prefix, api_key_hash, created_at, updated_at
 `
 
 type UpdateUserDOBParams struct {
@@ -139,12 +205,15 @@ func (q *Queries) UpdateUserDOB(ctx context.Context, arg UpdateUserDOBParams) (U
 	var i User
 	err := row.Scan(
 		&i.ID,
+		&i.Username,
 		&i.Name,
 		&i.Email,
 		&i.Phone,
 		&i.DateOfBirth,
 		&i.Timezone,
 		&i.Preferences,
+		&i.ApiKeyPrefix,
+		&i.ApiKeyHash,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -152,7 +221,7 @@ func (q *Queries) UpdateUserDOB(ctx context.Context, arg UpdateUserDOBParams) (U
 }
 
 const updateUserPreferences = `-- name: UpdateUserPreferences :one
-UPDATE users SET preferences = $2, updated_at = NOW() WHERE id = $1 RETURNING id, name, email, phone, date_of_birth, timezone, preferences, created_at, updated_at
+UPDATE users SET preferences = $2, updated_at = NOW() WHERE id = $1 RETURNING id, username, name, email, phone, date_of_birth, timezone, preferences, api_key_prefix, api_key_hash, created_at, updated_at
 `
 
 type UpdateUserPreferencesParams struct {
@@ -165,12 +234,64 @@ func (q *Queries) UpdateUserPreferences(ctx context.Context, arg UpdateUserPrefe
 	var i User
 	err := row.Scan(
 		&i.ID,
+		&i.Username,
 		&i.Name,
 		&i.Email,
 		&i.Phone,
 		&i.DateOfBirth,
 		&i.Timezone,
 		&i.Preferences,
+		&i.ApiKeyPrefix,
+		&i.ApiKeyHash,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const upsertUser = `-- name: UpsertUser :one
+INSERT INTO users (username, name, email, timezone, preferences, api_key_prefix, api_key_hash)
+VALUES ($1, $2, $3, $4, '{}', $5, $6)
+ON CONFLICT (username) DO UPDATE SET
+  name           = EXCLUDED.name,
+  email          = EXCLUDED.email,
+  timezone       = EXCLUDED.timezone,
+  api_key_prefix = EXCLUDED.api_key_prefix,
+  api_key_hash   = EXCLUDED.api_key_hash,
+  updated_at     = NOW()
+RETURNING id, username, name, email, phone, date_of_birth, timezone, preferences, api_key_prefix, api_key_hash, created_at, updated_at
+`
+
+type UpsertUserParams struct {
+	Username     string  `json:"username"`
+	Name         string  `json:"name"`
+	Email        *string `json:"email"`
+	Timezone     string  `json:"timezone"`
+	ApiKeyPrefix string  `json:"api_key_prefix"`
+	ApiKeyHash   string  `json:"api_key_hash"`
+}
+
+func (q *Queries) UpsertUser(ctx context.Context, arg UpsertUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, upsertUser,
+		arg.Username,
+		arg.Name,
+		arg.Email,
+		arg.Timezone,
+		arg.ApiKeyPrefix,
+		arg.ApiKeyHash,
+	)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Name,
+		&i.Email,
+		&i.Phone,
+		&i.DateOfBirth,
+		&i.Timezone,
+		&i.Preferences,
+		&i.ApiKeyPrefix,
+		&i.ApiKeyHash,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
