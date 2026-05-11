@@ -14,11 +14,11 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/pushkaranand/finagent/config"
-	"github.com/pushkaranand/finagent/internal/model"
 	"github.com/pushkaranand/finagent/internal/db"
 	"github.com/pushkaranand/finagent/internal/importer"
 	"github.com/pushkaranand/finagent/internal/importer/parser"
 	"github.com/pushkaranand/finagent/internal/llm/openai"
+	"github.com/pushkaranand/finagent/internal/model"
 	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
 	"github.com/pushkaranand/finagent/internal/store"
 )

@@ -39,13 +39,13 @@ func NewImporter(txnStore *store.TransactionStore, runStore *store.ImportRunStor
 
 // Result holds final counts for a completed import run.
 type Result struct {
-	RunID              uuid.UUID
-	Parsed             int
-	Inserted           int
-	Duplicate          int
-	Failed             int
-	LatestBalance      *int64     // closing balance in paise from the most recent row with balance data
-	LatestBalanceDate  time.Time  // txn date of that row
+	RunID             uuid.UUID
+	Parsed            int
+	Inserted          int
+	Duplicate         int
+	Failed            int
+	LatestBalance     *int64    // closing balance in paise from the most recent row with balance data
+	LatestBalanceDate time.Time // txn date of that row
 }
 
 // RunParams holds all inputs for a single import.
