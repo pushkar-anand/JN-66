@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/pushkaranand/finagent/config"
+	"github.com/pushkaranand/finagent/internal/model"
 	"github.com/pushkaranand/finagent/internal/db"
 	"github.com/pushkaranand/finagent/internal/importer"
 	"github.com/pushkaranand/finagent/internal/importer/parser"
@@ -130,6 +131,12 @@ func runImport(args []string) error {
 	})
 	if err != nil {
 		return fmt.Errorf("import: %w", err)
+	}
+
+	if res.LatestBalance != nil {
+		if err := accountStore.UpdateBalance(ctx, accountID.String(), model.Money(*res.LatestBalance), res.LatestBalanceDate); err != nil {
+			slog.Warn("could not update account balance", "err", err)
+		}
 	}
 
 	enrichMsg := ""

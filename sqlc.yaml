@@ -41,6 +41,11 @@ sql:
               import: github.com/pushkaranand/finagent/internal/model
               package: model
               type: Money
+          - column: "accounts.current_balance"
+            go_type:
+              import: github.com/pushkaranand/finagent/internal/model
+              package: model
+              type: Money
           - db_type: vector
             go_type:
               import: github.com/pgvector/pgvector-go

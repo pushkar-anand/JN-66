@@ -9,6 +9,8 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
+	model "github.com/pushkaranand/finagent/internal/model"
 )
 
 const addAccountMember = `-- name: AddAccountMember :exec
@@ -30,7 +32,7 @@ func (q *Queries) AddAccountMember(ctx context.Context, arg AddAccountMemberPara
 const createAccount = `-- name: CreateAccount :one
 INSERT INTO accounts (institution, external_account_id, name, account_type, currency, is_active, metadata)
 VALUES ($1, $2, $3, $4, $5, $6, $7)
-RETURNING id, institution, external_account_id, name, account_type, account_class, currency, is_active, metadata, created_at, updated_at, deleted_at
+RETURNING id, institution, external_account_id, name, account_type, account_class, currency, current_balance, balance_as_of, is_active, metadata, created_at, updated_at, deleted_at
 `
 
 type CreateAccountParams struct {
@@ -62,6 +64,8 @@ func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) (A
 		&i.AccountType,
 		&i.AccountClass,
 		&i.Currency,
+		&i.CurrentBalance,
+		&i.BalanceAsOf,
 		&i.IsActive,
 		&i.Metadata,
 		&i.CreatedAt,
@@ -72,7 +76,7 @@ func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) (A
 }
 
 const getAccountByID = `-- name: GetAccountByID :one
-SELECT id, institution, external_account_id, name, account_type, account_class, currency, is_active, metadata, created_at, updated_at, deleted_at FROM accounts WHERE id = $1 AND deleted_at IS NULL
+SELECT id, institution, external_account_id, name, account_type, account_class, currency, current_balance, balance_as_of, is_active, metadata, created_at, updated_at, deleted_at FROM accounts WHERE id = $1 AND deleted_at IS NULL
 `
 
 func (q *Queries) GetAccountByID(ctx context.Context, id uuid.UUID) (Account, error) {
@@ -86,6 +90,8 @@ func (q *Queries) GetAccountByID(ctx context.Context, id uuid.UUID) (Account, er
 		&i.AccountType,
 		&i.AccountClass,
 		&i.Currency,
+		&i.CurrentBalance,
+		&i.BalanceAsOf,
 		&i.IsActive,
 		&i.Metadata,
 		&i.CreatedAt,
@@ -120,7 +126,7 @@ func (q *Queries) GetAccountDetails(ctx context.Context, accountID uuid.UUID) (A
 }
 
 const listAccountsByUser = `-- name: ListAccountsByUser :many
-SELECT a.id, a.institution, a.external_account_id, a.name, a.account_type, a.account_class, a.currency, a.is_active, a.metadata, a.created_at, a.updated_at, a.deleted_at
+SELECT a.id, a.institution, a.external_account_id, a.name, a.account_type, a.account_class, a.currency, a.current_balance, a.balance_as_of, a.is_active, a.metadata, a.created_at, a.updated_at, a.deleted_at
 FROM accounts a
 JOIN account_members am ON am.account_id = a.id
 WHERE am.user_id = $1 AND a.deleted_at IS NULL
@@ -144,6 +150,8 @@ func (q *Queries) ListAccountsByUser(ctx context.Context, userID uuid.UUID) ([]A
 			&i.AccountType,
 			&i.AccountClass,
 			&i.Currency,
+			&i.CurrentBalance,
+			&i.BalanceAsOf,
 			&i.IsActive,
 			&i.Metadata,
 			&i.CreatedAt,
@@ -158,6 +166,24 @@ func (q *Queries) ListAccountsByUser(ctx context.Context, userID uuid.UUID) ([]A
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateAccountBalance = `-- name: UpdateAccountBalance :exec
+UPDATE accounts
+SET current_balance = $1, balance_as_of = $2, updated_at = NOW()
+WHERE id = $3
+  AND (balance_as_of IS NULL OR balance_as_of <= $2)
+`
+
+type UpdateAccountBalanceParams struct {
+	Balance model.Money `json:"balance"`
+	AsOf    pgtype.Date `json:"as_of"`
+	ID      uuid.UUID   `json:"id"`
+}
+
+func (q *Queries) UpdateAccountBalance(ctx context.Context, arg UpdateAccountBalanceParams) error {
+	_, err := q.db.Exec(ctx, updateAccountBalance, arg.Balance, arg.AsOf, arg.ID)
+	return err
 }
 
 const upsertAccountDetails = `-- name: UpsertAccountDetails :exec

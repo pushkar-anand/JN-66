@@ -3,12 +3,15 @@ package store
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
+	"github.com/pushkaranand/finagent/internal/model"
 	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
 )
 
@@ -205,4 +208,43 @@ func TestAccountStore_GetDetails_StoreError(t *testing.T) {
 	_, err := s.GetDetails(t.Context(), aid)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "get account details")
+}
+
+func TestAccountStore_UpdateBalance_HappyPath(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	q := NewMockQuerier(ctrl)
+	s := newAccountStoreForTest(q)
+
+	aid := uuid.New()
+	asOf := time.Date(2025, 4, 30, 0, 0, 0, 0, time.UTC)
+	q.EXPECT().UpdateAccountBalance(gomock.Any(), sqlcgen.UpdateAccountBalanceParams{
+		ID:      aid,
+		Balance: model.Money(12345678),
+		AsOf:    pgtype.Date{Time: asOf, Valid: true},
+	}).Return(nil)
+
+	err := s.UpdateBalance(t.Context(), aid.String(), model.Money(12345678), asOf)
+	require.NoError(t, err)
+}
+
+func TestAccountStore_UpdateBalance_InvalidUUID(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	q := NewMockQuerier(ctrl)
+	s := newAccountStoreForTest(q)
+
+	err := s.UpdateBalance(t.Context(), "bad-uuid", 0, time.Now())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid uuid")
+}
+
+func TestAccountStore_UpdateBalance_StoreError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	q := NewMockQuerier(ctrl)
+	s := newAccountStoreForTest(q)
+
+	aid := uuid.New()
+	q.EXPECT().UpdateAccountBalance(gomock.Any(), gomock.Any()).Return(errors.New("db error"))
+
+	err := s.UpdateBalance(t.Context(), aid.String(), 0, time.Now())
+	require.Error(t, err)
 }

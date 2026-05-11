@@ -293,21 +293,6 @@ func (mr *MockQuerierMockRecorder) GetIdempotencyKeyExists(ctx, idempotencyKey a
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIdempotencyKeyExists", reflect.TypeOf((*MockQuerier)(nil).GetIdempotencyKeyExists), ctx, idempotencyKey)
 }
 
-// GetTransactionByIdempotencyKey mocks base method.
-func (m *MockQuerier) GetTransactionByIdempotencyKey(ctx context.Context, idempotencyKey string) (uuid.UUID, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetTransactionByIdempotencyKey", ctx, idempotencyKey)
-	ret0, _ := ret[0].(uuid.UUID)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetTransactionByIdempotencyKey indicates an expected call of GetTransactionByIdempotencyKey.
-func (mr *MockQuerierMockRecorder) GetTransactionByIdempotencyKey(ctx, idempotencyKey any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTransactionByIdempotencyKey", reflect.TypeOf((*MockQuerier)(nil).GetTransactionByIdempotencyKey), ctx, idempotencyKey)
-}
-
 // GetLabelBySlug mocks base method.
 func (m *MockQuerier) GetLabelBySlug(ctx context.Context, slug string) (sqlcgen.Label, error) {
 	m.ctrl.T.Helper()
@@ -383,6 +368,21 @@ func (mr *MockQuerierMockRecorder) GetTransactionByID(ctx, id any) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTransactionByID", reflect.TypeOf((*MockQuerier)(nil).GetTransactionByID), ctx, id)
 }
 
+// GetTransactionByIdempotencyKey mocks base method.
+func (m *MockQuerier) GetTransactionByIdempotencyKey(ctx context.Context, idempotencyKey string) (uuid.UUID, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTransactionByIdempotencyKey", ctx, idempotencyKey)
+	ret0, _ := ret[0].(uuid.UUID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTransactionByIdempotencyKey indicates an expected call of GetTransactionByIdempotencyKey.
+func (mr *MockQuerierMockRecorder) GetTransactionByIdempotencyKey(ctx, idempotencyKey any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTransactionByIdempotencyKey", reflect.TypeOf((*MockQuerier)(nil).GetTransactionByIdempotencyKey), ctx, idempotencyKey)
+}
+
 // GetUserByAPIKeyPrefix mocks base method.
 func (m *MockQuerier) GetUserByAPIKeyPrefix(ctx context.Context, apiKeyPrefix string) (sqlcgen.User, error) {
 	m.ctrl.T.Helper()
@@ -413,21 +413,6 @@ func (mr *MockQuerierMockRecorder) GetUserByEmail(ctx, email any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByEmail", reflect.TypeOf((*MockQuerier)(nil).GetUserByEmail), ctx, email)
 }
 
-// GetUserByUsername mocks base method.
-func (m *MockQuerier) GetUserByUsername(ctx context.Context, username string) (sqlcgen.User, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUserByUsername", ctx, username)
-	ret0, _ := ret[0].(sqlcgen.User)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetUserByUsername indicates an expected call of GetUserByUsername.
-func (mr *MockQuerierMockRecorder) GetUserByUsername(ctx, username any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByUsername", reflect.TypeOf((*MockQuerier)(nil).GetUserByUsername), ctx, username)
-}
-
 // GetUserByID mocks base method.
 func (m *MockQuerier) GetUserByID(ctx context.Context, id uuid.UUID) (sqlcgen.User, error) {
 	m.ctrl.T.Helper()
@@ -441,6 +426,21 @@ func (m *MockQuerier) GetUserByID(ctx context.Context, id uuid.UUID) (sqlcgen.Us
 func (mr *MockQuerierMockRecorder) GetUserByID(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByID", reflect.TypeOf((*MockQuerier)(nil).GetUserByID), ctx, id)
+}
+
+// GetUserByUsername mocks base method.
+func (m *MockQuerier) GetUserByUsername(ctx context.Context, username string) (sqlcgen.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserByUsername", ctx, username)
+	ret0, _ := ret[0].(sqlcgen.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserByUsername indicates an expected call of GetUserByUsername.
+func (mr *MockQuerierMockRecorder) GetUserByUsername(ctx, username any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByUsername", reflect.TypeOf((*MockQuerier)(nil).GetUserByUsername), ctx, username)
 }
 
 // InsertTransaction mocks base method.
@@ -740,6 +740,20 @@ func (mr *MockQuerierMockRecorder) TouchSession(ctx, id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TouchSession", reflect.TypeOf((*MockQuerier)(nil).TouchSession), ctx, id)
 }
 
+// UpdateAccountBalance mocks base method.
+func (m *MockQuerier) UpdateAccountBalance(ctx context.Context, arg sqlcgen.UpdateAccountBalanceParams) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateAccountBalance", ctx, arg)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateAccountBalance indicates an expected call of UpdateAccountBalance.
+func (mr *MockQuerierMockRecorder) UpdateAccountBalance(ctx, arg any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAccountBalance", reflect.TypeOf((*MockQuerier)(nil).UpdateAccountBalance), ctx, arg)
+}
+
 // UpdateEnrichment mocks base method.
 func (m *MockQuerier) UpdateEnrichment(ctx context.Context, arg sqlcgen.UpdateEnrichmentParams) error {
 	m.ctrl.T.Helper()
@@ -826,6 +840,20 @@ func (mr *MockQuerierMockRecorder) UpdateUserPreferences(ctx, arg any) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUserPreferences", reflect.TypeOf((*MockQuerier)(nil).UpdateUserPreferences), ctx, arg)
 }
 
+// UpsertAccountDetails mocks base method.
+func (m *MockQuerier) UpsertAccountDetails(ctx context.Context, arg sqlcgen.UpsertAccountDetailsParams) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpsertAccountDetails", ctx, arg)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpsertAccountDetails indicates an expected call of UpsertAccountDetails.
+func (mr *MockQuerierMockRecorder) UpsertAccountDetails(ctx, arg any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertAccountDetails", reflect.TypeOf((*MockQuerier)(nil).UpsertAccountDetails), ctx, arg)
+}
+
 // UpsertUser mocks base method.
 func (m *MockQuerier) UpsertUser(ctx context.Context, arg sqlcgen.UpsertUserParams) (sqlcgen.User, error) {
 	m.ctrl.T.Helper()
@@ -839,18 +867,4 @@ func (m *MockQuerier) UpsertUser(ctx context.Context, arg sqlcgen.UpsertUserPara
 func (mr *MockQuerierMockRecorder) UpsertUser(ctx, arg any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertUser", reflect.TypeOf((*MockQuerier)(nil).UpsertUser), ctx, arg)
-}
-
-// UpsertAccountDetails mocks base method.
-func (m *MockQuerier) UpsertAccountDetails(ctx context.Context, arg sqlcgen.UpsertAccountDetailsParams) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpsertAccountDetails", ctx, arg)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// UpsertAccountDetails indicates an expected call of UpsertAccountDetails.
-func (mr *MockQuerierMockRecorder) UpsertAccountDetails(ctx, arg any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertAccountDetails", reflect.TypeOf((*MockQuerier)(nil).UpsertAccountDetails), ctx, arg)
 }

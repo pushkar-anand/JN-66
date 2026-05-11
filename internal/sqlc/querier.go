@@ -59,6 +59,7 @@ type Querier interface {
 	RemoveTransactionLabel(ctx context.Context, arg RemoveTransactionLabelParams) error
 	SaveMessage(ctx context.Context, arg SaveMessageParams) (ConversationMessage, error)
 	TouchSession(ctx context.Context, id uuid.UUID) error
+	UpdateAccountBalance(ctx context.Context, arg UpdateAccountBalanceParams) error
 	UpdateEnrichment(ctx context.Context, arg UpdateEnrichmentParams) error
 	UpdateImportRunCounts(ctx context.Context, arg UpdateImportRunCountsParams) error
 	UpdateRecurringLastCharged(ctx context.Context, arg UpdateRecurringLastChargedParams) error

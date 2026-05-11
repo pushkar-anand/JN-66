@@ -37,3 +37,9 @@ ON CONFLICT (account_id) DO UPDATE SET
 
 -- name: GetAccountDetails :one
 SELECT * FROM account_details WHERE account_id = $1;
+
+-- name: UpdateAccountBalance :exec
+UPDATE accounts
+SET current_balance = @balance, balance_as_of = @as_of, updated_at = NOW()
+WHERE id = @id
+  AND (balance_as_of IS NULL OR balance_as_of <= @as_of);
