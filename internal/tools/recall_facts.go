@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/pushkaranand/finagent/internal/llm"
@@ -53,10 +54,12 @@ func (t *RecallFacts) Execute(ctx context.Context, _ string, argsJSON string) (s
 		return "", fmt.Errorf("parse args: %w", err)
 	}
 
+	slog.DebugContext(ctx, "tool:recall_facts", slog.Any("tags", args.Tags))
 	rows, err := t.memories.Recall(ctx, t.userID, args.Tags, 10)
 	if err != nil {
 		return "", fmt.Errorf("recall facts: %w", err)
 	}
+	slog.DebugContext(ctx, "tool:recall_facts done", slog.Int("results", len(rows)))
 
 	if len(rows) == 0 {
 		return "No memories found matching those tags.", nil

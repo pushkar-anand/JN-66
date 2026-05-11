@@ -5,6 +5,7 @@ import (
 	"context"
 	"embed"
 	"fmt"
+	"log/slog"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -31,6 +32,7 @@ func Open(ctx context.Context, url string, maxConns int32) (*pgxpool.Pool, error
 		pool.Close()
 		return nil, fmt.Errorf("ping db: %w", err)
 	}
+	slog.Info("database connected", slog.Int("max_conns", int(cfg.MaxConns)))
 	return pool, nil
 }
 
@@ -46,8 +48,13 @@ func Migrate(databaseURL string) error {
 	}
 	defer m.Close()
 
-	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+	if err := m.Up(); err != nil {
+		if err == migrate.ErrNoChange {
+			slog.Info("migrations: no change")
+			return nil
+		}
 		return fmt.Errorf("run migrations: %w", err)
 	}
+	slog.Info("migrations applied")
 	return nil
 }

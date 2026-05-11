@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 
 	"github.com/pushkaranand/finagent/internal/llm"
 )
@@ -54,6 +55,10 @@ func (t *ManageLabels) Execute(ctx context.Context, _ string, argsJSON string) (
 		return "", fmt.Errorf("resolve label: %w", err)
 	}
 
+	slog.DebugContext(ctx, "tool:manage_labels",
+		slog.String("action", args.Action),
+		slog.String("label", args.LabelName),
+	)
 	switch args.Action {
 	case "add":
 		if err := t.labels.AddToTransaction(ctx, args.TransactionID, labelID); err != nil {

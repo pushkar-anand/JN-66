@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/pushkaranand/finagent/internal/llm"
@@ -50,6 +51,7 @@ func (t *ListRecurring) Execute(ctx context.Context, _ string, argsJSON string) 
 	if err != nil {
 		return "", fmt.Errorf("list recurring: %w", err)
 	}
+	slog.DebugContext(ctx, "tool:list_recurring done", slog.Int("results", len(rows)))
 
 	if len(rows) == 0 {
 		return "No active recurring payments found.", nil

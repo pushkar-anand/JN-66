@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/pushkar-anand/build-with-go/http/middleware"
+	bwglogger "github.com/pushkar-anand/build-with-go/logger"
 
 	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
 
@@ -32,7 +34,8 @@ func New(listen string, handler channel.MessageHandler, userStore userLookup) *S
 	s := &Server{handler: handler, userStore: userStore}
 
 	r := mux.NewRouter()
-	r.Use(loggingMiddleware)
+	r.Use(middleware.RequestID)
+	r.Use(bwglogger.NewHTTPLogger(slog.Default()))
 	r.HandleFunc("/api/health", s.handleHealth).Methods(http.MethodGet)
 
 	protected := r.NewRoute().Subrouter()
@@ -65,12 +68,4 @@ func (s *Server) Start(ctx context.Context) error {
 		return err
 	}
 	return nil
-}
-
-func loggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-		next.ServeHTTP(w, r)
-		slog.Info("http", "method", r.Method, "path", r.URL.Path, "dur", time.Since(start))
-	})
 }

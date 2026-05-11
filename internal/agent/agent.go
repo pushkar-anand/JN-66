@@ -46,6 +46,10 @@ func New(
 // HandleMessage is the MessageHandler the channel layer calls for each inbound message.
 func (a *Agent) HandleMessage(ctx context.Context, msg channel.Message) (channel.Response, error) {
 	t0 := time.Now()
+	slog.InfoContext(ctx, "agent session start",
+		slog.String("user_id", msg.UserID),
+		slog.String("session_id", msg.SessionID),
+	)
 
 	// Resolve the user's display name for the system prompt.
 	userName := msg.UserID
@@ -82,14 +86,20 @@ func (a *Agent) HandleMessage(ctx context.Context, msg channel.Message) (channel
 	model := a.router.Select(msg.Text, RouterHintChat)
 
 	var finalText string
-	for round := range maxToolRounds {
+	var round int
+	for round = range maxToolRounds {
 		tLLM := time.Now()
 		resp, err := a.llm.Chat(ctx, llm.ChatRequest{
 			Model:    model,
 			Messages: messages,
 			Tools:    a.registry.Definitions(),
 		})
-		slog.Debug("llm chat", "round", round+1, "model", model, "elapsed_ms", time.Since(tLLM).Milliseconds())
+		slog.DebugContext(ctx, "llm round",
+			slog.String("session_id", msg.SessionID),
+			slog.Int("round", round+1),
+			slog.String("model", model),
+			slog.Int64("elapsed_ms", time.Since(tLLM).Milliseconds()),
+		)
 		if err != nil {
 			return channel.Response{}, fmt.Errorf("llm chat: %w", err)
 		}
@@ -105,16 +115,28 @@ func (a *Agent) HandleMessage(ctx context.Context, msg channel.Message) (channel
 		for _, tc := range resp.Message.ToolCalls {
 			tTool := time.Now()
 			result, err := a.registry.Execute(ctx, tc.Name, tc.ID, tc.ArgsJSON)
-			slog.Debug("tool call", "name", tc.Name, "id", tc.ID, "elapsed_ms", time.Since(tTool).Milliseconds())
+			slog.DebugContext(ctx, "tool call",
+				slog.String("session_id", msg.SessionID),
+				slog.String("tool", tc.Name),
+				slog.Int64("elapsed_ms", time.Since(tTool).Milliseconds()),
+			)
 			if err != nil {
 				result = "error: " + err.Error()
-				slog.Warn("tool error", "tool", tc.Name, "err", err)
+				slog.WarnContext(ctx, "tool error",
+					slog.String("session_id", msg.SessionID),
+					slog.String("tool", tc.Name),
+					slog.Any("error", err),
+				)
 			}
 			messages = append(messages, llm.ToolResultMessage(tc.ID, result, tc.Name))
 		}
 	}
 
 	if finalText == "" {
+		slog.WarnContext(ctx, "agent tool limit reached",
+			slog.String("session_id", msg.SessionID),
+			slog.Int("max_rounds", maxToolRounds),
+		)
 		finalText = "I reached the tool call limit without a final answer. Please try a more specific question."
 	}
 
@@ -123,7 +145,12 @@ func (a *Agent) HandleMessage(ctx context.Context, msg channel.Message) (channel
 		slog.Warn("failed to save assistant message", "err", err)
 	}
 
-	slog.Debug("agent done", "total_ms", time.Since(t0).Milliseconds())
+	slog.InfoContext(ctx, "agent session done",
+		slog.String("user_id", msg.UserID),
+		slog.String("session_id", msg.SessionID),
+		slog.Int("rounds", round+1),
+		slog.Int64("total_ms", time.Since(t0).Milliseconds()),
+	)
 	return channel.Response{Text: finalText, Markdown: true}, nil
 }
 

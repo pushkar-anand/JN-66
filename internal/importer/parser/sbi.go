@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
+	"log/slog"
 	"math"
 	"strconv"
 	"strings"
@@ -35,6 +36,7 @@ func (p *SBIV1) CanParse(header []string) bool {
 
 // ParseXLSX reads an SBI XLSX file using the given decryption password.
 func (p *SBIV1) ParseXLSX(path, password string) (ParseResult, error) {
+	slog.Debug("parser start", slog.String("bank", p.Bank()), slog.String("format", p.FormatVersion()))
 	f, err := excelize.OpenFile(path, excelize.Options{Password: password})
 	if err != nil {
 		return ParseResult{}, fmt.Errorf("sbi open xlsx: %w", err)
@@ -52,11 +54,13 @@ func (p *SBIV1) ParseXLSX(path, password string) (ParseResult, error) {
 	if err != nil {
 		return ParseResult{}, err
 	}
+	slog.Info("parser done", slog.String("bank", p.Bank()), slog.Int("parsed", len(txns)))
 	return ParseResult{Meta: meta, Transactions: txns}, nil
 }
 
 // Parse implements Parser by treating r as a plain CSV (used in tests with decrypted data).
 func (p *SBIV1) Parse(r io.Reader) (ParseResult, error) {
+	slog.Debug("parser start", slog.String("bank", p.Bank()), slog.String("format", p.FormatVersion()))
 	rdr := csv.NewReader(r)
 	rdr.LazyQuotes = true
 	rdr.FieldsPerRecord = -1
@@ -76,6 +80,7 @@ func (p *SBIV1) Parse(r io.Reader) (ParseResult, error) {
 	if err != nil {
 		return ParseResult{}, err
 	}
+	slog.Info("parser done", slog.String("bank", p.Bank()), slog.Int("parsed", len(txns)))
 	return ParseResult{Transactions: txns}, nil
 }
 

@@ -4,7 +4,10 @@ package openai
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"time"
 
+	bwglogger "github.com/pushkar-anand/build-with-go/logger"
 	goai "github.com/sashabaranov/go-openai"
 
 	"github.com/pushkaranand/finagent/internal/llm"
@@ -52,8 +55,19 @@ func (c *Client) Chat(ctx context.Context, req llm.ChatRequest) (llm.ChatRespons
 		greq.Tools = tools
 	}
 
+	slog.DebugContext(ctx, "llm request",
+		slog.String("model", req.Model),
+		slog.Int("messages", len(req.Messages)),
+		slog.Int("tools", len(req.Tools)),
+	)
+	t0 := time.Now()
+
 	resp, err := c.inner.CreateChatCompletion(ctx, greq)
 	if err != nil {
+		slog.ErrorContext(ctx, "llm request failed",
+			slog.String("model", req.Model),
+			bwglogger.Error(err),
+		)
 		return llm.ChatResponse{}, fmt.Errorf("chat completion: %w", err)
 	}
 	if len(resp.Choices) == 0 {
@@ -64,9 +78,13 @@ func (c *Client) Chat(ctx context.Context, req llm.ChatRequest) (llm.ChatRespons
 	msg := fromGoAIMessage(choice.Message)
 
 	stopReason := string(choice.FinishReason)
-	if stopReason == "tool_calls" {
-		stopReason = "tool_calls"
-	}
+	slog.DebugContext(ctx, "llm response",
+		slog.String("model", req.Model),
+		slog.Int("input_tok", resp.Usage.PromptTokens),
+		slog.Int("output_tok", resp.Usage.CompletionTokens),
+		slog.String("stop", stopReason),
+		slog.Int64("dur_ms", time.Since(t0).Milliseconds()),
+	)
 
 	return llm.ChatResponse{
 		Message:      msg,
@@ -78,11 +96,19 @@ func (c *Client) Chat(ctx context.Context, req llm.ChatRequest) (llm.ChatRespons
 
 // Embed returns a text embedding vector.
 func (c *Client) Embed(ctx context.Context, req llm.EmbedRequest) (llm.EmbedResponse, error) {
+	slog.DebugContext(ctx, "embed request",
+		slog.String("model", req.Model),
+		slog.Int("inputs", len(req.Input)),
+	)
 	resp, err := c.inner.CreateEmbeddings(ctx, goai.EmbeddingRequest{
 		Model: goai.EmbeddingModel(req.Model),
 		Input: req.Input,
 	})
 	if err != nil {
+		slog.ErrorContext(ctx, "embed failed",
+			slog.String("model", req.Model),
+			bwglogger.Error(err),
+		)
 		return llm.EmbedResponse{}, fmt.Errorf("embed: %w", err)
 	}
 	if len(resp.Data) == 0 {
