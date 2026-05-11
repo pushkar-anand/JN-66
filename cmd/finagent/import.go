@@ -38,16 +38,11 @@ func runImport(args []string) error {
 		return fmt.Errorf("--file is required")
 	}
 
-	level := slog.LevelInfo
-	if *debugFlag {
-		level = slog.LevelDebug
-	}
-	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level})))
-
 	cfg, err := config.Load(*configPath)
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
 	}
+	config.SetupLogger(cfg.Log, *debugFlag)
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/pushkaranand/finagent/internal/llm"
@@ -52,6 +53,7 @@ func (t *GetAccountSummary) Execute(ctx context.Context, _ string, argsJSON stri
 	if err != nil {
 		return "", fmt.Errorf("get accounts: %w", err)
 	}
+	slog.DebugContext(ctx, "tool:get_account_summary done", slog.Int("accounts", len(accounts)))
 
 	if len(accounts) == 0 {
 		return "No accounts found.", nil

@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
+	"log/slog"
 	"math"
 	"strconv"
 	"strings"
@@ -33,6 +34,8 @@ func (p *AxisV1) CanParse(header []string) bool {
 }
 
 func (p *AxisV1) Parse(r io.Reader) (ParseResult, error) {
+	slog.Debug("parser start", slog.String("bank", p.Bank()), slog.String("format", p.FormatVersion()))
+
 	rdr := csv.NewReader(r)
 	rdr.LazyQuotes = true
 	rdr.FieldsPerRecord = -1
@@ -49,6 +52,7 @@ func (p *AxisV1) Parse(r io.Reader) (ParseResult, error) {
 	)
 
 	var rows []RawTransaction
+	var skipped int
 	lineNum := 0
 
 	for {
@@ -91,6 +95,7 @@ func (p *AxisV1) Parse(r io.Reader) (ParseResult, error) {
 
 		date, err := time.Parse("02-01-2006", strings.TrimSpace(record[colDate]))
 		if err != nil {
+			skipped++
 			continue
 		}
 
@@ -109,6 +114,7 @@ func (p *AxisV1) Parse(r io.Reader) (ParseResult, error) {
 		case drStr != "" && drStr != "0" && drStr != "0.00":
 			v, err := strconv.ParseFloat(drStr, 64)
 			if err != nil {
+				skipped++
 				continue
 			}
 			amount = int64(math.Round(v * 100))
@@ -116,11 +122,13 @@ func (p *AxisV1) Parse(r io.Reader) (ParseResult, error) {
 		case crStr != "" && crStr != "0" && crStr != "0.00":
 			v, err := strconv.ParseFloat(crStr, 64)
 			if err != nil {
+				skipped++
 				continue
 			}
 			amount = int64(math.Round(v * 100))
 			dir = sqlcgen.TxnDirectionEnumCredit
 		default:
+			skipped++
 			continue
 		}
 
@@ -145,6 +153,11 @@ func (p *AxisV1) Parse(r io.Reader) (ParseResult, error) {
 		rows = append(rows, tx)
 	}
 
+	slog.Info("parser done",
+		slog.String("bank", p.Bank()),
+		slog.Int("parsed", len(rows)),
+		slog.Int("skipped", skipped),
+	)
 	return ParseResult{Meta: meta, Transactions: rows}, nil
 }
 

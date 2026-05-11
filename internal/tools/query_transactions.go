@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -70,6 +71,12 @@ func (t *QueryTransactions) Execute(ctx context.Context, _ string, argsJSON stri
 	if err := json.Unmarshal([]byte(argsJSON), &args); err != nil {
 		return "", fmt.Errorf("parse args: %w", err)
 	}
+	slog.DebugContext(ctx, "tool:query_transactions",
+		slog.String("from", args.From),
+		slog.String("to", args.To),
+		slog.String("direction", args.Direction),
+		slog.Int("limit", int(args.Limit)),
+	)
 
 	limit := args.Limit
 	if limit <= 0 || limit > 50 {
@@ -122,6 +129,7 @@ func (t *QueryTransactions) Execute(ctx context.Context, _ string, argsJSON stri
 	if err != nil {
 		return "", fmt.Errorf("query transactions: %w", err)
 	}
+	slog.DebugContext(ctx, "tool:query_transactions done", slog.Int("results", len(rows)))
 
 	if len(rows) == 0 {
 		return "No transactions found matching the criteria.", nil

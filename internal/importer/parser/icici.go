@@ -3,6 +3,7 @@ package parser
 import (
 	"fmt"
 	"io"
+	"log/slog"
 	"math"
 	"strconv"
 	"strings"
@@ -41,6 +42,7 @@ func (p *ICICIV1) Parse(r io.Reader) (ParseResult, error) {
 
 // ParsePath reads an ICICI XLS statement from a file path.
 func (p *ICICIV1) ParsePath(path string) (ParseResult, error) {
+	slog.Debug("parser start", slog.String("bank", p.Bank()), slog.String("format", p.FormatVersion()))
 	wb, err := xlslib.Open(path, "utf-8")
 	if err != nil {
 		return ParseResult{}, fmt.Errorf("icici open xls: %w", err)
@@ -163,6 +165,7 @@ func (p *ICICIV1) ParsePath(path string) (ParseResult, error) {
 		out = append(out, tx)
 	}
 
+	slog.Info("parser done", slog.String("bank", p.Bank()), slog.Int("parsed", len(out)))
 	return ParseResult{Meta: meta, Transactions: out}, nil
 }
 

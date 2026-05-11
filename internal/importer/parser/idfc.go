@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
+	"log/slog"
 	"math"
 	"strconv"
 	"strings"
@@ -34,6 +35,7 @@ func (p *IDFCV1) CanParse(header []string) bool {
 
 // Parse implements Parser. IDFC CSV has no account metadata in the file.
 func (p *IDFCV1) Parse(r io.Reader) (ParseResult, error) {
+	slog.Debug("parser start", slog.String("bank", p.Bank()), slog.String("format", p.FormatVersion()))
 	rdr := csv.NewReader(r)
 	rdr.LazyQuotes = true
 	rdr.FieldsPerRecord = -1
@@ -107,6 +109,7 @@ func (p *IDFCV1) Parse(r io.Reader) (ParseResult, error) {
 		})
 	}
 
+	slog.Info("parser done", slog.String("bank", p.Bank()), slog.Int("parsed", len(rows)))
 	return ParseResult{Transactions: rows}, nil
 }
 

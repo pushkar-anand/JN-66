@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -27,16 +28,19 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
 		if token == "" || token == r.Header.Get("Authorization") {
+			slog.WarnContext(r.Context(), "auth: missing bearer token", slog.String("path", r.URL.Path))
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
 		prefix := apikey.Prefix(token)
 		user, err := s.userStore.GetByAPIKeyPrefix(r.Context(), prefix)
 		if err != nil {
+			slog.WarnContext(r.Context(), "auth: unknown api key prefix", slog.String("prefix", prefix))
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
 		if !apikey.Verify(token, user.ApiKeyHash) {
+			slog.WarnContext(r.Context(), "auth: invalid api key hash", slog.String("user_id", user.ID.String()))
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}

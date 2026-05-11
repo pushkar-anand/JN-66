@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -72,6 +73,11 @@ func (t *GetSpendingBreakdown) Execute(ctx context.Context, _ string, argsJSON s
 	if err != nil {
 		return "", fmt.Errorf("get spending breakdown: %w", err)
 	}
+	slog.DebugContext(ctx, "tool:get_spending_breakdown done",
+		slog.String("from", args.From),
+		slog.String("to", args.To),
+		slog.Int("categories", len(rows)),
+	)
 
 	if len(rows) == 0 {
 		return fmt.Sprintf("No spending found between %s and %s.", args.From, args.To), nil

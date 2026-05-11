@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 
 	"github.com/pushkaranand/finagent/internal/llm"
 	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
@@ -72,6 +73,10 @@ func (t *RememberFact) Execute(ctx context.Context, _ string, argsJSON string) (
 		tags = autoTags(args.Content)
 	}
 
+	slog.DebugContext(ctx, "tool:remember_fact",
+		slog.String("type", string(memType)),
+		slog.Int("content_len", len(args.Content)),
+	)
 	m, err := t.memories.Save(ctx, &userID, args.Content, memType, tags)
 	if err != nil {
 		return "", fmt.Errorf("save memory: %w", err)

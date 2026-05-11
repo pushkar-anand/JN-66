@@ -2,10 +2,12 @@ package api
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"time"
 
 	"github.com/google/uuid"
+	bwglogger "github.com/pushkar-anand/build-with-go/logger"
 
 	"github.com/pushkaranand/finagent/internal/channel"
 )
@@ -42,6 +44,12 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 		sessionID = uuid.New().String()
 	}
 
+	slog.DebugContext(r.Context(), "chat request",
+		slog.String("user_id", userID),
+		slog.String("session_id", sessionID),
+		slog.Int("text_len", len(req.Text)),
+	)
+
 	msg := channel.Message{
 		ID:        uuid.New().String(),
 		SessionID: sessionID,
@@ -52,6 +60,10 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := s.handler(r.Context(), msg)
 	if err != nil {
+		slog.ErrorContext(r.Context(), "agent handler error",
+			slog.String("user_id", userID),
+			bwglogger.Error(err),
+		)
 		http.Error(w, "agent error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}

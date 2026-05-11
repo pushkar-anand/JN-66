@@ -18,8 +18,15 @@ type Config struct {
 	Agent    AgentConfig       `koanf:"agent"`
 	Channel  ChannelConfig     `koanf:"channel"`
 	API      APIConfig         `koanf:"api"`
+	Log      LogConfig         `koanf:"log"`
 	Users    []UserSeed        `koanf:"users"`
 	APIKeys  map[string]string `koanf:"api_keys"`
+}
+
+// LogConfig controls log level and output format.
+type LogConfig struct {
+	Level  string `koanf:"level"`  // debug|info|warn|error (default "info")
+	Format string `koanf:"format"` // text|json              (default "text")
 }
 
 // UserSeed defines a user to be created or updated on startup.

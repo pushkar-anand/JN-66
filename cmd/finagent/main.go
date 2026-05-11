@@ -71,18 +71,12 @@ func run() error {
 		*configPath = "config.yaml"
 	}
 
-	// Logging
-	level := slog.LevelInfo
-	if *debugFlag {
-		level = slog.LevelDebug
-	}
-	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level})))
-
 	// Config
 	cfg, err := config.Load(*configPath)
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
 	}
+	config.SetupLogger(cfg.Log, *debugFlag)
 	slog.Debug("llm config", "base_url", cfg.LLM.BaseURL, "api_key_set", cfg.LLM.APIKey != "")
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
