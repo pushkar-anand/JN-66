@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -14,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/pushkaranand/finagent/internal/apikey"
 	"github.com/pushkaranand/finagent/internal/channel"
 	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
 )
@@ -125,7 +125,7 @@ type mockUserLookup struct {
 	err  error
 }
 
-func (m *mockUserLookup) GetByAPIKeyHash(_ context.Context, _ []byte) (*sqlcgen.User, error) {
+func (m *mockUserLookup) GetByAPIKeyPrefix(_ context.Context, _ string) (*sqlcgen.User, error) {
 	return m.user, m.err
 }
 
@@ -153,10 +153,12 @@ func TestAuthMiddleware_InvalidToken(t *testing.T) {
 
 func TestAuthMiddleware_ValidToken(t *testing.T) {
 	uid := uuid.New()
-	token := "mysecrettoken"
-	_ = sha256.Sum256([]byte(token)) // middleware does the hashing internally
+	// Token must be at least 16 chars (prefix length); use a realistic 64-char hex token.
+	token := "aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899"
+	hash, err := apikey.Hash(token)
+	require.NoError(t, err)
 
-	s := New(":0", okHandler, &mockUserLookup{user: &sqlcgen.User{ID: uid}})
+	s := New(":0", okHandler, &mockUserLookup{user: &sqlcgen.User{ID: uid, ApiKeyHash: hash}})
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodPost, "/api/chat", strings.NewReader(`{"text":"hi"}`))
 	r.Header.Set("Authorization", "Bearer "+token)

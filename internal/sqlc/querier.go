@@ -35,7 +35,7 @@ type Querier interface {
 	GetSpendingByCategory(ctx context.Context, arg GetSpendingByCategoryParams) ([]GetSpendingByCategoryRow, error)
 	GetTransactionByID(ctx context.Context, id uuid.UUID) (VTransaction, error)
 	GetTransactionByIdempotencyKey(ctx context.Context, idempotencyKey string) (uuid.UUID, error)
-	GetUserByAPIKeyHash(ctx context.Context, apiKeyHash []byte) (User, error)
+	GetUserByAPIKeyPrefix(ctx context.Context, apiKeyPrefix string) (User, error)
 	GetUserByEmail(ctx context.Context, email *string) (User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)

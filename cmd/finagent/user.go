@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"crypto/rand"
-	"crypto/sha256"
 	"encoding/hex"
 	"flag"
 	"fmt"
@@ -17,6 +16,7 @@ import (
 	"time"
 
 	"github.com/pushkaranand/finagent/config"
+	"github.com/pushkaranand/finagent/internal/apikey"
 	"github.com/pushkaranand/finagent/internal/db"
 	"github.com/pushkaranand/finagent/internal/store"
 )
@@ -94,15 +94,19 @@ func runUserAdd(configPath string) error {
 		return fmt.Errorf("generate api key: %w", err)
 	}
 	apiKey := hex.EncodeToString(raw)
-	sum := sha256.Sum256([]byte(apiKey))
+	keyHash, err := apikey.Hash(apiKey)
+	if err != nil {
+		return fmt.Errorf("hash api key: %w", err)
+	}
 
 	u, err := userStore.Create(ctx, store.CreateUserParams{
-		Username:   username,
-		Name:       name,
-		Email:      email,
-		Phone:      phone,
-		Timezone:   timezone,
-		APIKeyHash: sum[:],
+		Username:     username,
+		Name:         name,
+		Email:        email,
+		Phone:        phone,
+		Timezone:     timezone,
+		APIKeyPrefix: apikey.Prefix(apiKey),
+		APIKeyHash:   keyHash,
 	})
 	if err != nil {
 		return fmt.Errorf("create user: %w", err)

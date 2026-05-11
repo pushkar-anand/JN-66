@@ -11,23 +11,24 @@ SELECT * FROM users WHERE id = $1 LIMIT 1;
 SELECT * FROM users ORDER BY name;
 
 -- name: CreateUser :one
-INSERT INTO users (username, name, email, phone, timezone, preferences, api_key_hash)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
+INSERT INTO users (username, name, email, phone, timezone, preferences, api_key_prefix, api_key_hash)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 RETURNING *;
 
 -- name: UpsertUser :one
-INSERT INTO users (username, name, email, timezone, preferences, api_key_hash)
-VALUES ($1, $2, $3, $4, '{}', $5)
+INSERT INTO users (username, name, email, timezone, preferences, api_key_prefix, api_key_hash)
+VALUES ($1, $2, $3, $4, '{}', $5, $6)
 ON CONFLICT (username) DO UPDATE SET
-  name         = EXCLUDED.name,
-  email        = EXCLUDED.email,
-  timezone     = EXCLUDED.timezone,
-  api_key_hash = EXCLUDED.api_key_hash,
-  updated_at   = NOW()
+  name           = EXCLUDED.name,
+  email          = EXCLUDED.email,
+  timezone       = EXCLUDED.timezone,
+  api_key_prefix = EXCLUDED.api_key_prefix,
+  api_key_hash   = EXCLUDED.api_key_hash,
+  updated_at     = NOW()
 RETURNING *;
 
--- name: GetUserByAPIKeyHash :one
-SELECT * FROM users WHERE api_key_hash = $1 LIMIT 1;
+-- name: GetUserByAPIKeyPrefix :one
+SELECT * FROM users WHERE api_key_prefix = $1 LIMIT 1;
 
 -- name: UpdateUserPreferences :one
 UPDATE users SET preferences = $2, updated_at = NOW() WHERE id = $1 RETURNING *;

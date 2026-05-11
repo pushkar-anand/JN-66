@@ -7,7 +7,8 @@ CREATE TABLE users (
     date_of_birth  DATE,
     timezone       TEXT NOT NULL DEFAULT 'Asia/Kolkata',
     preferences    JSONB NOT NULL DEFAULT '{}',
-    api_key_hash   BYTEA NOT NULL UNIQUE,
+    api_key_prefix TEXT NOT NULL UNIQUE,
+    api_key_hash   TEXT NOT NULL,
     created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

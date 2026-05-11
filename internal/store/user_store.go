@@ -56,11 +56,11 @@ func (s *UserStore) GetByID(ctx context.Context, id string) (*sqlcgen.User, erro
 	return &u, nil
 }
 
-// GetByAPIKeyHash returns the user whose api_key_hash matches hash.
-func (s *UserStore) GetByAPIKeyHash(ctx context.Context, hash []byte) (*sqlcgen.User, error) {
-	u, err := s.q.GetUserByAPIKeyHash(ctx, hash)
+// GetByAPIKeyPrefix returns the user whose api_key_prefix matches prefix.
+func (s *UserStore) GetByAPIKeyPrefix(ctx context.Context, prefix string) (*sqlcgen.User, error) {
+	u, err := s.q.GetUserByAPIKeyPrefix(ctx, prefix)
 	if err != nil {
-		return nil, fmt.Errorf("get user by api key hash: %w", err)
+		return nil, fmt.Errorf("get user by api key prefix: %w", err)
 	}
 	return &u, nil
 }
@@ -76,11 +76,12 @@ func (s *UserStore) List(ctx context.Context) ([]sqlcgen.User, error) {
 
 // UpsertUserParams holds inputs for upserting a user by username.
 type UpsertUserParams struct {
-	Username   string
-	Name       string
-	Email      string
-	Timezone   string
-	APIKeyHash []byte // required — sha256 of the plaintext API key
+	Username     string
+	Name         string
+	Email        string
+	Timezone     string
+	APIKeyPrefix string // first 16 hex chars of the plaintext key, for indexed DB lookup
+	APIKeyHash   string // argon2id hash of the full plaintext key
 }
 
 // Upsert inserts or updates a user identified by username.
@@ -94,11 +95,12 @@ func (s *UserStore) Upsert(ctx context.Context, p UpsertUserParams) (*sqlcgen.Us
 		email = &p.Email
 	}
 	u, err := s.q.UpsertUser(ctx, sqlcgen.UpsertUserParams{
-		Username:   p.Username,
-		Name:       p.Name,
-		Email:      email,
-		Timezone:   tz,
-		ApiKeyHash: p.APIKeyHash,
+		Username:     p.Username,
+		Name:         p.Name,
+		Email:        email,
+		Timezone:     tz,
+		ApiKeyPrefix: p.APIKeyPrefix,
+		ApiKeyHash:   p.APIKeyHash,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("upsert user: %w", err)
@@ -108,12 +110,13 @@ func (s *UserStore) Upsert(ctx context.Context, p UpsertUserParams) (*sqlcgen.Us
 
 // CreateUserParams holds inputs for creating a new user.
 type CreateUserParams struct {
-	Username   string
-	Name       string
-	Email      string
-	Phone      string
-	Timezone   string
-	APIKeyHash []byte
+	Username     string
+	Name         string
+	Email        string
+	Phone        string
+	Timezone     string
+	APIKeyPrefix string // first 16 hex chars of the plaintext key, for indexed DB lookup
+	APIKeyHash   string // argon2id hash of the full plaintext key
 }
 
 // Create inserts a new user and returns the created record.
@@ -131,13 +134,14 @@ func (s *UserStore) Create(ctx context.Context, p CreateUserParams) (*sqlcgen.Us
 		email = &p.Email
 	}
 	u, err := s.q.CreateUser(ctx, sqlcgen.CreateUserParams{
-		Username:    p.Username,
-		Name:        p.Name,
-		Email:       email,
-		Phone:       phone,
-		Timezone:    tz,
-		Preferences: []byte("{}"),
-		ApiKeyHash:  p.APIKeyHash,
+		Username:     p.Username,
+		Name:         p.Name,
+		Email:        email,
+		Phone:        phone,
+		Timezone:     tz,
+		Preferences:  []byte("{}"),
+		ApiKeyPrefix: p.APIKeyPrefix,
+		ApiKeyHash:   p.APIKeyHash,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("create user: %w", err)

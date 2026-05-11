@@ -16,7 +16,7 @@ import (
 
 // userLookup is the store interface required for API authentication.
 type userLookup interface {
-	GetByAPIKeyHash(context.Context, []byte) (*sqlcgen.User, error)
+	GetByAPIKeyPrefix(context.Context, string) (*sqlcgen.User, error)
 }
 
 // Server is the HTTP API server.

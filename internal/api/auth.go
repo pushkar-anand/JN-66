@@ -2,9 +2,10 @@ package api
 
 import (
 	"context"
-	"crypto/sha256"
 	"net/http"
 	"strings"
+
+	"github.com/pushkaranand/finagent/internal/apikey"
 )
 
 type contextKey int
@@ -29,9 +30,13 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
-		hash := sha256.Sum256([]byte(token))
-		user, err := s.userStore.GetByAPIKeyHash(r.Context(), hash[:])
+		prefix := apikey.Prefix(token)
+		user, err := s.userStore.GetByAPIKeyPrefix(r.Context(), prefix)
 		if err != nil {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		if !apikey.Verify(token, user.ApiKeyHash) {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}

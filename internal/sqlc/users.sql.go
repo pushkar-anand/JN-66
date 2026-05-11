@@ -13,19 +13,20 @@ import (
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (username, name, email, phone, timezone, preferences, api_key_hash)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
-RETURNING id, username, name, email, phone, date_of_birth, timezone, preferences, api_key_hash, created_at, updated_at
+INSERT INTO users (username, name, email, phone, timezone, preferences, api_key_prefix, api_key_hash)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+RETURNING id, username, name, email, phone, date_of_birth, timezone, preferences, api_key_prefix, api_key_hash, created_at, updated_at
 `
 
 type CreateUserParams struct {
-	Username    string  `json:"username"`
-	Name        string  `json:"name"`
-	Email       *string `json:"email"`
-	Phone       *string `json:"phone"`
-	Timezone    string  `json:"timezone"`
-	Preferences []byte  `json:"preferences"`
-	ApiKeyHash  []byte  `json:"api_key_hash"`
+	Username     string  `json:"username"`
+	Name         string  `json:"name"`
+	Email        *string `json:"email"`
+	Phone        *string `json:"phone"`
+	Timezone     string  `json:"timezone"`
+	Preferences  []byte  `json:"preferences"`
+	ApiKeyPrefix string  `json:"api_key_prefix"`
+	ApiKeyHash   string  `json:"api_key_hash"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -36,6 +37,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.Phone,
 		arg.Timezone,
 		arg.Preferences,
+		arg.ApiKeyPrefix,
 		arg.ApiKeyHash,
 	)
 	var i User
@@ -48,6 +50,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.DateOfBirth,
 		&i.Timezone,
 		&i.Preferences,
+		&i.ApiKeyPrefix,
 		&i.ApiKeyHash,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -55,12 +58,12 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
-const getUserByAPIKeyHash = `-- name: GetUserByAPIKeyHash :one
-SELECT id, username, name, email, phone, date_of_birth, timezone, preferences, api_key_hash, created_at, updated_at FROM users WHERE api_key_hash = $1 LIMIT 1
+const getUserByAPIKeyPrefix = `-- name: GetUserByAPIKeyPrefix :one
+SELECT id, username, name, email, phone, date_of_birth, timezone, preferences, api_key_prefix, api_key_hash, created_at, updated_at FROM users WHERE api_key_prefix = $1 LIMIT 1
 `
 
-func (q *Queries) GetUserByAPIKeyHash(ctx context.Context, apiKeyHash []byte) (User, error) {
-	row := q.db.QueryRow(ctx, getUserByAPIKeyHash, apiKeyHash)
+func (q *Queries) GetUserByAPIKeyPrefix(ctx context.Context, apiKeyPrefix string) (User, error) {
+	row := q.db.QueryRow(ctx, getUserByAPIKeyPrefix, apiKeyPrefix)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -71,6 +74,7 @@ func (q *Queries) GetUserByAPIKeyHash(ctx context.Context, apiKeyHash []byte) (U
 		&i.DateOfBirth,
 		&i.Timezone,
 		&i.Preferences,
+		&i.ApiKeyPrefix,
 		&i.ApiKeyHash,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -79,7 +83,7 @@ func (q *Queries) GetUserByAPIKeyHash(ctx context.Context, apiKeyHash []byte) (U
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, username, name, email, phone, date_of_birth, timezone, preferences, api_key_hash, created_at, updated_at FROM users WHERE email = $1 LIMIT 1
+SELECT id, username, name, email, phone, date_of_birth, timezone, preferences, api_key_prefix, api_key_hash, created_at, updated_at FROM users WHERE email = $1 LIMIT 1
 `
 
 func (q *Queries) GetUserByEmail(ctx context.Context, email *string) (User, error) {
@@ -94,6 +98,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email *string) (User, erro
 		&i.DateOfBirth,
 		&i.Timezone,
 		&i.Preferences,
+		&i.ApiKeyPrefix,
 		&i.ApiKeyHash,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -102,7 +107,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email *string) (User, erro
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, username, name, email, phone, date_of_birth, timezone, preferences, api_key_hash, created_at, updated_at FROM users WHERE id = $1 LIMIT 1
+SELECT id, username, name, email, phone, date_of_birth, timezone, preferences, api_key_prefix, api_key_hash, created_at, updated_at FROM users WHERE id = $1 LIMIT 1
 `
 
 func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
@@ -117,6 +122,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 		&i.DateOfBirth,
 		&i.Timezone,
 		&i.Preferences,
+		&i.ApiKeyPrefix,
 		&i.ApiKeyHash,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -125,7 +131,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 }
 
 const getUserByUsername = `-- name: GetUserByUsername :one
-SELECT id, username, name, email, phone, date_of_birth, timezone, preferences, api_key_hash, created_at, updated_at FROM users WHERE username = $1 LIMIT 1
+SELECT id, username, name, email, phone, date_of_birth, timezone, preferences, api_key_prefix, api_key_hash, created_at, updated_at FROM users WHERE username = $1 LIMIT 1
 `
 
 func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User, error) {
@@ -140,6 +146,7 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 		&i.DateOfBirth,
 		&i.Timezone,
 		&i.Preferences,
+		&i.ApiKeyPrefix,
 		&i.ApiKeyHash,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -148,7 +155,7 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, username, name, email, phone, date_of_birth, timezone, preferences, api_key_hash, created_at, updated_at FROM users ORDER BY name
+SELECT id, username, name, email, phone, date_of_birth, timezone, preferences, api_key_prefix, api_key_hash, created_at, updated_at FROM users ORDER BY name
 `
 
 func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
@@ -169,6 +176,7 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 			&i.DateOfBirth,
 			&i.Timezone,
 			&i.Preferences,
+			&i.ApiKeyPrefix,
 			&i.ApiKeyHash,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -184,7 +192,7 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 }
 
 const updateUserDOB = `-- name: UpdateUserDOB :one
-UPDATE users SET date_of_birth = $2, updated_at = NOW() WHERE id = $1 RETURNING id, username, name, email, phone, date_of_birth, timezone, preferences, api_key_hash, created_at, updated_at
+UPDATE users SET date_of_birth = $2, updated_at = NOW() WHERE id = $1 RETURNING id, username, name, email, phone, date_of_birth, timezone, preferences, api_key_prefix, api_key_hash, created_at, updated_at
 `
 
 type UpdateUserDOBParams struct {
@@ -204,6 +212,7 @@ func (q *Queries) UpdateUserDOB(ctx context.Context, arg UpdateUserDOBParams) (U
 		&i.DateOfBirth,
 		&i.Timezone,
 		&i.Preferences,
+		&i.ApiKeyPrefix,
 		&i.ApiKeyHash,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -212,7 +221,7 @@ func (q *Queries) UpdateUserDOB(ctx context.Context, arg UpdateUserDOBParams) (U
 }
 
 const updateUserPreferences = `-- name: UpdateUserPreferences :one
-UPDATE users SET preferences = $2, updated_at = NOW() WHERE id = $1 RETURNING id, username, name, email, phone, date_of_birth, timezone, preferences, api_key_hash, created_at, updated_at
+UPDATE users SET preferences = $2, updated_at = NOW() WHERE id = $1 RETURNING id, username, name, email, phone, date_of_birth, timezone, preferences, api_key_prefix, api_key_hash, created_at, updated_at
 `
 
 type UpdateUserPreferencesParams struct {
@@ -232,6 +241,7 @@ func (q *Queries) UpdateUserPreferences(ctx context.Context, arg UpdateUserPrefe
 		&i.DateOfBirth,
 		&i.Timezone,
 		&i.Preferences,
+		&i.ApiKeyPrefix,
 		&i.ApiKeyHash,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -240,23 +250,25 @@ func (q *Queries) UpdateUserPreferences(ctx context.Context, arg UpdateUserPrefe
 }
 
 const upsertUser = `-- name: UpsertUser :one
-INSERT INTO users (username, name, email, timezone, preferences, api_key_hash)
-VALUES ($1, $2, $3, $4, '{}', $5)
+INSERT INTO users (username, name, email, timezone, preferences, api_key_prefix, api_key_hash)
+VALUES ($1, $2, $3, $4, '{}', $5, $6)
 ON CONFLICT (username) DO UPDATE SET
-  name         = EXCLUDED.name,
-  email        = EXCLUDED.email,
-  timezone     = EXCLUDED.timezone,
-  api_key_hash = EXCLUDED.api_key_hash,
-  updated_at   = NOW()
-RETURNING id, username, name, email, phone, date_of_birth, timezone, preferences, api_key_hash, created_at, updated_at
+  name           = EXCLUDED.name,
+  email          = EXCLUDED.email,
+  timezone       = EXCLUDED.timezone,
+  api_key_prefix = EXCLUDED.api_key_prefix,
+  api_key_hash   = EXCLUDED.api_key_hash,
+  updated_at     = NOW()
+RETURNING id, username, name, email, phone, date_of_birth, timezone, preferences, api_key_prefix, api_key_hash, created_at, updated_at
 `
 
 type UpsertUserParams struct {
-	Username   string  `json:"username"`
-	Name       string  `json:"name"`
-	Email      *string `json:"email"`
-	Timezone   string  `json:"timezone"`
-	ApiKeyHash []byte  `json:"api_key_hash"`
+	Username     string  `json:"username"`
+	Name         string  `json:"name"`
+	Email        *string `json:"email"`
+	Timezone     string  `json:"timezone"`
+	ApiKeyPrefix string  `json:"api_key_prefix"`
+	ApiKeyHash   string  `json:"api_key_hash"`
 }
 
 func (q *Queries) UpsertUser(ctx context.Context, arg UpsertUserParams) (User, error) {
@@ -265,6 +277,7 @@ func (q *Queries) UpsertUser(ctx context.Context, arg UpsertUserParams) (User, e
 		arg.Name,
 		arg.Email,
 		arg.Timezone,
+		arg.ApiKeyPrefix,
 		arg.ApiKeyHash,
 	)
 	var i User
@@ -277,6 +290,7 @@ func (q *Queries) UpsertUser(ctx context.Context, arg UpsertUserParams) (User, e
 		&i.DateOfBirth,
 		&i.Timezone,
 		&i.Preferences,
+		&i.ApiKeyPrefix,
 		&i.ApiKeyHash,
 		&i.CreatedAt,
 		&i.UpdatedAt,

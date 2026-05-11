@@ -383,19 +383,19 @@ func (mr *MockQuerierMockRecorder) GetTransactionByID(ctx, id any) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTransactionByID", reflect.TypeOf((*MockQuerier)(nil).GetTransactionByID), ctx, id)
 }
 
-// GetUserByAPIKeyHash mocks base method.
-func (m *MockQuerier) GetUserByAPIKeyHash(ctx context.Context, apiKeyHash []byte) (sqlcgen.User, error) {
+// GetUserByAPIKeyPrefix mocks base method.
+func (m *MockQuerier) GetUserByAPIKeyPrefix(ctx context.Context, apiKeyPrefix string) (sqlcgen.User, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUserByAPIKeyHash", ctx, apiKeyHash)
+	ret := m.ctrl.Call(m, "GetUserByAPIKeyPrefix", ctx, apiKeyPrefix)
 	ret0, _ := ret[0].(sqlcgen.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetUserByAPIKeyHash indicates an expected call of GetUserByAPIKeyHash.
-func (mr *MockQuerierMockRecorder) GetUserByAPIKeyHash(ctx, apiKeyHash any) *gomock.Call {
+// GetUserByAPIKeyPrefix indicates an expected call of GetUserByAPIKeyPrefix.
+func (mr *MockQuerierMockRecorder) GetUserByAPIKeyPrefix(ctx, apiKeyPrefix any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByAPIKeyHash", reflect.TypeOf((*MockQuerier)(nil).GetUserByAPIKeyHash), ctx, apiKeyHash)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByAPIKeyPrefix", reflect.TypeOf((*MockQuerier)(nil).GetUserByAPIKeyPrefix), ctx, apiKeyPrefix)
 }
 
 // GetUserByEmail mocks base method.

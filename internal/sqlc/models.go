@@ -1265,17 +1265,18 @@ type TransactionSplitLabel struct {
 }
 
 type User struct {
-	ID          uuid.UUID          `json:"id"`
-	Username    string             `json:"username"`
-	Name        string             `json:"name"`
-	Email       *string            `json:"email"`
-	Phone       *string            `json:"phone"`
-	DateOfBirth pgtype.Date        `json:"date_of_birth"`
-	Timezone    string             `json:"timezone"`
-	Preferences []byte             `json:"preferences"`
-	ApiKeyHash  []byte             `json:"api_key_hash"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	ID           uuid.UUID          `json:"id"`
+	Username     string             `json:"username"`
+	Name         string             `json:"name"`
+	Email        *string            `json:"email"`
+	Phone        *string            `json:"phone"`
+	DateOfBirth  pgtype.Date        `json:"date_of_birth"`
+	Timezone     string             `json:"timezone"`
+	Preferences  []byte             `json:"preferences"`
+	ApiKeyPrefix string             `json:"api_key_prefix"`
+	ApiKeyHash   string             `json:"api_key_hash"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 }
 
 type VTransaction struct {

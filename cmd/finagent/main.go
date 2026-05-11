@@ -3,7 +3,6 @@ package main
 
 import (
 	"context"
-	"crypto/sha256"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -15,6 +14,7 @@ import (
 	"github.com/pushkaranand/finagent/config"
 	"github.com/pushkaranand/finagent/internal/agent"
 	"github.com/pushkaranand/finagent/internal/api"
+	"github.com/pushkaranand/finagent/internal/apikey"
 	"github.com/pushkaranand/finagent/internal/channel/cli"
 	"github.com/pushkaranand/finagent/internal/db"
 	"github.com/pushkaranand/finagent/internal/llm/openai"
@@ -166,13 +166,17 @@ func bootstrapUsers(ctx context.Context, us *store.UserStore, cfg *config.Config
 				u.Username, u.Username, strings.ToUpper(u.Username),
 			)
 		}
-		sum := sha256.Sum256([]byte(key))
+		hash, err := apikey.Hash(key)
+		if err != nil {
+			return fmt.Errorf("hash api key for %s: %w", u.Username, err)
+		}
 		if _, err := us.Upsert(ctx, store.UpsertUserParams{
-			Username:   u.Username,
-			Name:       u.Name,
-			Email:      u.Email,
-			Timezone:   u.Timezone,
-			APIKeyHash: sum[:],
+			Username:     u.Username,
+			Name:         u.Name,
+			Email:        u.Email,
+			Timezone:     u.Timezone,
+			APIKeyPrefix: apikey.Prefix(key),
+			APIKeyHash:   hash,
 		}); err != nil {
 			return fmt.Errorf("upsert user %s: %w", u.Username, err)
 		}
