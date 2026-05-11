@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	"github.com/pushkaranand/finagent/internal/llm"
+	"github.com/pushkaranand/finagent/internal/model"
+	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
 )
 
 // GetAccountSummary returns all accounts the user has access to.
@@ -25,7 +27,7 @@ func NewGetAccountSummary(userID string, accounts accountQuerier) *GetAccountSum
 func (t *GetAccountSummary) Definition() llm.ToolDefinition {
 	return llm.ToolDefinition{
 		Name:        "get_account_summary",
-		Description: "List all accounts the user has access to, with type (savings/credit_card/etc) and class (asset/liability).",
+		Description: "List all accounts the user has access to, with type, class, and current balance.",
 		Parameters: map[string]any{
 			"type": "object",
 			"properties": map[string]any{
@@ -62,14 +64,30 @@ func (t *GetAccountSummary) Execute(ctx context.Context, _ string, argsJSON stri
 		if !a.IsActive {
 			active = " [inactive]"
 		}
-		fmt.Fprintf(&sb, "• %s (%s) — %s/%s%s  id:%s\n",
+		fmt.Fprintf(&sb, "• %s (%s) — %s/%s%s  %s  id:%s\n",
 			a.Name,
 			a.Institution,
 			a.AccountType,
 			a.AccountClass,
 			active,
+			formatBalance(a),
 			a.ID,
 		)
 	}
 	return sb.String(), nil
+}
+
+func formatBalance(a sqlcgen.Account) string {
+	if !a.BalanceAsOf.Valid {
+		if a.AccountClass == sqlcgen.AccountClassEnumLiability {
+			return "Outstanding: —"
+		}
+		return "Balance: —"
+	}
+	date := a.BalanceAsOf.Time.Format("2 Jan 2006")
+	amount := model.Money(a.CurrentBalance).String()
+	if a.AccountClass == sqlcgen.AccountClassEnumLiability {
+		return fmt.Sprintf("Outstanding: %s (as of %s)", amount, date)
+	}
+	return fmt.Sprintf("Balance: %s (as of %s)", amount, date)
 }

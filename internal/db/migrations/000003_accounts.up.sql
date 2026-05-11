@@ -16,6 +16,8 @@ CREATE TABLE accounts (
         END
     ) STORED,
     currency            TEXT NOT NULL DEFAULT 'INR',
+    current_balance     BIGINT NOT NULL DEFAULT 0,
+    balance_as_of       DATE,
     is_active           BOOLEAN NOT NULL DEFAULT TRUE,
     metadata            JSONB NOT NULL DEFAULT '{}',
     created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),

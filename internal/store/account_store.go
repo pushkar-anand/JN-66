@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/pushkaranand/finagent/internal/model"
 	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
 )
 
@@ -171,6 +174,21 @@ func (s *AccountStore) AddMember(ctx context.Context, accountID, userID string, 
 		AccountID: aid,
 		UserID:    uid,
 		Role:      role,
+	})
+}
+
+// UpdateBalance sets current_balance and balance_as_of for an account.
+// The update is guarded: it only applies if asOf is more recent than the stored balance_as_of,
+// so re-importing an older statement never overwrites a newer known balance.
+func (s *AccountStore) UpdateBalance(ctx context.Context, accountID string, balance model.Money, asOf time.Time) error {
+	aid, err := parseUUID(accountID)
+	if err != nil {
+		return err
+	}
+	return s.q.UpdateAccountBalance(ctx, sqlcgen.UpdateAccountBalanceParams{
+		ID:      aid,
+		Balance: balance,
+		AsOf:    pgtype.Date{Time: asOf, Valid: true},
 	})
 }
 

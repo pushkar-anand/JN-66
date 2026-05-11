@@ -1079,6 +1079,8 @@ type Account struct {
 	AccountType       AccountTypeEnum    `json:"account_type"`
 	AccountClass      AccountClassEnum   `json:"account_class"`
 	Currency          string             `json:"currency"`
+	CurrentBalance    model.Money        `json:"current_balance"`
+	BalanceAsOf       pgtype.Date        `json:"balance_as_of"`
 	IsActive          bool               `json:"is_active"`
 	Metadata          []byte             `json:"metadata"`
 	CreatedAt         pgtype.Timestamptz `json:"created_at"`

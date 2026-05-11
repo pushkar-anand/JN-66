@@ -18,6 +18,7 @@ import (
 	"github.com/pushkaranand/finagent/internal/importer"
 	"github.com/pushkaranand/finagent/internal/importer/parser"
 	"github.com/pushkaranand/finagent/internal/llm/openai"
+	"github.com/pushkaranand/finagent/internal/model"
 	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
 	"github.com/pushkaranand/finagent/internal/store"
 )
@@ -57,7 +58,17 @@ func runImport(args []string) error {
 	}
 	defer pool.Close()
 
+	if cfg.Database.AutoMigrate {
+		if err := db.Migrate(cfg.Database.URL); err != nil {
+			return fmt.Errorf("migrate: %w", err)
+		}
+	}
+
 	userStore := store.NewUserStore(pool)
+	if err := bootstrapUsers(ctx, userStore, cfg); err != nil {
+		return fmt.Errorf("bootstrap users: %w", err)
+	}
+
 	u, err := resolveUser(ctx, userStore, *userFlag, cfg.Channel.CLI.DefaultUser)
 	if err != nil {
 		return err
@@ -130,6 +141,12 @@ func runImport(args []string) error {
 	})
 	if err != nil {
 		return fmt.Errorf("import: %w", err)
+	}
+
+	if res.LatestBalance != nil {
+		if err := accountStore.UpdateBalance(ctx, accountID.String(), model.Money(*res.LatestBalance), res.LatestBalanceDate); err != nil {
+			slog.Warn("could not update account balance", "err", err)
+		}
 	}
 
 	enrichMsg := ""
