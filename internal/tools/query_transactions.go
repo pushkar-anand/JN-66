@@ -28,7 +28,7 @@ func NewQueryTransactions(userID string, txns transactionQuerier) *QueryTransact
 func (t *QueryTransactions) Definition() llm.ToolDefinition {
 	return llm.ToolDefinition{
 		Name:        "query_transactions",
-		Description: "Filter and list bank transactions for spending, income, investments, or any transaction history. Returns up to 50 results. Use this directly for investment/spending queries without needing account info first. All amounts in paise (INR × 100). Dates in YYYY-MM-DD.",
+		Description: "Filter and list bank transactions for spending, income, investments, or any transaction history. Returns up to 50 results. Use this directly for investment/spending queries without needing account info first. All amounts in paise (INR × 100). Dates in YYYY-MM-DD. Investment contributions (SIPs, stock purchases) are debits — money leaving the account.",
 		Parameters: map[string]any{
 			"type": "object",
 			"properties": map[string]any{
