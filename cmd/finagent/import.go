@@ -24,7 +24,7 @@ import (
 
 func runImport(args []string) error {
 	fs := flag.NewFlagSet("import", flag.ExitOnError)
-	configPath := fs.String("config", "config/config.yaml", "path to config file")
+	configPath := fs.String("config", "config.yaml", "path to config file")
 	fileFlag := fs.String("file", "", "path to bank statement file (required)")
 	userFlag := fs.String("user", "", "user email (required)")
 	accountFlag := fs.String("account", "", "account UUID (optional — auto-detected from statement)")

@@ -21,7 +21,7 @@ import (
 
 func runEnrich(args []string) error {
 	fs := flag.NewFlagSet("enrich", flag.ExitOnError)
-	configPath := fs.String("config", "config/config.yaml", "path to config file")
+	configPath := fs.String("config", "config.yaml", "path to config file")
 	desc := fs.String("desc", "", "raw transaction description (required)")
 	amountFlag := fs.Float64("amount", 0, "amount in rupees, e.g. 1500.00 (required)")
 	directionFlag := fs.String("direction", "debit", "debit or credit")

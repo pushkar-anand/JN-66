@@ -383,8 +383,23 @@ func (mr *MockQuerierMockRecorder) GetTransactionByID(ctx, id any) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTransactionByID", reflect.TypeOf((*MockQuerier)(nil).GetTransactionByID), ctx, id)
 }
 
+// GetUserByAPIKeyHash mocks base method.
+func (m *MockQuerier) GetUserByAPIKeyHash(ctx context.Context, apiKeyHash []byte) (sqlcgen.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserByAPIKeyHash", ctx, apiKeyHash)
+	ret0, _ := ret[0].(sqlcgen.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserByAPIKeyHash indicates an expected call of GetUserByAPIKeyHash.
+func (mr *MockQuerierMockRecorder) GetUserByAPIKeyHash(ctx, apiKeyHash any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByAPIKeyHash", reflect.TypeOf((*MockQuerier)(nil).GetUserByAPIKeyHash), ctx, apiKeyHash)
+}
+
 // GetUserByEmail mocks base method.
-func (m *MockQuerier) GetUserByEmail(ctx context.Context, email string) (sqlcgen.User, error) {
+func (m *MockQuerier) GetUserByEmail(ctx context.Context, email *string) (sqlcgen.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUserByEmail", ctx, email)
 	ret0, _ := ret[0].(sqlcgen.User)
@@ -396,6 +411,21 @@ func (m *MockQuerier) GetUserByEmail(ctx context.Context, email string) (sqlcgen
 func (mr *MockQuerierMockRecorder) GetUserByEmail(ctx, email any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByEmail", reflect.TypeOf((*MockQuerier)(nil).GetUserByEmail), ctx, email)
+}
+
+// GetUserByUsername mocks base method.
+func (m *MockQuerier) GetUserByUsername(ctx context.Context, username string) (sqlcgen.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserByUsername", ctx, username)
+	ret0, _ := ret[0].(sqlcgen.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserByUsername indicates an expected call of GetUserByUsername.
+func (mr *MockQuerierMockRecorder) GetUserByUsername(ctx, username any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByUsername", reflect.TypeOf((*MockQuerier)(nil).GetUserByUsername), ctx, username)
 }
 
 // GetUserByID mocks base method.
@@ -794,6 +824,21 @@ func (m *MockQuerier) UpdateUserPreferences(ctx context.Context, arg sqlcgen.Upd
 func (mr *MockQuerierMockRecorder) UpdateUserPreferences(ctx, arg any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUserPreferences", reflect.TypeOf((*MockQuerier)(nil).UpdateUserPreferences), ctx, arg)
+}
+
+// UpsertUser mocks base method.
+func (m *MockQuerier) UpsertUser(ctx context.Context, arg sqlcgen.UpsertUserParams) (sqlcgen.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpsertUser", ctx, arg)
+	ret0, _ := ret[0].(sqlcgen.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpsertUser indicates an expected call of UpsertUser.
+func (mr *MockQuerierMockRecorder) UpsertUser(ctx, arg any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertUser", reflect.TypeOf((*MockQuerier)(nil).UpsertUser), ctx, arg)
 }
 
 // UpsertAccountDetails mocks base method.

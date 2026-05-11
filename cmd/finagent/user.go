@@ -3,11 +3,16 @@ package main
 import (
 	"bufio"
 	"context"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
+	"regexp"
+	"strings"
 	"syscall"
 	"time"
 
@@ -18,7 +23,7 @@ import (
 
 func runUser(args []string) error {
 	fs := flag.NewFlagSet("user", flag.ExitOnError)
-	configPath := fs.String("config", "config/config.yaml", "path to config file")
+	configPath := fs.String("config", "config.yaml", "path to config file")
 	_ = fs.Parse(args)
 
 	sub := ""
@@ -34,6 +39,15 @@ func runUser(args []string) error {
 	default:
 		return fmt.Errorf("unknown user subcommand %q — use: add, list", sub)
 	}
+}
+
+var nonAlphanumRE = regexp.MustCompile(`[^a-z0-9]+`)
+
+func slugify(name string) string {
+	s := strings.ToLower(strings.TrimSpace(name))
+	s = nonAlphanumRE.ReplaceAllString(s, "-")
+	s = strings.Trim(s, "-")
+	return s
 }
 
 func runUserAdd(configPath string) error {
@@ -64,30 +78,50 @@ func runUserAdd(configPath string) error {
 		return fmt.Errorf("name is required")
 	}
 
-	email := prompt(scanner, "Email", "")
-	if email == "" {
-		return fmt.Errorf("email is required")
+	suggested := slugify(name)
+	username := prompt(scanner, "Username", suggested)
+	if username == "" {
+		return fmt.Errorf("username is required")
 	}
 
+	email := prompt(scanner, "Email", "")
 	phone := prompt(scanner, "Phone (e.g. +919876543210, leave blank to skip)", "")
 	timezone := prompt(scanner, "Timezone", "Asia/Kolkata")
 
+	// Generate API key.
+	raw := make([]byte, 32)
+	if _, err := rand.Read(raw); err != nil {
+		return fmt.Errorf("generate api key: %w", err)
+	}
+	apiKey := hex.EncodeToString(raw)
+	sum := sha256.Sum256([]byte(apiKey))
+
 	u, err := userStore.Create(ctx, store.CreateUserParams{
-		Name:     name,
-		Email:    email,
-		Phone:    phone,
-		Timezone: timezone,
+		Username:   username,
+		Name:       name,
+		Email:      email,
+		Phone:      phone,
+		Timezone:   timezone,
+		APIKeyHash: sum[:],
 	})
 	if err != nil {
 		return fmt.Errorf("create user: %w", err)
 	}
 
 	fmt.Printf("\nCreated user: %s\n", u.ID)
+	fmt.Printf("Username:     %s\n", u.Username)
 	fmt.Printf("Name:         %s\n", u.Name)
-	fmt.Printf("Email:        %s\n", u.Email)
-	fmt.Printf("Timezone:     %s\n\n", u.Timezone)
+	if u.Email != nil {
+		fmt.Printf("Email:        %s\n", *u.Email)
+	}
 
-	// Optionally set DOB (needed for SBI password derivation).
+	fmt.Println()
+	fmt.Println("API Key (save this — it will not be shown again):")
+	fmt.Printf("  %s\n", apiKey)
+	fmt.Println()
+	fmt.Printf("Use as:  Authorization: Bearer %s\n\n", apiKey)
+
+	// Optionally set DOB.
 	dobStr := prompt(scanner, "Date of birth (DD/MM/YYYY, for SBI password derivation — leave blank to skip)", "")
 	if dobStr != "" {
 		dob, err := time.Parse("02/01/2006", dobStr)
@@ -129,12 +163,17 @@ func runUserList(configPath string) error {
 
 	fmt.Println("\nUsers:")
 	fmt.Println()
+	fmt.Printf("  %-20s  %-30s  %-30s  %-10s  %s\n", "USERNAME", "NAME", "EMAIL", "API KEY", "ID")
 	for _, u := range users {
-		dob := "—"
-		if u.DateOfBirth.Valid {
-			dob = u.DateOfBirth.Time.Format("02 Jan 2006")
+		email := "—"
+		if u.Email != nil {
+			email = *u.Email
 		}
-		fmt.Printf("  %-30s  %-30s  %s  %s\n", u.Name, u.Email, dob, u.ID)
+		apiKeySet := "set"
+		if len(u.ApiKeyHash) == 0 {
+			apiKeySet = "—"
+		}
+		fmt.Printf("  %-20s  %-30s  %-30s  %-10s  %s\n", u.Username, u.Name, email, apiKeySet, u.ID)
 	}
 	fmt.Println()
 	return nil

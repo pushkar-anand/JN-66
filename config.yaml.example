@@ -4,8 +4,8 @@ database:
   auto_migrate: true
 
 llm:
-  base_url: "http://localhost:11434/v1"  # OpenAI-compatible endpoint (Ollama default)
-  api_key: ""           # set via FINAGENT_LLM__API_KEY env var or fill here
+  base_url: "http://localhost:11434/v1"
+  api_key: ""  # FINAGENT_LLM__API_KEY
   routing:
     chat_model:      "qwen3:14b"
     analysis_model:  "qwen3:14b"
@@ -23,3 +23,12 @@ channel:
 
 api:
   listen: ":8082"
+
+users:
+  - username: "alice"
+    name: "Alice"
+    email: "alice@example.com"
+    timezone: "Asia/Kolkata"
+
+api_keys:
+  alice: "changeme"  # FINAGENT_API_KEYS__ALICE

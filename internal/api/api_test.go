@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -9,10 +10,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/pushkaranand/finagent/internal/channel"
+	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
 )
 
 func okHandler(_ context.Context, msg channel.Message) (channel.Response, error) {
@@ -24,7 +27,11 @@ func errHandler(_ context.Context, _ channel.Message) (channel.Response, error) 
 }
 
 func newTestServer(h channel.MessageHandler) *Server {
-	return New(":0", h)
+	return New(":0", h, nil)
+}
+
+func requestWithUser(r *http.Request, userID string) *http.Request {
+	return r.WithContext(WithUserID(r.Context(), userID))
 }
 
 func TestHandleHealth(t *testing.T) {
@@ -40,9 +47,9 @@ func TestHandleHealth(t *testing.T) {
 
 func TestHandleChat_HappyPath(t *testing.T) {
 	s := newTestServer(okHandler)
-	body := `{"user_id":"uid-1","text":"hello","session_id":"sess-1"}`
+	body := `{"text":"hello","session_id":"sess-1"}`
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodPost, "/api/chat", strings.NewReader(body))
+	r := requestWithUser(httptest.NewRequest(http.MethodPost, "/api/chat", strings.NewReader(body)), "uid-1")
 
 	s.handleChat(w, r)
 
@@ -56,9 +63,9 @@ func TestHandleChat_HappyPath(t *testing.T) {
 
 func TestHandleChat_EmptySessionIDGeneratesOne(t *testing.T) {
 	s := newTestServer(okHandler)
-	body := `{"user_id":"uid-1","text":"hello"}`
+	body := `{"text":"hello"}`
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodPost, "/api/chat", strings.NewReader(body))
+	r := requestWithUser(httptest.NewRequest(http.MethodPost, "/api/chat", strings.NewReader(body)), "uid-1")
 
 	s.handleChat(w, r)
 
@@ -70,9 +77,9 @@ func TestHandleChat_EmptySessionIDGeneratesOne(t *testing.T) {
 
 func TestHandleChat_MissingText(t *testing.T) {
 	s := newTestServer(okHandler)
-	body := `{"user_id":"uid-1","text":""}`
+	body := `{"text":""}`
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodPost, "/api/chat", strings.NewReader(body))
+	r := requestWithUser(httptest.NewRequest(http.MethodPost, "/api/chat", strings.NewReader(body)), "uid-1")
 
 	s.handleChat(w, r)
 
@@ -93,7 +100,7 @@ func TestHandleChat_MissingUserID(t *testing.T) {
 func TestHandleChat_InvalidJSON(t *testing.T) {
 	s := newTestServer(okHandler)
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodPost, "/api/chat", strings.NewReader("not-json"))
+	r := requestWithUser(httptest.NewRequest(http.MethodPost, "/api/chat", strings.NewReader("not-json")), "uid-1")
 
 	s.handleChat(w, r)
 
@@ -102,12 +109,59 @@ func TestHandleChat_InvalidJSON(t *testing.T) {
 
 func TestHandleChat_AgentError(t *testing.T) {
 	s := newTestServer(errHandler)
-	body := `{"user_id":"uid-1","text":"hello"}`
+	body := `{"text":"hello"}`
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodPost, "/api/chat", strings.NewReader(body))
+	r := requestWithUser(httptest.NewRequest(http.MethodPost, "/api/chat", strings.NewReader(body)), "uid-1")
 
 	s.handleChat(w, r)
 
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 	assert.Contains(t, w.Body.String(), "agent boom")
+}
+
+// mockUserLookup is a test double for userLookup.
+type mockUserLookup struct {
+	user *sqlcgen.User
+	err  error
+}
+
+func (m *mockUserLookup) GetByAPIKeyHash(_ context.Context, _ []byte) (*sqlcgen.User, error) {
+	return m.user, m.err
+}
+
+func TestAuthMiddleware_MissingToken(t *testing.T) {
+	s := New(":0", okHandler, &mockUserLookup{err: errors.New("no user")})
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodPost, "/api/chat", strings.NewReader(`{"text":"hi"}`))
+	r.Header.Set("Content-Type", "application/json")
+
+	s.srv.Handler.ServeHTTP(w, r)
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
+func TestAuthMiddleware_InvalidToken(t *testing.T) {
+	s := New(":0", okHandler, &mockUserLookup{err: errors.New("not found")})
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodPost, "/api/chat", strings.NewReader(`{"text":"hi"}`))
+	r.Header.Set("Authorization", "Bearer wrongtoken")
+
+	s.srv.Handler.ServeHTTP(w, r)
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
+func TestAuthMiddleware_ValidToken(t *testing.T) {
+	uid := uuid.New()
+	token := "mysecrettoken"
+	_ = sha256.Sum256([]byte(token)) // middleware does the hashing internally
+
+	s := New(":0", okHandler, &mockUserLookup{user: &sqlcgen.User{ID: uid}})
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodPost, "/api/chat", strings.NewReader(`{"text":"hi"}`))
+	r.Header.Set("Authorization", "Bearer "+token)
+
+	s.srv.Handler.ServeHTTP(w, r)
+
+	assert.Equal(t, http.StatusOK, w.Code)
 }

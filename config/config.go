@@ -13,11 +13,21 @@ import (
 
 // Config is the root application configuration.
 type Config struct {
-	Database DatabaseConfig `koanf:"database"`
-	LLM      LLMConfig      `koanf:"llm"`
-	Agent    AgentConfig    `koanf:"agent"`
-	Channel  ChannelConfig  `koanf:"channel"`
-	API      APIConfig      `koanf:"api"`
+	Database DatabaseConfig    `koanf:"database"`
+	LLM      LLMConfig         `koanf:"llm"`
+	Agent    AgentConfig       `koanf:"agent"`
+	Channel  ChannelConfig     `koanf:"channel"`
+	API      APIConfig         `koanf:"api"`
+	Users    []UserSeed        `koanf:"users"`
+	APIKeys  map[string]string `koanf:"api_keys"`
+}
+
+// UserSeed defines a user to be created or updated on startup.
+type UserSeed struct {
+	Username string `koanf:"username"`
+	Name     string `koanf:"name"`
+	Email    string `koanf:"email"`
+	Timezone string `koanf:"timezone"`
 }
 
 // DatabaseConfig holds PostgreSQL connection settings.

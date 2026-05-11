@@ -35,8 +35,10 @@ type Querier interface {
 	GetSpendingByCategory(ctx context.Context, arg GetSpendingByCategoryParams) ([]GetSpendingByCategoryRow, error)
 	GetTransactionByID(ctx context.Context, id uuid.UUID) (VTransaction, error)
 	GetTransactionByIdempotencyKey(ctx context.Context, idempotencyKey string) (uuid.UUID, error)
-	GetUserByEmail(ctx context.Context, email string) (User, error)
+	GetUserByAPIKeyHash(ctx context.Context, apiKeyHash []byte) (User, error)
+	GetUserByEmail(ctx context.Context, email *string) (User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
+	GetUserByUsername(ctx context.Context, username string) (User, error)
 	InsertTransaction(ctx context.Context, arg InsertTransactionParams) (Transaction, error)
 	InsertTransactionEnrichment(ctx context.Context, transactionID uuid.UUID) error
 	ListAccountsByUser(ctx context.Context, userID uuid.UUID) ([]Account, error)
@@ -64,6 +66,7 @@ type Querier interface {
 	UpdateUserDOB(ctx context.Context, arg UpdateUserDOBParams) (User, error)
 	UpdateUserPreferences(ctx context.Context, arg UpdateUserPreferencesParams) (User, error)
 	UpsertAccountDetails(ctx context.Context, arg UpsertAccountDetailsParams) error
+	UpsertUser(ctx context.Context, arg UpsertUserParams) (User, error)
 }
 
 var _ Querier = (*Queries)(nil)

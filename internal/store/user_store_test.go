@@ -17,8 +17,9 @@ func TestUserStore_GetByEmail(t *testing.T) {
 	q := NewMockQuerier(ctrl)
 	s := newUserStoreForTest(q)
 
-	want := sqlcgen.User{ID: uuid.New(), Email: "a@b.com", Name: "Alice"}
-	q.EXPECT().GetUserByEmail(gomock.Any(), "a@b.com").Return(want, nil)
+	email := "a@b.com"
+	want := sqlcgen.User{ID: uuid.New(), Email: &email, Name: "Alice"}
+	q.EXPECT().GetUserByEmail(gomock.Any(), &email).Return(want, nil)
 
 	got, err := s.GetByEmail(t.Context(), "a@b.com")
 	require.NoError(t, err)

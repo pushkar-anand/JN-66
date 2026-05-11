@@ -3,11 +3,13 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
 	"flag"
 	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/pushkaranand/finagent/config"
@@ -59,11 +61,15 @@ func main() {
 
 func run() error {
 	// Flags
-	configPath := flag.String("config", "config/config.yaml", "path to config file")
-	userFlag := flag.String("user", "", "user email or name to identify as (CLI mode)")
+	configPath := flag.String("config", "", "path to config file (default: ./config.yaml)")
+	userFlag := flag.String("user", "", "user username, email, or name to identify as (CLI mode)")
 	serveFlag := flag.Bool("serve", false, "start HTTP API server instead of CLI")
 	debugFlag := flag.Bool("debug", false, "enable debug logging")
 	flag.Parse()
+
+	if *configPath == "" {
+		*configPath = "config.yaml"
+	}
 
 	// Logging
 	level := slog.LevelInfo
@@ -105,6 +111,11 @@ func run() error {
 	memoryStore := store.NewMemoryStore(pool)
 	convStore := store.NewConversationStore(pool)
 
+	// Bootstrap users from config.
+	if err := bootstrapUsers(ctx, userStore, cfg); err != nil {
+		return fmt.Errorf("bootstrap users: %w", err)
+	}
+
 	// Resolve CLI user.
 	u, resolveErr := resolveUser(ctx, userStore, *userFlag, cfg.Channel.CLI.DefaultUser)
 	userID := ""
@@ -130,7 +141,7 @@ func run() error {
 	ag := agent.New(llmProvider, convStore, memoryStore, userStore, registry, router)
 
 	if *serveFlag {
-		srv := api.New(cfg.API.Listen, ag.HandleMessage)
+		srv := api.New(cfg.API.Listen, ag.HandleMessage, userStore)
 		return srv.Start(ctx)
 	}
 
@@ -144,18 +155,46 @@ func run() error {
 	return cliCh.Start(ctx, ag.HandleMessage)
 }
 
+// bootstrapUsers upserts all users declared in config. Every user must have a
+// corresponding api_keys entry — startup fails loudly if one is missing.
+func bootstrapUsers(ctx context.Context, us *store.UserStore, cfg *config.Config) error {
+	for _, u := range cfg.Users {
+		key := cfg.APIKeys[u.Username]
+		if key == "" {
+			return fmt.Errorf(
+				"user %q has no api_key — add api_keys.%s to config or set FINAGENT_API_KEYS__%s",
+				u.Username, u.Username, strings.ToUpper(u.Username),
+			)
+		}
+		sum := sha256.Sum256([]byte(key))
+		if _, err := us.Upsert(ctx, store.UpsertUserParams{
+			Username:   u.Username,
+			Name:       u.Name,
+			Email:      u.Email,
+			Timezone:   u.Timezone,
+			APIKeyHash: sum[:],
+		}); err != nil {
+			return fmt.Errorf("upsert user %s: %w", u.Username, err)
+		}
+	}
+	return nil
+}
+
 // userLookup is the subset of store.UserStore used by resolveUser.
 type userLookup interface {
+	GetByUsername(ctx context.Context, username string) (*sqlcgen.User, error)
 	GetByEmail(ctx context.Context, email string) (*sqlcgen.User, error)
 	List(ctx context.Context) ([]sqlcgen.User, error)
 }
 
 // resolveUser returns the user matching identifier or defaultIdentifier.
-// Falls back to the sole DB user when neither locates a match.
-// Returns an error if identifier is given but not found, or if the
-// single-user fallback finds zero or multiple users.
+// Tries username → email → name. Falls back to the sole DB user when
+// neither locates a match.
 func resolveUser(ctx context.Context, users userLookup, identifier, defaultIdentifier string) (*sqlcgen.User, error) {
 	if identifier != "" {
+		if u, err := users.GetByUsername(ctx, identifier); err == nil {
+			return u, nil
+		}
 		if u, err := users.GetByEmail(ctx, identifier); err == nil {
 			return u, nil
 		}
@@ -170,6 +209,9 @@ func resolveUser(ctx context.Context, users userLookup, identifier, defaultIdent
 		return nil, fmt.Errorf("user %q not found in database", identifier)
 	}
 	if defaultIdentifier != "" {
+		if u, err := users.GetByUsername(ctx, defaultIdentifier); err == nil {
+			return u, nil
+		}
 		if u, err := users.GetByEmail(ctx, defaultIdentifier); err == nil {
 			return u, nil
 		}
@@ -184,13 +226,5 @@ func resolveUser(ctx context.Context, users userLookup, identifier, defaultIdent
 	if len(all) == 0 {
 		return nil, fmt.Errorf("no users in database — run: finagent user add")
 	}
-	return nil, fmt.Errorf("multiple users in database — pass --user <email>")
-}
-
-// cmp returns the first non-empty string.
-func cmp(a, b string) string {
-	if a != "" {
-		return a
-	}
-	return b
+	return nil, fmt.Errorf("multiple users in database — pass --user <username>")
 }
