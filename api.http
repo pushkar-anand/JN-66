@@ -1,0 +1,76 @@
+### finagent API
+### Run finagent in serve mode first: ./bin/finagent --serve --config config.yaml
+
+@base = http://localhost:8082
+@token = changeme
+
+### Health — no auth required
+GET {{base}}/api/health
+
+###
+
+### Chat — no token → 401
+POST {{base}}/api/chat
+Content-Type: application/json
+
+{
+  "text": "hello"
+}
+
+###
+
+### Chat — wrong token → 401
+POST {{base}}/api/chat
+Authorization: Bearer wrongtoken
+Content-Type: application/json
+
+{
+  "text": "hello"
+}
+
+###
+
+### Chat — valid token → 200
+POST {{base}}/api/chat
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "text": "hello"
+}
+
+###
+
+### Chat — list accounts
+POST {{base}}/api/chat
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "text": "what accounts do I have?"
+}
+
+###
+
+### Chat — spending this month
+POST {{base}}/api/chat
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "text": "what did I spend this month?"
+}
+
+###
+
+### Chat — continued session (copy session_id from a previous response)
+POST {{base}}/api/chat
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "text": "break it down by category",
+  "session_id": "replace-with-session-id-from-above"
+}
+
+###
