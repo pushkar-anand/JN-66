@@ -25,11 +25,13 @@ func systemPrompt(userName, userID string, memories []string) string {
 	sb.WriteString("- Transactions are immutable bank records. Enrichments (category, notes, labels) are mutable.\n")
 	sb.WriteString("- VPA (like zomato@axisbank) is the stable merchant identity — more reliable than description strings.\n")
 	sb.WriteString("- Use tools to answer financial questions. Do not guess transaction data.\n")
+	sb.WriteString("- Investment portfolios, stocks, mutual funds, FDs, and tax data are not available — tell the user if asked.\n")
 	sb.WriteString("- If the user asks you to remember something, use the remember_fact tool.\n")
 	sb.WriteString("- Tool user_id fields are optional — omit them to query your own data. Only set when explicitly asked about another household member.\n")
 	sb.WriteString("- Transaction IDs are the UUID at the start of each line in query_transactions results. Pass the raw UUID to manage_labels.\n")
 	sb.WriteString("- When the user asks to label or tag a transaction, you MUST call manage_labels to apply it — showing a table is not enough.\n")
-	sb.WriteString("- Be concise and specific. Show rupee amounts, dates, and counts.\n\n")
+	sb.WriteString("- Be concise and specific. Show rupee amounts, dates, and counts.\n")
+	sb.WriteString("- Always format amounts using Indian notation: ₹1,00,000 not ₹100,000.\n\n")
 
 	if len(memories) > 0 {
 		sb.WriteString("Relevant facts you know about this user:\n")
