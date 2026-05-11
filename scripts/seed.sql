@@ -32,6 +32,16 @@ INSERT INTO accounts (id, institution, external_account_id, name, account_type, 
     ('b3000000-0000-0000-0000-000000000003', 'sbi',  'SBI****9012',    'SBI Savings ****9012',       'bank_savings', 'INR', TRUE)
 ON CONFLICT (institution, external_account_id) DO NOTHING;
 
+-- Amounts in paise. Safe to re-run (UPDATE is idempotent).
+UPDATE accounts SET current_balance = 14520000, balance_as_of = '2026-05-05'
+WHERE institution = 'hdfc' AND external_account_id = 'HDFC****1234';
+
+UPDATE accounts SET current_balance = 2280000, balance_as_of = '2026-05-01'
+WHERE institution = 'hdfc' AND external_account_id = 'HDFCCC****5678';
+
+UPDATE accounts SET current_balance = 9540000, balance_as_of = '2026-04-15'
+WHERE institution = 'sbi' AND external_account_id = 'SBI****9012';
+
 INSERT INTO account_members (account_id, user_id, role) VALUES
     ('b1000000-0000-0000-0000-000000000001', (SELECT id FROM users WHERE username = 'alice'), 'owner'),
     ('b2000000-0000-0000-0000-000000000002', (SELECT id FROM users WHERE username = 'alice'), 'owner'),
