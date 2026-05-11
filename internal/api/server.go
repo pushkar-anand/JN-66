@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	bwglogger "github.com/pushkar-anand/build-with-go/logger"
 	"github.com/pushkar-anand/build-with-go/http/middleware"
+	bwglogger "github.com/pushkar-anand/build-with-go/logger"
 
 	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
 
@@ -69,4 +69,3 @@ func (s *Server) Start(ctx context.Context) error {
 	}
 	return nil
 }
-

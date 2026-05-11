@@ -7,8 +7,8 @@ import (
 	"log/slog"
 	"time"
 
-	goai "github.com/sashabaranov/go-openai"
 	bwglogger "github.com/pushkar-anand/build-with-go/logger"
+	goai "github.com/sashabaranov/go-openai"
 
 	"github.com/pushkaranand/finagent/internal/llm"
 )
