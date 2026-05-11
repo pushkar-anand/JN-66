@@ -32,3 +32,5 @@ config.yaml
 JN-66.iml
 bin/
 statements/
+
+*.log

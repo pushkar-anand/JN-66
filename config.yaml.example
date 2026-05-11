@@ -24,6 +24,10 @@ channel:
 api:
   listen: ":8082"
 
+log:
+  level:  "info"   # debug|info|warn|error — override with FINAGENT_LOG__LEVEL
+  format: "text"   # text (dev) or json (prod) — override with FINAGENT_LOG__FORMAT
+
 users:
   - username: "alice"
     name: "Alice"

@@ -21,22 +21,31 @@ type userLookup interface {
 	GetByAPIKeyPrefix(context.Context, string) (*sqlcgen.User, error)
 }
 
+// dbPinger is satisfied by *pgxpool.Pool and used for the readiness probe.
+type dbPinger interface {
+	Ping(context.Context) error
+}
+
 // Server is the HTTP API server.
 type Server struct {
 	handler   channel.MessageHandler
 	userStore userLookup
+	db        dbPinger
 	srv       *http.Server
 }
 
 // New creates a Server that dispatches chat requests to handler.
 // userStore is used for Bearer token authentication; pass nil to disable auth (tests).
-func New(listen string, handler channel.MessageHandler, userStore userLookup) *Server {
-	s := &Server{handler: handler, userStore: userStore}
+// db is used for the readiness probe; pass nil to skip the DB check.
+func New(listen string, handler channel.MessageHandler, userStore userLookup, db dbPinger) *Server {
+	s := &Server{handler: handler, userStore: userStore, db: db}
 
 	r := mux.NewRouter()
+	r.Use(recoveryMiddleware)
 	r.Use(middleware.RequestID)
 	r.Use(bwglogger.NewHTTPLogger(slog.Default()))
-	r.HandleFunc("/api/health", s.handleHealth).Methods(http.MethodGet)
+	r.HandleFunc("/healthz/live", s.handleLive).Methods(http.MethodGet)
+	r.HandleFunc("/healthz/ready", s.handleReady).Methods(http.MethodGet)
 
 	protected := r.NewRoute().Subrouter()
 	if s.userStore != nil {
@@ -48,10 +57,22 @@ func New(listen string, handler channel.MessageHandler, userStore userLookup) *S
 		Addr:         listen,
 		Handler:      r,
 		ReadTimeout:  30 * time.Second,
-		WriteTimeout: 120 * time.Second,
+		WriteTimeout: 5 * time.Minute,
 		IdleTimeout:  60 * time.Second,
 	}
 	return s
+}
+
+func recoveryMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if rec := recover(); rec != nil {
+				slog.ErrorContext(r.Context(), "handler panic", slog.Any("panic", rec))
+				http.Error(w, "internal server error", http.StatusInternalServerError)
+			}
+		}()
+		next.ServeHTTP(w, r)
+	})
 }
 
 // Start begins listening. It blocks until ctx is cancelled.

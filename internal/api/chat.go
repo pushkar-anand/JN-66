@@ -1,7 +1,9 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"time"
@@ -24,8 +26,14 @@ type chatResponse struct {
 }
 
 func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 	var req chatRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		var maxErr *http.MaxBytesError
+		if errors.As(err, &maxErr) {
+			http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
+			return
+		}
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
@@ -50,6 +58,9 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 		slog.Int("text_len", len(req.Text)),
 	)
 
+	ctx, cancel := context.WithTimeout(r.Context(), 4*time.Minute)
+	defer cancel()
+
 	msg := channel.Message{
 		ID:        uuid.New().String(),
 		SessionID: sessionID,
@@ -58,13 +69,13 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 		Timestamp: time.Now(),
 	}
 
-	resp, err := s.handler(r.Context(), msg)
+	resp, err := s.handler(ctx, msg)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "agent handler error",
 			slog.String("user_id", userID),
 			bwglogger.Error(err),
 		)
-		http.Error(w, "agent error: "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
 
