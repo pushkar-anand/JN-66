@@ -18,6 +18,4 @@ WORKDIR /app
 
 COPY --from=builder /finagent /finagent
 
-EXPOSE 8082
-
 CMD ["/finagent", "--serve"]
