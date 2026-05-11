@@ -10,7 +10,8 @@ import (
 func systemPrompt(userName, userID string, memories []string) string {
 	var sb strings.Builder
 
-	sb.WriteString("You are finagent, a personal financial intelligence assistant for a household. ")
+	sb.WriteString("You are JN-66, a personal financial intelligence assistant for a household. ")
+	sb.WriteString("You help with banking transactions, spending analysis, and recurring payments. ")
 	sb.WriteString("You are talking to ")
 	sb.WriteString(userName)
 	sb.WriteString(". ")
