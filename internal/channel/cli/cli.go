@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"os"
 	"time"
 
 	"github.com/chzyer/readline"
 	"github.com/google/uuid"
+	"golang.org/x/term"
 
 	"github.com/pushkaranand/finagent/internal/channel"
 )
@@ -78,7 +80,9 @@ func (c *CLI) Start(ctx context.Context, handler channel.MessageHandler) error {
 			Timestamp: time.Now(),
 		}
 
+		stopSpinner := startSpinner()
 		resp, err := handler(ctx, msg)
+		stopSpinner()
 		if err != nil {
 			slog.Error("agent error", "err", err)
 			fmt.Printf("error: %v\n\n", err)
@@ -87,4 +91,33 @@ func (c *CLI) Start(ctx context.Context, handler channel.MessageHandler) error {
 
 		fmt.Printf("\nagent> %s\n\n", resp.Text)
 	}
+}
+
+// startSpinner prints an animated "Thinking..." indicator while the agent is
+// working. It returns a stop function that clears the line. When stdout is not
+// a TTY (e.g. piped output) it is a no-op.
+func startSpinner() func() {
+	if !term.IsTerminal(int(os.Stdout.Fd())) {
+		return func() {}
+	}
+
+	done := make(chan struct{})
+	frames := []string{"|", "/", "-", "\\"}
+	go func() {
+		ticker := time.NewTicker(100 * time.Millisecond)
+		defer ticker.Stop()
+		i := 0
+		for {
+			select {
+			case <-done:
+				fmt.Print("\r\033[K")
+				return
+			case <-ticker.C:
+				fmt.Printf("\r%s Thinking...", frames[i%len(frames)])
+				i++
+			}
+		}
+	}()
+
+	return func() { close(done) }
 }
