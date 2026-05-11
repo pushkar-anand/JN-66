@@ -251,7 +251,7 @@ WHERE transaction_id = 'c0600000-0000-0000-0000-000000000001';
 UPDATE transaction_enrichments SET
     transfer_id = 'e1000000-0000-0000-0000-000000000001',
     transfer_type = 'household',
-    category_id = (SELECT id FROM categories WHERE slug = 'transfer.household'), tagging_status = 'manual'
+    category_id = (SELECT id FROM categories WHERE slug = 'household_transfer'), tagging_status = 'manual'
 WHERE transaction_id IN (
     'c0700000-0000-0000-0000-000000000001',
     'd0200000-0000-0000-0000-000000000001'
@@ -272,7 +272,7 @@ WHERE transaction_id = 'c1000000-0000-0000-0000-000000000001';
 UPDATE transaction_enrichments SET
     transfer_id = 'e2000000-0000-0000-0000-000000000001',
     transfer_type = 'own',
-    category_id = (SELECT id FROM categories WHERE slug = 'transfer.own'), tagging_status = 'manual'
+    category_id = (SELECT id FROM categories WHERE slug = 'self_transfer'), tagging_status = 'manual'
 WHERE transaction_id = 'c1100000-0000-0000-0000-000000000001';
 
 UPDATE transaction_enrichments SET

@@ -135,7 +135,7 @@ func run() error {
 	ag := agent.New(llmProvider, convStore, memoryStore, userStore, registry, router)
 
 	if *serveFlag {
-		srv := api.New(cfg.API.Listen, ag.HandleMessage, userStore)
+		srv := api.New(cfg.API.Listen, ag.HandleMessage, userStore, pool)
 		return srv.Start(ctx)
 	}
 
