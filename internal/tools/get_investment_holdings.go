@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	"github.com/pushkaranand/finagent/internal/llm"
-	"github.com/pushkaranand/finagent/internal/store"
 	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
+	"github.com/pushkaranand/finagent/internal/store"
 )
 
 // GetInvestmentHoldings lists Zerodha equity and SGB holdings.

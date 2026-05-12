@@ -16,13 +16,13 @@ const maxToolRounds = 8
 // Agent is the core ReAct loop. It receives messages from any channel,
 // calls the LLM, dispatches tool calls, and returns a response.
 type Agent struct {
-	llm         chatProvider
-	conv        convStore
-	memories    memStore
-	users       userStore
-	registry    toolRegistry
-	router      *Router
-	hasZerodha  bool
+	llm        chatProvider
+	conv       convStore
+	memories   memStore
+	users      userStore
+	registry   toolRegistry
+	router     *Router
+	hasZerodha bool
 }
 
 // New creates an Agent with all dependencies wired in.
