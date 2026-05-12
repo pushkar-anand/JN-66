@@ -23,6 +23,9 @@ type Querier interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeactivateMemory(ctx context.Context, id uuid.UUID) error
 	DeactivateRecurringPayment(ctx context.Context, id uuid.UUID) error
+	DeleteZerodhaEquityHoldings(ctx context.Context, accountID uuid.UUID) error
+	DeleteZerodhaMFHoldings(ctx context.Context, accountID uuid.UUID) error
+	DeleteZerodhaToken(ctx context.Context, userID uuid.UUID) error
 	FinishImportRun(ctx context.Context, arg FinishImportRunParams) error
 	GetAccountByID(ctx context.Context, id uuid.UUID) (Account, error)
 	GetAccountDetails(ctx context.Context, accountID uuid.UUID) (AccountDetail, error)
@@ -39,8 +42,16 @@ type Querier interface {
 	GetUserByEmail(ctx context.Context, email *string) (User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
+	GetZerodhaEquityHoldingsByType(ctx context.Context, userID uuid.UUID) ([]GetZerodhaEquityHoldingsByTypeRow, error)
+	GetZerodhaEquitySummary(ctx context.Context, userID uuid.UUID) (GetZerodhaEquitySummaryRow, error)
+	GetZerodhaEquitySyncedAt(ctx context.Context, accountID uuid.UUID) (interface{}, error)
+	GetZerodhaMFSummary(ctx context.Context, userID uuid.UUID) (GetZerodhaMFSummaryRow, error)
+	GetZerodhaMFSyncedAt(ctx context.Context, accountID uuid.UUID) (interface{}, error)
+	GetZerodhaToken(ctx context.Context, userID uuid.UUID) (ZerodhaToken, error)
 	InsertTransaction(ctx context.Context, arg InsertTransactionParams) (Transaction, error)
 	InsertTransactionEnrichment(ctx context.Context, transactionID uuid.UUID) error
+	InsertZerodhaEquityHolding(ctx context.Context, arg InsertZerodhaEquityHoldingParams) error
+	InsertZerodhaMFHolding(ctx context.Context, arg InsertZerodhaMFHoldingParams) error
 	ListAccountsByUser(ctx context.Context, userID uuid.UUID) ([]Account, error)
 	ListCategories(ctx context.Context) ([]Category, error)
 	ListImportRuns(ctx context.Context, userID uuid.UUID) ([]ImportRun, error)
@@ -55,6 +66,8 @@ type Querier interface {
 	ListTransactionsByLabel(ctx context.Context, arg ListTransactionsByLabelParams) ([]VTransaction, error)
 	ListUserSessions(ctx context.Context, arg ListUserSessionsParams) ([]ConversationSession, error)
 	ListUsers(ctx context.Context) ([]User, error)
+	ListZerodhaEquityHoldings(ctx context.Context, userID uuid.UUID) ([]ZerodhaEquityHolding, error)
+	ListZerodhaMFHoldings(ctx context.Context, userID uuid.UUID) ([]ZerodhaMfHolding, error)
 	RecallMemoriesByTags(ctx context.Context, arg RecallMemoriesByTagsParams) ([]AgentMemory, error)
 	RemoveTransactionLabel(ctx context.Context, arg RemoveTransactionLabelParams) error
 	SaveMessage(ctx context.Context, arg SaveMessageParams) (ConversationMessage, error)
@@ -68,6 +81,7 @@ type Querier interface {
 	UpdateUserPreferences(ctx context.Context, arg UpdateUserPreferencesParams) (User, error)
 	UpsertAccountDetails(ctx context.Context, arg UpsertAccountDetailsParams) error
 	UpsertUser(ctx context.Context, arg UpsertUserParams) (User, error)
+	UpsertZerodhaToken(ctx context.Context, arg UpsertZerodhaTokenParams) error
 }
 
 var _ Querier = (*Queries)(nil)

@@ -7,7 +7,8 @@ import (
 )
 
 // systemPrompt builds the system prompt for a given user and context.
-func systemPrompt(userName, userID string, memories []string) string {
+// hasZerodha should be true when Zerodha investment tools are registered.
+func systemPrompt(userName, userID string, memories []string, hasZerodha bool) string {
 	var sb strings.Builder
 
 	sb.WriteString("You are JN-66, a personal financial intelligence assistant for a household. ")
@@ -25,7 +26,12 @@ func systemPrompt(userName, userID string, memories []string) string {
 	sb.WriteString("- Transactions are immutable bank records. Enrichments (category, notes, labels) are mutable.\n")
 	sb.WriteString("- VPA (like zomato@axisbank) is the stable merchant identity — more reliable than description strings.\n")
 	sb.WriteString("- Use tools to answer financial questions. Do not guess transaction data.\n")
-	sb.WriteString("- Investment portfolios, stocks, mutual funds, FDs, and tax data are not available — tell the user if asked.\n")
+	if hasZerodha {
+		sb.WriteString("- Zerodha investment data (stocks, SGBs, mutual funds) is available via get_investment_holdings, get_mf_holdings, and get_investment_summary tools. Holdings are cached and auto-refresh every 4 hours.\n")
+		sb.WriteString("- If a Zerodha tool returns a token-expired message, tell the user to run: finagent zerodha auth\n")
+	} else {
+		sb.WriteString("- Investment portfolios, stocks, mutual funds, FDs, and tax data are not available — tell the user if asked.\n")
+	}
 	sb.WriteString("- If the user asks you to remember something, use the remember_fact tool.\n")
 	sb.WriteString("- Tool user_id fields are optional — omit them to query your own data. Only set when explicitly asked about another household member.\n")
 	sb.WriteString("- Transaction IDs are the UUID at the start of each line in query_transactions results. Pass the raw UUID to manage_labels.\n")

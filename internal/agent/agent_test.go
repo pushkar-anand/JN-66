@@ -37,7 +37,7 @@ func newTestAgent(
 		ChatModel:      "chat-model",
 		AnalysisModel:  "analysis-model",
 		SummarizeModel: "summarize-model",
-	}))
+	}), false)
 }
 
 func TestHandleMessage_HappyPath(t *testing.T) {

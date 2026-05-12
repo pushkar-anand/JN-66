@@ -52,3 +52,9 @@ func (r *Registry) Execute(ctx context.Context, name, callID, argsJSON string) (
 	}
 	return t.Execute(ctx, callID, argsJSON)
 }
+
+// Has reports whether a tool with the given name is registered.
+func (r *Registry) Has(name string) bool {
+	_, ok := r.tools[name]
+	return ok
+}
