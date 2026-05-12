@@ -87,8 +87,9 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create and push manifest
+        env:
+          TAG: ${{ github.event.release.tag_name }}
         run: |
-          TAG=${{ github.event.release.tag_name }}
           docker buildx imagetools create \
             -t ghcr.io/pushkar-anand/jn-66:${TAG} \
             -t ghcr.io/pushkar-anand/jn-66:latest \
