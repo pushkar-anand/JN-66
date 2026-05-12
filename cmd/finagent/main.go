@@ -21,6 +21,7 @@ import (
 	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
 	"github.com/pushkaranand/finagent/internal/store"
 	"github.com/pushkaranand/finagent/internal/tools"
+	"github.com/pushkaranand/finagent/internal/zerodha"
 )
 
 func main() {
@@ -48,6 +49,12 @@ func main() {
 		case "enrich":
 			if err := runEnrich(os.Args[2:]); err != nil {
 				fmt.Fprintf(os.Stderr, "enrich: %v\n", err)
+				os.Exit(1)
+			}
+			return
+		case "zerodha":
+			if err := runZerodha(os.Args[2:]); err != nil {
+				fmt.Fprintf(os.Stderr, "zerodha: %v\n", err)
 				os.Exit(1)
 			}
 			return
@@ -104,6 +111,7 @@ func run() error {
 	recurringStore := store.NewRecurringStore(pool)
 	memoryStore := store.NewMemoryStore(pool)
 	convStore := store.NewConversationStore(pool)
+	zStore := store.NewZerodhaStore(pool)
 
 	// Bootstrap users from config.
 	if err := bootstrapUsers(ctx, userStore, cfg); err != nil {
@@ -130,12 +138,35 @@ func run() error {
 	registry.Register(tools.NewRememberFact(userID, memoryStore))
 	registry.Register(tools.NewRecallFacts(userID, memoryStore))
 
+	// Conditionally register Zerodha investment tools if credentials are configured for this user.
+	if u != nil {
+		if zerCreds, ok := cfg.Zerodha.Users[u.Username]; ok {
+			zSvc := store.NewZerodhaService(zStore, zerodha.NewClient(zerCreds.APIKey))
+			registry.Register(tools.NewGetInvestmentHoldings(userID, zSvc))
+			registry.Register(tools.NewGetMFHoldings(userID, zSvc))
+			registry.Register(tools.NewGetInvestmentSummary(userID, zSvc))
+		}
+	}
+
 	// Agent
 	router := agent.NewRouter(cfg.LLM.Routing)
-	ag := agent.New(llmProvider, convStore, memoryStore, userStore, registry, router)
+	ag := agent.New(llmProvider, convStore, memoryStore, userStore, registry, router, registry.Has("get_investment_holdings"))
 
 	if *serveFlag {
-		srv := api.New(cfg.API.Listen, ag.HandleMessage, userStore, pool)
+		var zerCbCfg *api.ZerodhaCallbackConfig
+		if len(cfg.Zerodha.Users) > 0 && cfg.Zerodha.ServerSecret != "" {
+			userCreds := make(map[string]api.ZerodhaCallbackCreds, len(cfg.Zerodha.Users))
+			for uname, creds := range cfg.Zerodha.Users {
+				userCreds[uname] = api.ZerodhaCallbackCreds{APIKey: creds.APIKey, APISecret: creds.APISecret}
+			}
+			zerCbCfg = &api.ZerodhaCallbackConfig{
+				ServerSecret: cfg.Zerodha.ServerSecret,
+				UserCreds:    userCreds,
+				Store:        zStore,
+				UserByID:     userStore.GetByID,
+			}
+		}
+		srv := api.New(cfg.API.Listen, ag.HandleMessage, userStore, pool, zerCbCfg)
 		return srv.Start(ctx)
 	}
 

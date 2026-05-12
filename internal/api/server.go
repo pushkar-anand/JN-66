@@ -31,14 +31,16 @@ type Server struct {
 	handler   channel.MessageHandler
 	userStore userLookup
 	db        dbPinger
+	zerodha   *ZerodhaCallbackConfig
 	srv       *http.Server
 }
 
 // New creates a Server that dispatches chat requests to handler.
 // userStore is used for Bearer token authentication; pass nil to disable auth (tests).
 // db is used for the readiness probe; pass nil to skip the DB check.
-func New(listen string, handler channel.MessageHandler, userStore userLookup, db dbPinger) *Server {
-	s := &Server{handler: handler, userStore: userStore, db: db}
+// zerodha is optional; when non-nil it registers GET /api/zerodha/callback.
+func New(listen string, handler channel.MessageHandler, userStore userLookup, db dbPinger, zerodha *ZerodhaCallbackConfig) *Server {
+	s := &Server{handler: handler, userStore: userStore, db: db, zerodha: zerodha}
 
 	r := mux.NewRouter()
 	r.Use(recoveryMiddleware)
@@ -46,6 +48,10 @@ func New(listen string, handler channel.MessageHandler, userStore userLookup, db
 	r.Use(bwglogger.NewHTTPLogger(slog.Default()))
 	r.HandleFunc("/healthz/live", s.handleLive).Methods(http.MethodGet)
 	r.HandleFunc("/healthz/ready", s.handleReady).Methods(http.MethodGet)
+
+	if s.zerodha != nil {
+		r.HandleFunc("/api/zerodha/callback", s.handleZerodhaCallback).Methods(http.MethodGet)
+	}
 
 	protected := r.NewRoute().Subrouter()
 	if s.userStore != nil {

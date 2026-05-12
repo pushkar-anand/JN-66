@@ -16,15 +16,17 @@ const maxToolRounds = 8
 // Agent is the core ReAct loop. It receives messages from any channel,
 // calls the LLM, dispatches tool calls, and returns a response.
 type Agent struct {
-	llm      chatProvider
-	conv     convStore
-	memories memStore
-	users    userStore
-	registry toolRegistry
-	router   *Router
+	llm        chatProvider
+	conv       convStore
+	memories   memStore
+	users      userStore
+	registry   toolRegistry
+	router     *Router
+	hasZerodha bool
 }
 
 // New creates an Agent with all dependencies wired in.
+// hasZerodha should be true when Zerodha investment tools are registered in registry.
 func New(
 	provider chatProvider,
 	conv convStore,
@@ -32,14 +34,16 @@ func New(
 	users userStore,
 	registry toolRegistry,
 	router *Router,
+	hasZerodha bool,
 ) *Agent {
 	return &Agent{
-		llm:      provider,
-		conv:     conv,
-		memories: memories,
-		users:    users,
-		registry: registry,
-		router:   router,
+		llm:        provider,
+		conv:       conv,
+		memories:   memories,
+		users:      users,
+		registry:   registry,
+		router:     router,
+		hasZerodha: hasZerodha,
 	}
 }
 
@@ -82,7 +86,7 @@ func (a *Agent) HandleMessage(ctx context.Context, msg channel.Message) (channel
 	slog.Debug("agent setup", "elapsed_ms", time.Since(t0).Milliseconds())
 
 	// Build the full message list for the LLM.
-	messages := buildMessages(systemPrompt(userName, msg.UserID, memStrings), history, msg.Text)
+	messages := buildMessages(systemPrompt(userName, msg.UserID, memStrings, a.hasZerodha), history, msg.Text)
 	model := a.router.Select(msg.Text, RouterHintChat)
 
 	var finalText string

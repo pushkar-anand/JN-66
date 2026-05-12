@@ -84,7 +84,7 @@ func run() error {
 		regRec := eval.NewRecordingRegistry(registry)
 
 		router := agent.NewRouter(cfg.LLM.Routing)
-		ag := agent.New(llmRec, convStore, memoryStore, userStore, regRec, router)
+		ag := agent.New(llmRec, convStore, memoryStore, userStore, regRec, router, false)
 
 		scenarios := eval.Scenarios
 		for i := range scenarios {

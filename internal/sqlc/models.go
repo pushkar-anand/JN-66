@@ -1314,3 +1314,40 @@ type VTransaction struct {
 	Metadata               []byte             `json:"metadata"`
 	EnrichedAt             pgtype.Timestamptz `json:"enriched_at"`
 }
+
+type ZerodhaEquityHolding struct {
+	ID             uuid.UUID          `json:"id"`
+	UserID         uuid.UUID          `json:"user_id"`
+	AccountID      uuid.UUID          `json:"account_id"`
+	Tradingsymbol  string             `json:"tradingsymbol"`
+	Exchange       string             `json:"exchange"`
+	Isin           *string            `json:"isin"`
+	Quantity       int32              `json:"quantity"`
+	AvgPricePaise  int64              `json:"avg_price_paise"`
+	LastPricePaise int64              `json:"last_price_paise"`
+	PnlPaise       int64              `json:"pnl_paise"`
+	DayChangePaise int64              `json:"day_change_paise"`
+	SyncedAt       pgtype.Timestamptz `json:"synced_at"`
+}
+
+type ZerodhaMfHolding struct {
+	ID            uuid.UUID          `json:"id"`
+	UserID        uuid.UUID          `json:"user_id"`
+	AccountID     uuid.UUID          `json:"account_id"`
+	Folio         string             `json:"folio"`
+	Fund          string             `json:"fund"`
+	Tradingsymbol string             `json:"tradingsymbol"`
+	Units         pgtype.Numeric     `json:"units"`
+	AvgNavPaise   int64              `json:"avg_nav_paise"`
+	NavPaise      int64              `json:"nav_paise"`
+	PnlPaise      int64              `json:"pnl_paise"`
+	SyncedAt      pgtype.Timestamptz `json:"synced_at"`
+}
+
+type ZerodhaToken struct {
+	UserID      uuid.UUID          `json:"user_id"`
+	AccessToken string             `json:"access_token"`
+	ExpiresAt   pgtype.Timestamptz `json:"expires_at"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}

@@ -204,6 +204,48 @@ func (mr *MockQuerierMockRecorder) DeactivateRecurringPayment(ctx, id any) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeactivateRecurringPayment", reflect.TypeOf((*MockQuerier)(nil).DeactivateRecurringPayment), ctx, id)
 }
 
+// DeleteZerodhaEquityHoldings mocks base method.
+func (m *MockQuerier) DeleteZerodhaEquityHoldings(ctx context.Context, accountID uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteZerodhaEquityHoldings", ctx, accountID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteZerodhaEquityHoldings indicates an expected call of DeleteZerodhaEquityHoldings.
+func (mr *MockQuerierMockRecorder) DeleteZerodhaEquityHoldings(ctx, accountID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteZerodhaEquityHoldings", reflect.TypeOf((*MockQuerier)(nil).DeleteZerodhaEquityHoldings), ctx, accountID)
+}
+
+// DeleteZerodhaMFHoldings mocks base method.
+func (m *MockQuerier) DeleteZerodhaMFHoldings(ctx context.Context, accountID uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteZerodhaMFHoldings", ctx, accountID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteZerodhaMFHoldings indicates an expected call of DeleteZerodhaMFHoldings.
+func (mr *MockQuerierMockRecorder) DeleteZerodhaMFHoldings(ctx, accountID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteZerodhaMFHoldings", reflect.TypeOf((*MockQuerier)(nil).DeleteZerodhaMFHoldings), ctx, accountID)
+}
+
+// DeleteZerodhaToken mocks base method.
+func (m *MockQuerier) DeleteZerodhaToken(ctx context.Context, userID uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteZerodhaToken", ctx, userID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteZerodhaToken indicates an expected call of DeleteZerodhaToken.
+func (mr *MockQuerierMockRecorder) DeleteZerodhaToken(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteZerodhaToken", reflect.TypeOf((*MockQuerier)(nil).DeleteZerodhaToken), ctx, userID)
+}
+
 // FinishImportRun mocks base method.
 func (m *MockQuerier) FinishImportRun(ctx context.Context, arg sqlcgen.FinishImportRunParams) error {
 	m.ctrl.T.Helper()
@@ -443,6 +485,96 @@ func (mr *MockQuerierMockRecorder) GetUserByUsername(ctx, username any) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByUsername", reflect.TypeOf((*MockQuerier)(nil).GetUserByUsername), ctx, username)
 }
 
+// GetZerodhaEquityHoldingsByType mocks base method.
+func (m *MockQuerier) GetZerodhaEquityHoldingsByType(ctx context.Context, userID uuid.UUID) ([]sqlcgen.GetZerodhaEquityHoldingsByTypeRow, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetZerodhaEquityHoldingsByType", ctx, userID)
+	ret0, _ := ret[0].([]sqlcgen.GetZerodhaEquityHoldingsByTypeRow)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetZerodhaEquityHoldingsByType indicates an expected call of GetZerodhaEquityHoldingsByType.
+func (mr *MockQuerierMockRecorder) GetZerodhaEquityHoldingsByType(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetZerodhaEquityHoldingsByType", reflect.TypeOf((*MockQuerier)(nil).GetZerodhaEquityHoldingsByType), ctx, userID)
+}
+
+// GetZerodhaEquitySummary mocks base method.
+func (m *MockQuerier) GetZerodhaEquitySummary(ctx context.Context, userID uuid.UUID) (sqlcgen.GetZerodhaEquitySummaryRow, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetZerodhaEquitySummary", ctx, userID)
+	ret0, _ := ret[0].(sqlcgen.GetZerodhaEquitySummaryRow)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetZerodhaEquitySummary indicates an expected call of GetZerodhaEquitySummary.
+func (mr *MockQuerierMockRecorder) GetZerodhaEquitySummary(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetZerodhaEquitySummary", reflect.TypeOf((*MockQuerier)(nil).GetZerodhaEquitySummary), ctx, userID)
+}
+
+// GetZerodhaEquitySyncedAt mocks base method.
+func (m *MockQuerier) GetZerodhaEquitySyncedAt(ctx context.Context, accountID uuid.UUID) (any, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetZerodhaEquitySyncedAt", ctx, accountID)
+	ret0, _ := ret[0].(any)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetZerodhaEquitySyncedAt indicates an expected call of GetZerodhaEquitySyncedAt.
+func (mr *MockQuerierMockRecorder) GetZerodhaEquitySyncedAt(ctx, accountID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetZerodhaEquitySyncedAt", reflect.TypeOf((*MockQuerier)(nil).GetZerodhaEquitySyncedAt), ctx, accountID)
+}
+
+// GetZerodhaMFSummary mocks base method.
+func (m *MockQuerier) GetZerodhaMFSummary(ctx context.Context, userID uuid.UUID) (sqlcgen.GetZerodhaMFSummaryRow, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetZerodhaMFSummary", ctx, userID)
+	ret0, _ := ret[0].(sqlcgen.GetZerodhaMFSummaryRow)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetZerodhaMFSummary indicates an expected call of GetZerodhaMFSummary.
+func (mr *MockQuerierMockRecorder) GetZerodhaMFSummary(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetZerodhaMFSummary", reflect.TypeOf((*MockQuerier)(nil).GetZerodhaMFSummary), ctx, userID)
+}
+
+// GetZerodhaMFSyncedAt mocks base method.
+func (m *MockQuerier) GetZerodhaMFSyncedAt(ctx context.Context, accountID uuid.UUID) (any, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetZerodhaMFSyncedAt", ctx, accountID)
+	ret0, _ := ret[0].(any)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetZerodhaMFSyncedAt indicates an expected call of GetZerodhaMFSyncedAt.
+func (mr *MockQuerierMockRecorder) GetZerodhaMFSyncedAt(ctx, accountID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetZerodhaMFSyncedAt", reflect.TypeOf((*MockQuerier)(nil).GetZerodhaMFSyncedAt), ctx, accountID)
+}
+
+// GetZerodhaToken mocks base method.
+func (m *MockQuerier) GetZerodhaToken(ctx context.Context, userID uuid.UUID) (sqlcgen.ZerodhaToken, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetZerodhaToken", ctx, userID)
+	ret0, _ := ret[0].(sqlcgen.ZerodhaToken)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetZerodhaToken indicates an expected call of GetZerodhaToken.
+func (mr *MockQuerierMockRecorder) GetZerodhaToken(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetZerodhaToken", reflect.TypeOf((*MockQuerier)(nil).GetZerodhaToken), ctx, userID)
+}
+
 // InsertTransaction mocks base method.
 func (m *MockQuerier) InsertTransaction(ctx context.Context, arg sqlcgen.InsertTransactionParams) (sqlcgen.Transaction, error) {
 	m.ctrl.T.Helper()
@@ -470,6 +602,34 @@ func (m *MockQuerier) InsertTransactionEnrichment(ctx context.Context, transacti
 func (mr *MockQuerierMockRecorder) InsertTransactionEnrichment(ctx, transactionID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InsertTransactionEnrichment", reflect.TypeOf((*MockQuerier)(nil).InsertTransactionEnrichment), ctx, transactionID)
+}
+
+// InsertZerodhaEquityHolding mocks base method.
+func (m *MockQuerier) InsertZerodhaEquityHolding(ctx context.Context, arg sqlcgen.InsertZerodhaEquityHoldingParams) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "InsertZerodhaEquityHolding", ctx, arg)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// InsertZerodhaEquityHolding indicates an expected call of InsertZerodhaEquityHolding.
+func (mr *MockQuerierMockRecorder) InsertZerodhaEquityHolding(ctx, arg any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InsertZerodhaEquityHolding", reflect.TypeOf((*MockQuerier)(nil).InsertZerodhaEquityHolding), ctx, arg)
+}
+
+// InsertZerodhaMFHolding mocks base method.
+func (m *MockQuerier) InsertZerodhaMFHolding(ctx context.Context, arg sqlcgen.InsertZerodhaMFHoldingParams) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "InsertZerodhaMFHolding", ctx, arg)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// InsertZerodhaMFHolding indicates an expected call of InsertZerodhaMFHolding.
+func (mr *MockQuerierMockRecorder) InsertZerodhaMFHolding(ctx, arg any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InsertZerodhaMFHolding", reflect.TypeOf((*MockQuerier)(nil).InsertZerodhaMFHolding), ctx, arg)
 }
 
 // ListAccountsByUser mocks base method.
@@ -682,6 +842,36 @@ func (mr *MockQuerierMockRecorder) ListUsers(ctx any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListUsers", reflect.TypeOf((*MockQuerier)(nil).ListUsers), ctx)
 }
 
+// ListZerodhaEquityHoldings mocks base method.
+func (m *MockQuerier) ListZerodhaEquityHoldings(ctx context.Context, userID uuid.UUID) ([]sqlcgen.ZerodhaEquityHolding, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListZerodhaEquityHoldings", ctx, userID)
+	ret0, _ := ret[0].([]sqlcgen.ZerodhaEquityHolding)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListZerodhaEquityHoldings indicates an expected call of ListZerodhaEquityHoldings.
+func (mr *MockQuerierMockRecorder) ListZerodhaEquityHoldings(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListZerodhaEquityHoldings", reflect.TypeOf((*MockQuerier)(nil).ListZerodhaEquityHoldings), ctx, userID)
+}
+
+// ListZerodhaMFHoldings mocks base method.
+func (m *MockQuerier) ListZerodhaMFHoldings(ctx context.Context, userID uuid.UUID) ([]sqlcgen.ZerodhaMfHolding, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListZerodhaMFHoldings", ctx, userID)
+	ret0, _ := ret[0].([]sqlcgen.ZerodhaMfHolding)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListZerodhaMFHoldings indicates an expected call of ListZerodhaMFHoldings.
+func (mr *MockQuerierMockRecorder) ListZerodhaMFHoldings(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListZerodhaMFHoldings", reflect.TypeOf((*MockQuerier)(nil).ListZerodhaMFHoldings), ctx, userID)
+}
+
 // RecallMemoriesByTags mocks base method.
 func (m *MockQuerier) RecallMemoriesByTags(ctx context.Context, arg sqlcgen.RecallMemoriesByTagsParams) ([]sqlcgen.AgentMemory, error) {
 	m.ctrl.T.Helper()
@@ -867,4 +1057,18 @@ func (m *MockQuerier) UpsertUser(ctx context.Context, arg sqlcgen.UpsertUserPara
 func (mr *MockQuerierMockRecorder) UpsertUser(ctx, arg any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertUser", reflect.TypeOf((*MockQuerier)(nil).UpsertUser), ctx, arg)
+}
+
+// UpsertZerodhaToken mocks base method.
+func (m *MockQuerier) UpsertZerodhaToken(ctx context.Context, arg sqlcgen.UpsertZerodhaTokenParams) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpsertZerodhaToken", ctx, arg)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpsertZerodhaToken indicates an expected call of UpsertZerodhaToken.
+func (mr *MockQuerierMockRecorder) UpsertZerodhaToken(ctx, arg any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertZerodhaToken", reflect.TypeOf((*MockQuerier)(nil).UpsertZerodhaToken), ctx, arg)
 }

@@ -21,6 +21,20 @@ type Config struct {
 	Log      LogConfig         `koanf:"log"`
 	Users    []UserSeed        `koanf:"users"`
 	APIKeys  map[string]string `koanf:"api_keys"`
+	Zerodha  ZerodhaConfig     `koanf:"zerodha"`
+}
+
+// ZerodhaConfig holds Kite Connect credentials for all users.
+type ZerodhaConfig struct {
+	ServerSecret string                      `koanf:"server_secret"`
+	Users        map[string]ZerodhaUserCreds `koanf:"users"`
+}
+
+// ZerodhaUserCreds holds the Kite Connect api_key and api_secret for one user.
+// Overridable via FINAGENT_ZERODHA__USERS__<USERNAME>__API_KEY etc.
+type ZerodhaUserCreds struct {
+	APIKey    string `koanf:"api_key"`
+	APISecret string `koanf:"api_secret"`
 }
 
 // LogConfig controls log level and output format.

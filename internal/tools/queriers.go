@@ -73,3 +73,11 @@ type memoryQuerier interface {
 	Save(ctx context.Context, userID *string, content string, memType sqlcgen.MemoryTypeEnum, tags []string) (*sqlcgen.AgentMemory, error)
 	Recall(ctx context.Context, userID string, queryTags []string, limit int32) ([]sqlcgen.AgentMemory, error)
 }
+
+type zerodhaQuerier interface {
+	GetEquityHoldings(ctx context.Context, userID string) ([]sqlcgen.ZerodhaEquityHolding, error)
+	GetMFHoldings(ctx context.Context, userID string) ([]sqlcgen.ZerodhaMfHolding, error)
+	GetEquitySummary(ctx context.Context, userID string) (sqlcgen.GetZerodhaEquitySummaryRow, error)
+	GetMFSummary(ctx context.Context, userID string) (sqlcgen.GetZerodhaMFSummaryRow, error)
+	GetEquityHoldingsByType(ctx context.Context, userID string) ([]sqlcgen.GetZerodhaEquityHoldingsByTypeRow, error)
+}

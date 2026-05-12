@@ -27,7 +27,7 @@ func errHandler(_ context.Context, _ channel.Message) (channel.Response, error) 
 }
 
 func newTestServer(h channel.MessageHandler) *Server {
-	return New(":0", h, nil, nil)
+	return New(":0", h, nil, nil, nil)
 }
 
 func requestWithUser(r *http.Request, userID string) *http.Request {
@@ -141,7 +141,7 @@ func (m *mockUserLookup) GetByAPIKeyPrefix(_ context.Context, _ string) (*sqlcge
 }
 
 func TestAuthMiddleware_MissingToken(t *testing.T) {
-	s := New(":0", okHandler, &mockUserLookup{err: errors.New("no user")}, nil)
+	s := New(":0", okHandler, &mockUserLookup{err: errors.New("no user")}, nil, nil)
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodPost, "/api/chat", strings.NewReader(`{"text":"hi"}`))
 	r.Header.Set("Content-Type", "application/json")
@@ -152,7 +152,7 @@ func TestAuthMiddleware_MissingToken(t *testing.T) {
 }
 
 func TestAuthMiddleware_InvalidToken(t *testing.T) {
-	s := New(":0", okHandler, &mockUserLookup{err: errors.New("not found")}, nil)
+	s := New(":0", okHandler, &mockUserLookup{err: errors.New("not found")}, nil, nil)
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodPost, "/api/chat", strings.NewReader(`{"text":"hi"}`))
 	r.Header.Set("Authorization", "Bearer wrongtoken")
@@ -169,7 +169,7 @@ func TestAuthMiddleware_ValidToken(t *testing.T) {
 	hash, err := apikey.Hash(token)
 	require.NoError(t, err)
 
-	s := New(":0", okHandler, &mockUserLookup{user: &sqlcgen.User{ID: uid, ApiKeyHash: hash}}, nil)
+	s := New(":0", okHandler, &mockUserLookup{user: &sqlcgen.User{ID: uid, ApiKeyHash: hash}}, nil, nil)
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodPost, "/api/chat", strings.NewReader(`{"text":"hi"}`))
 	r.Header.Set("Authorization", "Bearer "+token)
