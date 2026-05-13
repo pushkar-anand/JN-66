@@ -45,7 +45,8 @@ func (c *Client) LoginURL(redirectURL, state string) string {
 // ExchangeToken exchanges a request_token for an access_token.
 // checksum = SHA-256(api_key + request_token + api_secret).
 func (c *Client) ExchangeToken(ctx context.Context, requestToken, apiSecret string) (*TokenResponse, error) {
-	checksum := fmt.Sprintf("%x", sha256.Sum256([]byte(c.apiKey+requestToken+apiSecret))) // lgtm[go/weak-sensitive-data-hashing] -- Kite Connect v3 mandates SHA-256(api_key+request_token+api_secret) as the session checksum; this is not password storage
+	// lgtm[go/weak-sensitive-data-hashing] -- Kite Connect v3 mandates SHA-256(api_key+request_token+api_secret) as the session checksum; not password storage
+	checksum := fmt.Sprintf("%x", sha256.Sum256([]byte(c.apiKey+requestToken+apiSecret)))
 
 	form := url.Values{
 		"api_key":       {c.apiKey},
