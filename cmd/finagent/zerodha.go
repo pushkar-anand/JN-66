@@ -85,6 +85,7 @@ func runZerodhaAuth(configPath, userIdentifier string) error {
 	client := zerodha.NewClient(creds.APIKey)
 	loginURL := client.LoginURL(redirectURL, nonce)
 
+	// lgtm[go/clear-text-logging] -- Kite Connect OAuth requires the api_key in the URL; shown to user to open in a browser
 	fmt.Printf("\nOpen this URL in your browser to authenticate with Zerodha:\n\n  %s\n\nWaiting for redirect...\n", loginURL)
 
 	tokenCh := make(chan *zerodha.TokenResponse, 1)
