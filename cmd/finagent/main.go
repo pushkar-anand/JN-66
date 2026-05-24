@@ -2,6 +2,7 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"flag"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/pushkaranand/finagent/config"
 	"github.com/pushkaranand/finagent/internal/agent"
@@ -125,6 +127,12 @@ func run() error {
 		userID = u.ID.String()
 	}
 
+	// Resolve display timezone from user profile (IANA name, e.g. "Asia/Kolkata").
+	loc, err := time.LoadLocation(cmp.Or(u.Timezone, "Asia/Kolkata"))
+	if err != nil {
+		return fmt.Errorf("user timezone %q: %w", u.Timezone, err)
+	}
+
 	// LLM provider
 	llmProvider := openai.New(cfg.LLM.BaseURL, cfg.LLM.APIKey)
 
@@ -135,9 +143,23 @@ func run() error {
 	if u != nil {
 		if zerCreds, ok := cfg.Zerodha.Users[u.Username]; ok {
 			zSvc := store.NewZerodhaService(zStore, zerodha.NewClient(zerCreds.APIKey))
-			registry.Register(tools.NewGetInvestmentHoldings(userID, zSvc))
-			registry.Register(tools.NewGetMFHoldings(userID, zSvc))
-			registry.Register(tools.NewGetInvestmentSummary(userID, zSvc))
+
+			// loginURLFunc generates a fresh Kite login URL for in-chat re-auth.
+			// Only wired when --serve is active: the OAuth callback endpoint
+			// /api/zerodha/callback only exists when the HTTP server is running.
+			var loginURLFunc func() string
+			if *serveFlag && cfg.Zerodha.ServerSecret != "" {
+				client := zerodha.NewClient(zerCreds.APIKey)
+				uid, secret := userID, cfg.Zerodha.ServerSecret
+				loginURLFunc = func() string {
+					return client.LoginURL("", zerodha.NewNonce(uid, secret))
+				}
+			}
+
+			registry.Register(tools.NewGetInvestmentHoldings(userID, zSvc, loc))
+			registry.Register(tools.NewGetMFHoldings(userID, zSvc, loc))
+			registry.Register(tools.NewGetInvestmentSummary(userID, zSvc, loc))
+			registry.Register(tools.NewSyncPortfolio(userID, zSvc, loginURLFunc))
 		}
 	}
 

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"time"
 
 	"github.com/pushkaranand/finagent/internal/llm"
 	"github.com/pushkaranand/finagent/internal/store"
@@ -15,18 +16,19 @@ import (
 type GetInvestmentSummary struct {
 	userID  string
 	zerodha zerodhaQuerier
+	loc     *time.Location
 }
 
 // NewGetInvestmentSummary creates the tool bound to the current user.
-func NewGetInvestmentSummary(userID string, zerodha zerodhaQuerier) *GetInvestmentSummary {
-	return &GetInvestmentSummary{userID: userID, zerodha: zerodha}
+func NewGetInvestmentSummary(userID string, zerodha zerodhaQuerier, loc *time.Location) *GetInvestmentSummary {
+	return &GetInvestmentSummary{userID: userID, zerodha: zerodha, loc: loc}
 }
 
 // Definition returns the tool descriptor.
 func (t *GetInvestmentSummary) Definition() llm.ToolDefinition {
 	return llm.ToolDefinition{
 		Name:        "get_investment_summary",
-		Description: "Portfolio overview: total current value, invested value, P&L, and breakdown by asset class (equity, SGB, mutual funds). Auto-refreshes if cache is older than 4 hours.",
+		Description: "Portfolio overview: total current value, invested value, P&L, and breakdown by asset class (equity, SGB, mutual funds). Auto-refreshes if cache is older than 24 hours.",
 		Parameters: map[string]any{
 			"type":       "object",
 			"properties": map[string]any{},
@@ -42,6 +44,11 @@ func (t *GetInvestmentSummary) Execute(ctx context.Context, _ string, _ string) 
 			return "Zerodha token has expired or is not set up. Run: finagent zerodha auth", nil
 		}
 		return "", fmt.Errorf("get equity by type: %w", err)
+	}
+
+	eqSummary, err := t.zerodha.GetEquitySummary(ctx, t.userID)
+	if err != nil && !errors.Is(err, store.ErrZerodhaTokenExpired) {
+		return "", fmt.Errorf("get equity summary: %w", err)
 	}
 
 	mfSummary, err := t.zerodha.GetMFSummary(ctx, t.userID)
@@ -104,5 +111,8 @@ func (t *GetInvestmentSummary) Execute(ctx context.Context, _ string, _ string) 
 		float64(totalInvestedPaise)/100,
 		sign, float64(totalPnlPaise)/100, totalPct)
 
+	if ts, ok := eqSummary.SyncedAt.(time.Time); ok {
+		sb.WriteString(syncedAtLine(ts, t.loc))
+	}
 	return sb.String(), nil
 }

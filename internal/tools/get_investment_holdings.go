@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"math"
 	"strings"
+	"time"
 
 	"github.com/pushkaranand/finagent/internal/llm"
 	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
@@ -18,18 +19,19 @@ import (
 type GetInvestmentHoldings struct {
 	userID  string
 	zerodha zerodhaQuerier
+	loc     *time.Location
 }
 
 // NewGetInvestmentHoldings creates the tool bound to the current user.
-func NewGetInvestmentHoldings(userID string, zerodha zerodhaQuerier) *GetInvestmentHoldings {
-	return &GetInvestmentHoldings{userID: userID, zerodha: zerodha}
+func NewGetInvestmentHoldings(userID string, zerodha zerodhaQuerier, loc *time.Location) *GetInvestmentHoldings {
+	return &GetInvestmentHoldings{userID: userID, zerodha: zerodha, loc: loc}
 }
 
 // Definition returns the tool descriptor.
 func (t *GetInvestmentHoldings) Definition() llm.ToolDefinition {
 	return llm.ToolDefinition{
 		Name:        "get_investment_holdings",
-		Description: "List Zerodha stock and SGB holdings with quantity, average price, current price, and P&L. Auto-refreshes if cache is older than 4 hours.",
+		Description: "List Zerodha stock and SGB holdings with quantity, average price, current price, and P&L. Auto-refreshes if cache is older than 24 hours.",
 		Parameters: map[string]any{
 			"type": "object",
 			"properties": map[string]any{
@@ -98,6 +100,9 @@ func (t *GetInvestmentHoldings) Execute(ctx context.Context, _ string, argsJSON 
 		fmt.Fprintf(&sb, "%-20s %-8s %-7s %6d %12.2f %12.2f %s%11.2f %6.1f%%\n",
 			h.Tradingsymbol, h.Exchange, htype, h.Quantity,
 			avgRupees, lastRupees, sign, pnlRupees, pnlPct)
+	}
+	if filtered[0].SyncedAt.Valid {
+		sb.WriteString(syncedAtLine(filtered[0].SyncedAt.Time, t.loc))
 	}
 	return sb.String(), nil
 }
