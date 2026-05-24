@@ -15,6 +15,7 @@ import (
 	"github.com/pushkaranand/finagent/internal/agent"
 	"github.com/pushkaranand/finagent/internal/api"
 	"github.com/pushkaranand/finagent/internal/apikey"
+	"github.com/pushkaranand/finagent/internal/app"
 	"github.com/pushkaranand/finagent/internal/channel/cli"
 	"github.com/pushkaranand/finagent/internal/db"
 	"github.com/pushkaranand/finagent/internal/llm/openai"
@@ -105,10 +106,6 @@ func run() error {
 
 	// Stores
 	userStore := store.NewUserStore(pool)
-	accountStore := store.NewAccountStore(pool)
-	txnStore := store.NewTransactionStore(pool)
-	labelStore := store.NewLabelStore(pool)
-	recurringStore := store.NewRecurringStore(pool)
 	memoryStore := store.NewMemoryStore(pool)
 	convStore := store.NewConversationStore(pool)
 	zStore := store.NewZerodhaStore(pool)
@@ -128,15 +125,8 @@ func run() error {
 	// LLM provider
 	llmProvider := openai.New(cfg.LLM.BaseURL, cfg.LLM.APIKey)
 
-	// Tool registry
-	registry := tools.NewRegistry()
-	registry.Register(tools.NewQueryTransactions(userID, txnStore))
-	registry.Register(tools.NewGetAccountSummary(userID, accountStore))
-	registry.Register(tools.NewGetSpendingBreakdown(userID, txnStore))
-	registry.Register(tools.NewManageLabels(userID, labelStore))
-	registry.Register(tools.NewListRecurring(userID, recurringStore))
-	registry.Register(tools.NewRememberFact(userID, memoryStore))
-	registry.Register(tools.NewRecallFacts(userID, memoryStore))
+	// Tool registry — shared base tools.
+	registry := app.BuildToolRegistry(ctx, pool, userID)
 
 	// Conditionally register Zerodha investment tools if credentials are configured for this user.
 	if u != nil {

@@ -13,6 +13,7 @@ import (
 
 	"github.com/pushkaranand/finagent/config"
 	"github.com/pushkaranand/finagent/internal/agent"
+	"github.com/pushkaranand/finagent/internal/app"
 	"github.com/pushkaranand/finagent/internal/db"
 	"github.com/pushkaranand/finagent/internal/eval"
 	"github.com/pushkaranand/finagent/internal/importer"
@@ -64,27 +65,21 @@ func run() error {
 		}
 		userID := u.ID.String()
 
-		accountStore := store.NewAccountStore(pool)
-		txnStore := store.NewTransactionStore(pool)
-		labelStore := store.NewLabelStore(pool)
-		recurringStore := store.NewRecurringStore(pool)
 		memoryStore := store.NewMemoryStore(pool)
 		convStore := store.NewConversationStore(pool)
 
 		llmRec := eval.NewRecordingLLM(realLLM)
 
-		registry := tools.NewRegistry()
-		registry.Register(tools.NewQueryTransactions(userID, txnStore))
-		registry.Register(tools.NewGetAccountSummary(userID, accountStore))
-		registry.Register(tools.NewGetSpendingBreakdown(userID, txnStore))
-		registry.Register(tools.NewManageLabels(userID, labelStore))
-		registry.Register(tools.NewListRecurring(userID, recurringStore))
-		registry.Register(tools.NewRememberFact(userID, memoryStore))
-		registry.Register(tools.NewRecallFacts(userID, memoryStore))
+		// Shared base tools + Zerodha investment tools via ZerodhaStore (DB-only, no API key needed).
+		registry := app.BuildToolRegistry(ctx, pool, userID)
+		zStore := store.NewZerodhaStore(pool)
+		registry.Register(tools.NewGetInvestmentSummary(userID, zStore))
+		registry.Register(tools.NewGetInvestmentHoldings(userID, zStore))
+		registry.Register(tools.NewGetMFHoldings(userID, zStore))
 		regRec := eval.NewRecordingRegistry(registry)
 
 		router := agent.NewRouter(cfg.LLM.Routing)
-		ag := agent.New(llmRec, convStore, memoryStore, userStore, regRec, router, false)
+		ag := agent.New(llmRec, convStore, memoryStore, userStore, regRec, router, true)
 
 		scenarios := eval.Scenarios
 		for i := range scenarios {
@@ -107,7 +102,7 @@ func run() error {
 		for i := range scenarios {
 			sc := &scenarios[i]
 			fmt.Printf("  %-32s", sc.Name)
-			res := sc.Run(ctx, ag.HandleMessage, llmRec, regRec)
+			res := sc.Run(ctx, pool, ag.HandleMessage, llmRec, regRec)
 			if res.Passed {
 				passed++
 				fmt.Printf("✓  %d rounds  %.1fs\n", res.LLMRounds, res.Duration.Seconds())
