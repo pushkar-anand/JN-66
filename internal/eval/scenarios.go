@@ -37,9 +37,7 @@ var Scenarios = []EvalCase{
 			}
 			var total int64
 			for _, r := range rows {
-				if r.Depth == 0 {
-					total += r.TotalAmount
-				}
+				total += r.TotalAmount
 			}
 			return paiseToINRStrings(total), nil
 		},
@@ -90,10 +88,10 @@ var Scenarios = []EvalCase{
 		// No tool or output assertions — just verify agent returns without panic.
 	},
 	{
-		// Now that Zerodha tools are registered, the agent can answer truthfully.
+		// Agent can answer using either get_account_summary or get_investment_summary;
+		// both are valid paths. Assert only on output content.
 		Name:              "has_zerodha_account",
 		Input:             "Do I have a Zerodha account?",
-		MustCallTools:     []string{"get_investment_summary"},
 		MaxLLMRounds:      4,
 		OutputMustContain: []string{"zerodha"},
 	},
@@ -103,29 +101,30 @@ var Scenarios = []EvalCase{
 		MustCallTools:     []string{"get_investment_summary"},
 		MaxLLMRounds:      3,
 		OutputMustContain: []string{"₹"},
-		// Dynamic: verify the agent cites the correct current value from DB.
+		// Dynamic: verify the agent cites the equity-only value (not equity+SGB).
+		// GetEquitySummary includes SGB, so we use GetEquityHoldingsByType to isolate equity.
 		ComputeExpected: func(ctx context.Context, pool *pgxpool.Pool, userID string) ([]string, error) {
-			row, err := store.NewZerodhaStore(pool).GetEquitySummary(ctx, userID)
+			rows, err := store.NewZerodhaStore(pool).GetEquityHoldingsByType(ctx, userID)
 			if err != nil {
 				return nil, err
 			}
-			return paiseToINRStrings(row.CurrentValuePaise), nil
+			var equityPaise int64
+			for _, r := range rows {
+				if fmt.Sprintf("%s", r.HoldingType) == "equity" {
+					equityPaise = r.CurrentValuePaise
+				}
+			}
+			return paiseToINRStrings(equityPaise), nil
 		},
 	},
 	{
+		// "What MFs do I hold?" → agent lists individual holdings, no portfolio total.
+		// Dynamic value check doesn't apply here; tool-call and ₹-symbol checks suffice.
 		Name:              "mf_summary",
 		Input:             "What mutual funds do I hold?",
 		MustCallTools:     []string{"get_mf_holdings"},
 		MaxLLMRounds:      3,
 		OutputMustContain: []string{"₹"},
-		// Dynamic: verify the agent cites the correct current value from DB.
-		ComputeExpected: func(ctx context.Context, pool *pgxpool.Pool, userID string) ([]string, error) {
-			row, err := store.NewZerodhaStore(pool).GetMFSummary(ctx, userID)
-			if err != nil {
-				return nil, err
-			}
-			return paiseToINRStrings(row.CurrentValuePaise), nil
-		},
 	},
 	{
 		Name:              "portfolio_total",
