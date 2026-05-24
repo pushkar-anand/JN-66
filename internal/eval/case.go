@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pushkaranand/finagent/internal/channel"
 )
 
@@ -38,6 +39,12 @@ type EvalCase struct {
 	OutputMustContainOneOf []string
 	// OutputMustNotContain: none may appear in the final response (case-insensitive).
 	OutputMustNotContain []string
+
+	// ComputeExpected, if non-nil, is called at the start of Run to generate
+	// dynamic expected-value candidates. The returned strings are appended to
+	// OutputMustContainOneOf (OR logic), so any single match satisfies the check.
+	// On error the dynamic check is skipped; static assertions still apply.
+	ComputeExpected func(ctx context.Context, pool *pgxpool.Pool, userID string) ([]string, error)
 }
 
 // EvalResult holds the outcome of a single EvalCase run.
@@ -56,10 +63,23 @@ type EvalResult struct {
 
 // Run executes the scenario against the given agent HandleMessage function.
 // The llmRec and regRec recorders must already be wired into the agent.
-func (c *EvalCase) Run(ctx context.Context, handle channel.MessageHandler, llmRec *RecordingLLM, regRec *RecordingRegistry) EvalResult {
+func (c *EvalCase) Run(ctx context.Context, pool *pgxpool.Pool, handle channel.MessageHandler, llmRec *RecordingLLM, regRec *RecordingRegistry) EvalResult {
 	maxRounds := c.MaxLLMRounds
 	if maxRounds <= 0 {
 		maxRounds = 4
+	}
+
+	// Compute dynamic expected-value candidates before sending any messages.
+	// Use a local copy to avoid mutating the package-level Scenarios slice across runs.
+	mustContainOneOf := c.OutputMustContainOneOf
+	var computeErr error
+	if c.ComputeExpected != nil {
+		cands, err := c.ComputeExpected(ctx, pool, c.UserID)
+		if err != nil {
+			computeErr = err
+		} else {
+			mustContainOneOf = append(mustContainOneOf, cands...)
+		}
 	}
 
 	sessionID := uuid.NewString()
@@ -130,6 +150,12 @@ func (c *EvalCase) Run(ctx context.Context, handle channel.MessageHandler, llmRe
 		res.Failures = append(res.Failures, fmt.Sprintf("llm_rounds=%d  max=%d", res.LLMRounds, maxRounds))
 	}
 
+	// Surface a ComputeExpected error as a failure — a skipped dynamic check
+	// is a false negative, not a pass.
+	if computeErr != nil {
+		res.Failures = append(res.Failures, fmt.Sprintf("ComputeExpected failed: %v", computeErr))
+	}
+
 	// Output assertions (case-insensitive).
 	lower := strings.ToLower(res.Output)
 	for _, sub := range c.OutputMustContain {
@@ -137,16 +163,16 @@ func (c *EvalCase) Run(ctx context.Context, handle channel.MessageHandler, llmRe
 			res.Failures = append(res.Failures, fmt.Sprintf("output missing %q", sub))
 		}
 	}
-	if len(c.OutputMustContainOneOf) > 0 {
+	if len(mustContainOneOf) > 0 {
 		found := false
-		for _, sub := range c.OutputMustContainOneOf {
+		for _, sub := range mustContainOneOf {
 			if strings.Contains(lower, strings.ToLower(sub)) {
 				found = true
 				break
 			}
 		}
 		if !found {
-			res.Failures = append(res.Failures, fmt.Sprintf("output missing all of %v", c.OutputMustContainOneOf))
+			res.Failures = append(res.Failures, fmt.Sprintf("output missing all of %v", mustContainOneOf))
 		}
 	}
 	for _, sub := range c.OutputMustNotContain {

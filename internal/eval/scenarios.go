@@ -1,5 +1,16 @@
 package eval
 
+import (
+	"context"
+	"fmt"
+	"strconv"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/pushkaranand/finagent/internal/store"
+)
+
 // Scenarios is the full eval suite. UserID is filled by the runner at startup.
 var Scenarios = []EvalCase{
 	{
@@ -9,11 +20,29 @@ var Scenarios = []EvalCase{
 		OutputMustContain: []string{"HDFC"},
 	},
 	{
-		Name:              "spending_breakdown",
-		Input:             "How much did I spend in April 2026?",
-		MustCallTools:     []string{"get_spending_breakdown"},
-		MaxLLMRounds:      3,
+		Name:          "spending_breakdown",
+		Input:         "How much did I spend in April 2026?",
+		MustCallTools: []string{"get_spending_breakdown"},
+		MaxLLMRounds:  3,
+		// Static: must at least mention a rupee amount.
 		OutputMustContain: []string{"₹"},
+		// Dynamic: verify the agent reports the correct total from DB.
+		ComputeExpected: func(ctx context.Context, pool *pgxpool.Pool, userID string) ([]string, error) {
+			txnStore := store.NewTransactionStore(pool)
+			from := time.Date(2026, 4, 1, 0, 0, 0, 0, time.UTC)
+			to := time.Date(2026, 4, 30, 23, 59, 59, 0, time.UTC)
+			rows, err := txnStore.GetSpendingByCategory(ctx, userID, from, to, nil)
+			if err != nil {
+				return nil, err
+			}
+			var total int64
+			for _, r := range rows {
+				if r.Depth == 0 {
+					total += r.TotalAmount
+				}
+			}
+			return paiseToINRStrings(total), nil
+		},
 	},
 	{
 		Name:                   "investment_direct",
@@ -61,9 +90,126 @@ var Scenarios = []EvalCase{
 		// No tool or output assertions — just verify agent returns without panic.
 	},
 	{
-		Name:                 "no_hallucinated_accounts",
-		Input:                "Do I have a Zerodha account?",
-		MaxLLMRounds:         4,
-		OutputMustNotContain: []string{"yes, you have a zerodha", "yes you have a zerodha"},
+		// Now that Zerodha tools are registered, the agent can answer truthfully.
+		Name:              "has_zerodha_account",
+		Input:             "Do I have a Zerodha account?",
+		MustCallTools:     []string{"get_investment_summary"},
+		MaxLLMRounds:      4,
+		OutputMustContain: []string{"zerodha"},
 	},
+	{
+		Name:              "equity_summary",
+		Input:             "What is my equity portfolio worth?",
+		MustCallTools:     []string{"get_investment_summary"},
+		MaxLLMRounds:      3,
+		OutputMustContain: []string{"₹"},
+		// Dynamic: verify the agent cites the correct current value from DB.
+		ComputeExpected: func(ctx context.Context, pool *pgxpool.Pool, userID string) ([]string, error) {
+			row, err := store.NewZerodhaStore(pool).GetEquitySummary(ctx, userID)
+			if err != nil {
+				return nil, err
+			}
+			return paiseToINRStrings(row.CurrentValuePaise), nil
+		},
+	},
+	{
+		Name:              "mf_summary",
+		Input:             "What mutual funds do I hold?",
+		MustCallTools:     []string{"get_mf_holdings"},
+		MaxLLMRounds:      3,
+		OutputMustContain: []string{"₹"},
+		// Dynamic: verify the agent cites the correct current value from DB.
+		ComputeExpected: func(ctx context.Context, pool *pgxpool.Pool, userID string) ([]string, error) {
+			row, err := store.NewZerodhaStore(pool).GetMFSummary(ctx, userID)
+			if err != nil {
+				return nil, err
+			}
+			return paiseToINRStrings(row.CurrentValuePaise), nil
+		},
+	},
+	{
+		Name:              "portfolio_total",
+		Input:             "What is my total investment portfolio value across equity and mutual funds?",
+		MustCallTools:     []string{"get_investment_summary"},
+		MaxLLMRounds:      3,
+		OutputMustContain: []string{"₹"},
+		// Dynamic: verify the agent cites the correct combined equity + MF value from DB.
+		ComputeExpected: func(ctx context.Context, pool *pgxpool.Pool, userID string) ([]string, error) {
+			zs := store.NewZerodhaStore(pool)
+			eq, err := zs.GetEquitySummary(ctx, userID)
+			if err != nil {
+				return nil, err
+			}
+			mf, err := zs.GetMFSummary(ctx, userID)
+			if err != nil {
+				return nil, err
+			}
+			return paiseToINRStrings(eq.CurrentValuePaise + mf.CurrentValuePaise), nil
+		},
+	},
+}
+
+// paiseToINRStrings returns common string representations of a paise amount that
+// an LLM might use in its response. For amounts below 1 lakh, Indian and Western
+// grouping are identical. For amounts ≥ 1 lakh both formats are included.
+//
+// Example: 4874200 paise → ["48742", "48,742"]
+// Example: 52345678 paise → ["523456", "5,23,456", "523,456"]
+func paiseToINRStrings(paise int64) []string {
+	rupees := paise / 100
+	raw := strconv.FormatInt(rupees, 10)
+	indian := indianComma(rupees)
+	seen := map[string]bool{raw: true}
+	out := []string{raw}
+	if !seen[indian] {
+		seen[indian] = true
+		out = append(out, indian)
+	}
+	if rupees >= 100000 {
+		western := westernComma(rupees)
+		if !seen[western] {
+			out = append(out, western)
+		}
+	}
+	return out
+}
+
+// indianComma formats n with Indian grouping (last group of 3, then groups of 2).
+// E.g. 523456 → "5,23,456".
+func indianComma(n int64) string {
+	if n < 0 {
+		return "-" + indianComma(-n)
+	}
+	s := strconv.FormatInt(n, 10)
+	if len(s) <= 3 {
+		return s
+	}
+	result := s[len(s)-3:]
+	s = s[:len(s)-3]
+	for len(s) > 2 {
+		result = s[len(s)-2:] + "," + result
+		s = s[:len(s)-2]
+	}
+	return fmt.Sprintf("%s,%s", s, result)
+}
+
+// westernComma formats n with standard Western grouping (groups of 3).
+// E.g. 523456 → "523,456".
+func westernComma(n int64) string {
+	if n < 0 {
+		return "-" + westernComma(-n)
+	}
+	s := strconv.FormatInt(n, 10)
+	if len(s) <= 3 {
+		return s
+	}
+	result := ""
+	for i, ch := range s {
+		pos := len(s) - i
+		if i > 0 && pos%3 == 0 {
+			result += ","
+		}
+		result += string(ch)
+	}
+	return result
 }

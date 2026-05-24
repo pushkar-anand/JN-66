@@ -194,6 +194,57 @@ func (s *ZerodhaStore) getEquityHoldingsByType(ctx context.Context, userID uuid.
 	return s.q.GetZerodhaEquityHoldingsByType(ctx, userID)
 }
 
+// ---------------------------------------------------------------------------
+// zerodhaQuerier implementation — DB-only (no lazy-sync).
+// Satisfies tools.zerodhaQuerier so ZerodhaStore can be passed directly to
+// investment tools in contexts where live API access is not needed (e.g. eval).
+// ---------------------------------------------------------------------------
+
+// GetEquityHoldings returns cached equity + SGB holdings from the DB.
+func (s *ZerodhaStore) GetEquityHoldings(ctx context.Context, userID string) ([]sqlcgen.ZerodhaEquityHolding, error) {
+	uid, err := parseUUID(userID)
+	if err != nil {
+		return nil, err
+	}
+	return s.getEquityHoldings(ctx, uid)
+}
+
+// GetMFHoldings returns cached mutual fund holdings from the DB.
+func (s *ZerodhaStore) GetMFHoldings(ctx context.Context, userID string) ([]sqlcgen.ZerodhaMfHolding, error) {
+	uid, err := parseUUID(userID)
+	if err != nil {
+		return nil, err
+	}
+	return s.getMFHoldings(ctx, uid)
+}
+
+// GetEquitySummary returns cached equity aggregate stats from the DB.
+func (s *ZerodhaStore) GetEquitySummary(ctx context.Context, userID string) (sqlcgen.GetZerodhaEquitySummaryRow, error) {
+	uid, err := parseUUID(userID)
+	if err != nil {
+		return sqlcgen.GetZerodhaEquitySummaryRow{}, err
+	}
+	return s.getEquitySummary(ctx, uid)
+}
+
+// GetMFSummary returns cached MF aggregate stats from the DB.
+func (s *ZerodhaStore) GetMFSummary(ctx context.Context, userID string) (sqlcgen.GetZerodhaMFSummaryRow, error) {
+	uid, err := parseUUID(userID)
+	if err != nil {
+		return sqlcgen.GetZerodhaMFSummaryRow{}, err
+	}
+	return s.getMFSummary(ctx, uid)
+}
+
+// GetEquityHoldingsByType returns cached holdings grouped by type (equity vs SGB).
+func (s *ZerodhaStore) GetEquityHoldingsByType(ctx context.Context, userID string) ([]sqlcgen.GetZerodhaEquityHoldingsByTypeRow, error) {
+	uid, err := parseUUID(userID)
+	if err != nil {
+		return nil, err
+	}
+	return s.getEquityHoldingsByType(ctx, uid)
+}
+
 func (s *ZerodhaStore) updateAccountBalance(ctx context.Context, accountID uuid.UUID, totalPaise int64) error {
 	return s.q.UpdateAccountBalance(ctx, sqlcgen.UpdateAccountBalanceParams{
 		ID:      accountID,
