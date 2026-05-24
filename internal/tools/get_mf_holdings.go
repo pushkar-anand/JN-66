@@ -9,6 +9,7 @@ import (
 	"math"
 	"math/big"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/pushkaranand/finagent/internal/llm"
@@ -19,18 +20,19 @@ import (
 type GetMFHoldings struct {
 	userID  string
 	zerodha zerodhaQuerier
+	loc     *time.Location
 }
 
 // NewGetMFHoldings creates the tool bound to the current user.
-func NewGetMFHoldings(userID string, zerodha zerodhaQuerier) *GetMFHoldings {
-	return &GetMFHoldings{userID: userID, zerodha: zerodha}
+func NewGetMFHoldings(userID string, zerodha zerodhaQuerier, loc *time.Location) *GetMFHoldings {
+	return &GetMFHoldings{userID: userID, zerodha: zerodha, loc: loc}
 }
 
 // Definition returns the tool descriptor.
 func (t *GetMFHoldings) Definition() llm.ToolDefinition {
 	return llm.ToolDefinition{
 		Name:        "get_mf_holdings",
-		Description: "List Zerodha mutual fund holdings with folio, units, NAV, current value, and P&L. Auto-refreshes if cache is older than 4 hours.",
+		Description: "List Zerodha mutual fund holdings with folio, units, NAV, current value, and P&L. Auto-refreshes if cache is older than 24 hours.",
 		Parameters: map[string]any{
 			"type":       "object",
 			"properties": map[string]any{},
@@ -79,6 +81,9 @@ func (t *GetMFHoldings) Execute(ctx context.Context, _ string, argsJSON string) 
 		}
 		fmt.Fprintf(&sb, "%-40s %-14s %10.4f %10.2f %14.2f %s%11.2f %6.1f%%\n",
 			truncate(h.Fund, 40), h.Folio, units, avgNav, currentValue, sign, pnl, pct)
+	}
+	if holdings[0].SyncedAt.Valid {
+		sb.WriteString(syncedAtLine(holdings[0].SyncedAt.Time, t.loc))
 	}
 	return sb.String(), nil
 }

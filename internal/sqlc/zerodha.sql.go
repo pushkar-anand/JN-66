@@ -87,21 +87,21 @@ func (q *Queries) GetZerodhaEquityHoldingsByType(ctx context.Context, userID uui
 
 const getZerodhaEquitySummary = `-- name: GetZerodhaEquitySummary :one
 SELECT
-    COUNT(*)                         AS holding_count,
-    SUM(quantity * last_price_paise) AS current_value_paise,
-    SUM(quantity * avg_price_paise)  AS invested_value_paise,
-    SUM(pnl_paise)                   AS total_pnl_paise,
-    MAX(synced_at)                   AS synced_at
+    COUNT(*)                              AS holding_count,
+    SUM(quantity * last_price_paise)      AS current_value_paise,
+    SUM(quantity * avg_price_paise)       AS invested_value_paise,
+    SUM(pnl_paise)                        AS total_pnl_paise,
+    MAX(synced_at)::TIMESTAMPTZ           AS synced_at
 FROM zerodha_equity_holdings
 WHERE user_id = $1
 `
 
 type GetZerodhaEquitySummaryRow struct {
-	HoldingCount       int64       `json:"holding_count"`
-	CurrentValuePaise  int64       `json:"current_value_paise"`
-	InvestedValuePaise int64       `json:"invested_value_paise"`
-	TotalPnlPaise      int64       `json:"total_pnl_paise"`
-	SyncedAt           interface{} `json:"synced_at"`
+	HoldingCount       int64              `json:"holding_count"`
+	CurrentValuePaise  int64              `json:"current_value_paise"`
+	InvestedValuePaise int64              `json:"invested_value_paise"`
+	TotalPnlPaise      int64              `json:"total_pnl_paise"`
+	SyncedAt           pgtype.Timestamptz `json:"synced_at"`
 }
 
 func (q *Queries) GetZerodhaEquitySummary(ctx context.Context, userID uuid.UUID) (GetZerodhaEquitySummaryRow, error) {

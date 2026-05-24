@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+
 	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
 	"github.com/pushkaranand/finagent/internal/store"
 )
@@ -80,4 +82,16 @@ type zerodhaQuerier interface {
 	GetEquitySummary(ctx context.Context, userID string) (sqlcgen.GetZerodhaEquitySummaryRow, error)
 	GetMFSummary(ctx context.Context, userID string) (sqlcgen.GetZerodhaMFSummaryRow, error)
 	GetEquityHoldingsByType(ctx context.Context, userID string) ([]sqlcgen.GetZerodhaEquityHoldingsByTypeRow, error)
+}
+
+type zerodhaSyncer interface {
+	ForceSync(ctx context.Context, userID uuid.UUID) (equityCount, mfCount int, err error)
+}
+
+// syncedAtLine formats a sync timestamp as a "Last synced: ..." footer for tool output.
+func syncedAtLine(t time.Time, loc *time.Location) string {
+	if loc == nil {
+		loc = time.UTC
+	}
+	return "\nLast synced: " + t.In(loc).Format("2006-01-02 15:04 MST")
 }

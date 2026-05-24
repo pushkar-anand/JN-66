@@ -24,7 +24,7 @@ import (
 // run: finagent zerodha auth
 var ErrZerodhaTokenExpired = errors.New("zerodha token expired")
 
-const holdingsCacheTTL = 4 * time.Hour
+const holdingsCacheTTL = 24 * time.Hour
 
 // ist is the Indian Standard Time fixed offset (+5:30).
 var ist = time.FixedZone("IST", 5*60*60+30*60)

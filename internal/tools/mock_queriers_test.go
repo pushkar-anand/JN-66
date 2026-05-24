@@ -14,6 +14,7 @@ import (
 	reflect "reflect"
 	time "time"
 
+	uuid "github.com/google/uuid"
 	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
 	store "github.com/pushkaranand/finagent/internal/store"
 	gomock "go.uber.org/mock/gomock"
@@ -270,4 +271,143 @@ func (m *MockmemoryQuerier) Save(ctx context.Context, userID *string, content st
 func (mr *MockmemoryQuerierMockRecorder) Save(ctx, userID, content, memType, tags any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*MockmemoryQuerier)(nil).Save), ctx, userID, content, memType, tags)
+}
+
+// MockzerodhaQuerier is a mock of zerodhaQuerier interface.
+type MockzerodhaQuerier struct {
+	ctrl     *gomock.Controller
+	recorder *MockzerodhaQuerierMockRecorder
+	isgomock struct{}
+}
+
+// MockzerodhaQuerierMockRecorder is the mock recorder for MockzerodhaQuerier.
+type MockzerodhaQuerierMockRecorder struct {
+	mock *MockzerodhaQuerier
+}
+
+// NewMockzerodhaQuerier creates a new mock instance.
+func NewMockzerodhaQuerier(ctrl *gomock.Controller) *MockzerodhaQuerier {
+	mock := &MockzerodhaQuerier{ctrl: ctrl}
+	mock.recorder = &MockzerodhaQuerierMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockzerodhaQuerier) EXPECT() *MockzerodhaQuerierMockRecorder {
+	return m.recorder
+}
+
+// GetEquityHoldings mocks base method.
+func (m *MockzerodhaQuerier) GetEquityHoldings(ctx context.Context, userID string) ([]sqlcgen.ZerodhaEquityHolding, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetEquityHoldings", ctx, userID)
+	ret0, _ := ret[0].([]sqlcgen.ZerodhaEquityHolding)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetEquityHoldings indicates an expected call of GetEquityHoldings.
+func (mr *MockzerodhaQuerierMockRecorder) GetEquityHoldings(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEquityHoldings", reflect.TypeOf((*MockzerodhaQuerier)(nil).GetEquityHoldings), ctx, userID)
+}
+
+// GetEquityHoldingsByType mocks base method.
+func (m *MockzerodhaQuerier) GetEquityHoldingsByType(ctx context.Context, userID string) ([]sqlcgen.GetZerodhaEquityHoldingsByTypeRow, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetEquityHoldingsByType", ctx, userID)
+	ret0, _ := ret[0].([]sqlcgen.GetZerodhaEquityHoldingsByTypeRow)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetEquityHoldingsByType indicates an expected call of GetEquityHoldingsByType.
+func (mr *MockzerodhaQuerierMockRecorder) GetEquityHoldingsByType(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEquityHoldingsByType", reflect.TypeOf((*MockzerodhaQuerier)(nil).GetEquityHoldingsByType), ctx, userID)
+}
+
+// GetEquitySummary mocks base method.
+func (m *MockzerodhaQuerier) GetEquitySummary(ctx context.Context, userID string) (sqlcgen.GetZerodhaEquitySummaryRow, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetEquitySummary", ctx, userID)
+	ret0, _ := ret[0].(sqlcgen.GetZerodhaEquitySummaryRow)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetEquitySummary indicates an expected call of GetEquitySummary.
+func (mr *MockzerodhaQuerierMockRecorder) GetEquitySummary(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEquitySummary", reflect.TypeOf((*MockzerodhaQuerier)(nil).GetEquitySummary), ctx, userID)
+}
+
+// GetMFHoldings mocks base method.
+func (m *MockzerodhaQuerier) GetMFHoldings(ctx context.Context, userID string) ([]sqlcgen.ZerodhaMfHolding, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetMFHoldings", ctx, userID)
+	ret0, _ := ret[0].([]sqlcgen.ZerodhaMfHolding)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetMFHoldings indicates an expected call of GetMFHoldings.
+func (mr *MockzerodhaQuerierMockRecorder) GetMFHoldings(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMFHoldings", reflect.TypeOf((*MockzerodhaQuerier)(nil).GetMFHoldings), ctx, userID)
+}
+
+// GetMFSummary mocks base method.
+func (m *MockzerodhaQuerier) GetMFSummary(ctx context.Context, userID string) (sqlcgen.GetZerodhaMFSummaryRow, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetMFSummary", ctx, userID)
+	ret0, _ := ret[0].(sqlcgen.GetZerodhaMFSummaryRow)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetMFSummary indicates an expected call of GetMFSummary.
+func (mr *MockzerodhaQuerierMockRecorder) GetMFSummary(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMFSummary", reflect.TypeOf((*MockzerodhaQuerier)(nil).GetMFSummary), ctx, userID)
+}
+
+// MockzerodhaSyncer is a mock of zerodhaSyncer interface.
+type MockzerodhaSyncer struct {
+	ctrl     *gomock.Controller
+	recorder *MockzerodhaSyncerMockRecorder
+	isgomock struct{}
+}
+
+// MockzerodhaSyncerMockRecorder is the mock recorder for MockzerodhaSyncer.
+type MockzerodhaSyncerMockRecorder struct {
+	mock *MockzerodhaSyncer
+}
+
+// NewMockzerodhaSyncer creates a new mock instance.
+func NewMockzerodhaSyncer(ctrl *gomock.Controller) *MockzerodhaSyncer {
+	mock := &MockzerodhaSyncer{ctrl: ctrl}
+	mock.recorder = &MockzerodhaSyncerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockzerodhaSyncer) EXPECT() *MockzerodhaSyncerMockRecorder {
+	return m.recorder
+}
+
+// ForceSync mocks base method.
+func (m *MockzerodhaSyncer) ForceSync(ctx context.Context, userID uuid.UUID) (int, int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ForceSync", ctx, userID)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(int)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// ForceSync indicates an expected call of ForceSync.
+func (mr *MockzerodhaSyncerMockRecorder) ForceSync(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ForceSync", reflect.TypeOf((*MockzerodhaSyncer)(nil).ForceSync), ctx, userID)
 }
