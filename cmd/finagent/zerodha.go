@@ -24,6 +24,7 @@ func runZerodha(args []string) error {
 	fs := flag.NewFlagSet("zerodha", flag.ExitOnError)
 	configPath := fs.String("config", "config.yaml", "path to config file")
 	userFlag := fs.String("user", "", "username (optional if only one user in DB)")
+	callbackAddr := fs.String("callback-addr", "127.0.0.1:8085", "local address for the OAuth callback server (register this URL in your Kite app)")
 	_ = fs.Parse(args)
 
 	sub := ""
@@ -33,7 +34,7 @@ func runZerodha(args []string) error {
 
 	switch sub {
 	case "auth", "":
-		return runZerodhaAuth(*configPath, *userFlag)
+		return runZerodhaAuth(*configPath, *userFlag, *callbackAddr)
 	case "sync":
 		return runZerodhaSync(*configPath, *userFlag)
 	default:
@@ -43,7 +44,7 @@ func runZerodha(args []string) error {
 
 // runZerodhaAuth spins up a temporary local HTTP server, prints the Kite login
 // URL, and waits for the OAuth redirect. On success it stores the access token.
-func runZerodhaAuth(configPath, userIdentifier string) error {
+func runZerodhaAuth(configPath, userIdentifier, callbackAddr string) error {
 	cfg, err := config.Load(configPath)
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
@@ -59,7 +60,17 @@ func runZerodhaAuth(configPath, userIdentifier string) error {
 	}
 	defer pool.Close()
 
+	if cfg.Database.AutoMigrate {
+		if err := db.Migrate(cfg.Database.URL); err != nil {
+			return fmt.Errorf("migrate: %w", err)
+		}
+	}
+
 	userStore := store.NewUserStore(pool)
+	if err := bootstrapUsers(ctx, userStore, cfg); err != nil {
+		return fmt.Errorf("bootstrap users: %w", err)
+	}
+
 	u, err := resolveUser(ctx, userStore, userIdentifier, cfg.Channel.CLI.DefaultUser)
 	if err != nil {
 		return err
@@ -73,13 +84,12 @@ func runZerodhaAuth(configPath, userIdentifier string) error {
 		return fmt.Errorf("zerodha.server_secret is not set in config")
 	}
 
-	// Start temporary local HTTP server on a random available port.
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	// Start temporary local HTTP server on the fixed callback address.
+	ln, err := net.Listen("tcp", callbackAddr)
 	if err != nil {
-		return fmt.Errorf("listen: %w", err)
+		return fmt.Errorf("listen on %s: %w", callbackAddr, err)
 	}
-	port := ln.Addr().(*net.TCPAddr).Port
-	redirectURL := fmt.Sprintf("http://127.0.0.1:%d/callback", port)
+	redirectURL := fmt.Sprintf("http://%s/callback", callbackAddr)
 
 	nonce := zerodha.NewNonce(u.ID.String(), cfg.Zerodha.ServerSecret)
 	client := zerodha.NewClient(creds.APIKey)
@@ -190,7 +200,17 @@ func runZerodhaSync(configPath, userIdentifier string) error {
 	}
 	defer pool.Close()
 
+	if cfg.Database.AutoMigrate {
+		if err := db.Migrate(cfg.Database.URL); err != nil {
+			return fmt.Errorf("migrate: %w", err)
+		}
+	}
+
 	userStore := store.NewUserStore(pool)
+	if err := bootstrapUsers(ctx, userStore, cfg); err != nil {
+		return fmt.Errorf("bootstrap users: %w", err)
+	}
+
 	u, err := resolveUser(ctx, userStore, userIdentifier, cfg.Channel.CLI.DefaultUser)
 	if err != nil {
 		return err
