@@ -35,3 +35,9 @@ run:
 
 eval:
 	go run ./cmd/eval/... --config config/config.yaml
+
+docker-run:
+	docker compose up -d
+
+docker-stop:
+	docker compose down -v
