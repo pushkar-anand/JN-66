@@ -8,6 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
 	"github.com/pushkaranand/finagent/internal/store"
 )
 
@@ -108,13 +109,7 @@ var Scenarios = []EvalCase{
 			if err != nil {
 				return nil, err
 			}
-			var equityPaise int64
-			for _, r := range rows {
-				if fmt.Sprintf("%s", r.HoldingType) == "equity" {
-					equityPaise = r.CurrentValuePaise
-				}
-			}
-			return paiseToINRStrings(equityPaise), nil
+			return paiseToINRStrings(equityPaiseOnly(rows)), nil
 		},
 	},
 	{
@@ -139,19 +134,24 @@ var Scenarios = []EvalCase{
 			if err != nil {
 				return nil, err
 			}
-			var equityPaise int64
-			for _, r := range rows {
-				if fmt.Sprintf("%s", r.HoldingType) == "equity" {
-					equityPaise = r.CurrentValuePaise
-				}
-			}
 			mf, err := zs.GetMFSummary(ctx, userID)
 			if err != nil {
 				return nil, err
 			}
-			return paiseToINRStrings(equityPaise + mf.CurrentValuePaise), nil
+			return paiseToINRStrings(equityPaiseOnly(rows) + mf.CurrentValuePaise), nil
 		},
 	},
+}
+
+// equityPaiseOnly returns the current value in paise for the "equity" type row
+// from a GetEquityHoldingsByType result set (excludes SGB).
+func equityPaiseOnly(rows []sqlcgen.GetZerodhaEquityHoldingsByTypeRow) int64 {
+	for _, r := range rows {
+		if r.HoldingType == "equity" {
+			return r.CurrentValuePaise
+		}
+	}
+	return 0
 }
 
 // paiseToINRStrings returns common string representations of a paise amount that

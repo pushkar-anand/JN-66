@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"math"
 	"strings"
 	"time"
@@ -70,10 +71,14 @@ func (s *ZerodhaStore) FindOrCreateZerodhaAccount(ctx context.Context, userID uu
 	for _, a := range accounts {
 		if strings.EqualFold(a.Institution, "Zerodha") {
 			if clientID != "" && a.ExternalAccountID == "" {
-				_ = s.q.SetExternalAccountID(ctx, sqlcgen.SetExternalAccountIDParams{
+				if err := s.q.SetExternalAccountID(ctx, sqlcgen.SetExternalAccountIDParams{
 					ID:                a.ID,
 					ExternalAccountID: clientID,
-				})
+				}); err != nil {
+					slog.WarnContext(ctx, "zerodha: backfill external_account_id failed",
+						slog.String("account_id", a.ID.String()),
+						slog.String("err", err.Error()))
+				}
 			}
 			return a.ID, nil
 		}
