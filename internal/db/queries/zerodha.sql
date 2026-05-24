@@ -76,8 +76,8 @@ ORDER BY fund;
 -- name: GetZerodhaMFSummary :one
 SELECT
     COUNT(*)                   AS holding_count,
-    SUM(units * nav_paise)     AS current_value_paise,
-    SUM(units * avg_nav_paise) AS invested_value_paise,
+    ROUND(SUM(units * nav_paise))::BIGINT     AS current_value_paise,
+    ROUND(SUM(units * avg_nav_paise))::BIGINT AS invested_value_paise,
     SUM(pnl_paise)             AS total_pnl_paise,
     MAX(synced_at)             AS synced_at
 FROM zerodha_mf_holdings
