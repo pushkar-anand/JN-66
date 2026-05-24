@@ -236,7 +236,7 @@ func printTrace(res eval.EvalResult) {
 	if len(out) > 300 {
 		out = out[:300] + "…"
 	}
-	for _, line := range strings.Split(out, "\n") {
+	for line := range strings.SplitSeq(out, "\n") {
 		fmt.Printf("      │   %s\n", line)
 	}
 	fmt.Printf("      └───────────────────────────────────────────\n\n")

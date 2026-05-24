@@ -63,8 +63,7 @@ func (s *Server) handleCreateAccount(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 	var req createAccountRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		var maxErr *http.MaxBytesError
-		if errors.As(err, &maxErr) {
+		if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
 			http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
 			return
 		}
@@ -102,8 +101,7 @@ func (s *Server) handleCreateAccount(w http.ResponseWriter, r *http.Request) {
 		IsActive:          true,
 	}, userID)
 	if err != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == "23505" && pgErr.ConstraintName == "uq_accounts_institution_ext_account_id" {
+		if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok && pgErr.Code == "23505" && pgErr.ConstraintName == "uq_accounts_institution_ext_account_id" {
 			http.Error(w, "account already exists for this institution and account number", http.StatusConflict)
 			return
 		}
