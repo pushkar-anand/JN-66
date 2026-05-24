@@ -1,10 +1,11 @@
 -- name: UpsertZerodhaToken :exec
-INSERT INTO zerodha_tokens (user_id, access_token, expires_at)
-VALUES (@user_id, @access_token, @expires_at)
+INSERT INTO zerodha_tokens (user_id, access_token, expires_at, zerodha_client_id)
+VALUES (@user_id, @access_token, @expires_at, @zerodha_client_id)
 ON CONFLICT (user_id) DO UPDATE SET
-    access_token = EXCLUDED.access_token,
-    expires_at   = EXCLUDED.expires_at,
-    updated_at   = NOW();
+    access_token      = EXCLUDED.access_token,
+    expires_at        = EXCLUDED.expires_at,
+    zerodha_client_id = EXCLUDED.zerodha_client_id,
+    updated_at        = NOW();
 
 -- name: GetZerodhaToken :one
 SELECT * FROM zerodha_tokens WHERE user_id = @user_id;

@@ -930,6 +930,20 @@ func (mr *MockQuerierMockRecorder) TouchSession(ctx, id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TouchSession", reflect.TypeOf((*MockQuerier)(nil).TouchSession), ctx, id)
 }
 
+// SetExternalAccountID mocks base method.
+func (m *MockQuerier) SetExternalAccountID(ctx context.Context, arg sqlcgen.SetExternalAccountIDParams) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetExternalAccountID", ctx, arg)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetExternalAccountID indicates an expected call of SetExternalAccountID.
+func (mr *MockQuerierMockRecorder) SetExternalAccountID(ctx, arg any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetExternalAccountID", reflect.TypeOf((*MockQuerier)(nil).SetExternalAccountID), ctx, arg)
+}
+
 // UpdateAccountBalance mocks base method.
 func (m *MockQuerier) UpdateAccountBalance(ctx context.Context, arg sqlcgen.UpdateAccountBalanceParams) error {
 	m.ctrl.T.Helper()

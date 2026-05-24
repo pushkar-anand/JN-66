@@ -38,6 +38,10 @@ ON CONFLICT (account_id) DO UPDATE SET
 -- name: GetAccountDetails :one
 SELECT * FROM account_details WHERE account_id = $1;
 
+-- name: SetExternalAccountID :exec
+UPDATE accounts SET external_account_id = @external_account_id, updated_at = NOW()
+WHERE id = @id AND external_account_id = '';
+
 -- name: UpdateAccountBalance :exec
 UPDATE accounts
 SET current_balance = @balance, balance_as_of = @as_of, updated_at = NOW()

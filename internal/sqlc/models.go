@@ -1345,9 +1345,10 @@ type ZerodhaMfHolding struct {
 }
 
 type ZerodhaToken struct {
-	UserID      uuid.UUID          `json:"user_id"`
-	AccessToken string             `json:"access_token"`
-	ExpiresAt   pgtype.Timestamptz `json:"expires_at"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	UserID          uuid.UUID          `json:"user_id"`
+	AccessToken     string             `json:"access_token"`
+	ExpiresAt       pgtype.Timestamptz `json:"expires_at"`
+	ZerodhaClientID string             `json:"zerodha_client_id"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
 }

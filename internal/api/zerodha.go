@@ -31,7 +31,7 @@ type ZerodhaCallbackCreds struct {
 
 // zerodhaTokenStore is the minimal store interface used by the callback handler.
 type zerodhaTokenStore interface {
-	UpsertToken(ctx context.Context, userID uuid.UUID, accessToken string, expiresAt time.Time) error
+	UpsertToken(ctx context.Context, userID uuid.UUID, accessToken, zerodhaClientID string, expiresAt time.Time) error
 }
 
 func (s *Server) handleZerodhaCallback(w http.ResponseWriter, r *http.Request) {
@@ -77,7 +77,7 @@ func (s *Server) handleZerodhaCallback(w http.ResponseWriter, r *http.Request) {
 	uid, _ := uuid.Parse(userID)
 	now := time.Now().In(zerodhaIST)
 	midnight := time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, zerodhaIST)
-	if err := cfg.Store.UpsertToken(r.Context(), uid, resp.AccessToken, midnight); err != nil {
+	if err := cfg.Store.UpsertToken(r.Context(), uid, resp.AccessToken, resp.UserID, midnight); err != nil {
 		slog.ErrorContext(r.Context(), "zerodha callback: upsert token failed",
 			slog.String("user", user.Username), slog.String("err", err.Error()))
 		http.Error(w, "failed to save token", http.StatusInternalServerError)

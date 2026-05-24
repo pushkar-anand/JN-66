@@ -172,7 +172,7 @@ func (q *Queries) GetZerodhaMFSyncedAt(ctx context.Context, accountID uuid.UUID)
 }
 
 const getZerodhaToken = `-- name: GetZerodhaToken :one
-SELECT user_id, access_token, expires_at, created_at, updated_at FROM zerodha_tokens WHERE user_id = $1
+SELECT user_id, access_token, expires_at, zerodha_client_id, created_at, updated_at FROM zerodha_tokens WHERE user_id = $1
 `
 
 func (q *Queries) GetZerodhaToken(ctx context.Context, userID uuid.UUID) (ZerodhaToken, error) {
@@ -182,6 +182,7 @@ func (q *Queries) GetZerodhaToken(ctx context.Context, userID uuid.UUID) (Zerodh
 		&i.UserID,
 		&i.AccessToken,
 		&i.ExpiresAt,
+		&i.ZerodhaClientID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -342,21 +343,28 @@ func (q *Queries) ListZerodhaMFHoldings(ctx context.Context, userID uuid.UUID) (
 }
 
 const upsertZerodhaToken = `-- name: UpsertZerodhaToken :exec
-INSERT INTO zerodha_tokens (user_id, access_token, expires_at)
-VALUES ($1, $2, $3)
+INSERT INTO zerodha_tokens (user_id, access_token, expires_at, zerodha_client_id)
+VALUES ($1, $2, $3, $4)
 ON CONFLICT (user_id) DO UPDATE SET
-    access_token = EXCLUDED.access_token,
-    expires_at   = EXCLUDED.expires_at,
-    updated_at   = NOW()
+    access_token      = EXCLUDED.access_token,
+    expires_at        = EXCLUDED.expires_at,
+    zerodha_client_id = EXCLUDED.zerodha_client_id,
+    updated_at        = NOW()
 `
 
 type UpsertZerodhaTokenParams struct {
-	UserID      uuid.UUID          `json:"user_id"`
-	AccessToken string             `json:"access_token"`
-	ExpiresAt   pgtype.Timestamptz `json:"expires_at"`
+	UserID          uuid.UUID          `json:"user_id"`
+	AccessToken     string             `json:"access_token"`
+	ExpiresAt       pgtype.Timestamptz `json:"expires_at"`
+	ZerodhaClientID string             `json:"zerodha_client_id"`
 }
 
 func (q *Queries) UpsertZerodhaToken(ctx context.Context, arg UpsertZerodhaTokenParams) error {
-	_, err := q.db.Exec(ctx, upsertZerodhaToken, arg.UserID, arg.AccessToken, arg.ExpiresAt)
+	_, err := q.db.Exec(ctx, upsertZerodhaToken,
+		arg.UserID,
+		arg.AccessToken,
+		arg.ExpiresAt,
+		arg.ZerodhaClientID,
+	)
 	return err
 }
