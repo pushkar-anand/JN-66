@@ -65,13 +65,12 @@ func run() error {
 		}
 		userID := u.ID.String()
 
-		memoryStore := store.NewMemoryStore(pool)
 		convStore := store.NewConversationStore(pool)
 
 		llmRec := eval.NewRecordingLLM(realLLM)
 
 		// Shared base tools + Zerodha investment tools via ZerodhaStore (DB-only, no API key needed).
-		registry := app.BuildToolRegistry(ctx, pool, userID)
+		registry, memoryStore := app.BuildToolRegistry(pool, userID)
 		zStore := store.NewZerodhaStore(pool)
 		registry.Register(tools.NewGetInvestmentSummary(userID, zStore))
 		registry.Register(tools.NewGetInvestmentHoldings(userID, zStore))

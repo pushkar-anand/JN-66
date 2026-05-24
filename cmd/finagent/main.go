@@ -106,7 +106,6 @@ func run() error {
 
 	// Stores
 	userStore := store.NewUserStore(pool)
-	memoryStore := store.NewMemoryStore(pool)
 	convStore := store.NewConversationStore(pool)
 	zStore := store.NewZerodhaStore(pool)
 
@@ -126,7 +125,7 @@ func run() error {
 	llmProvider := openai.New(cfg.LLM.BaseURL, cfg.LLM.APIKey)
 
 	// Tool registry — shared base tools.
-	registry := app.BuildToolRegistry(ctx, pool, userID)
+	registry, memoryStore := app.BuildToolRegistry(pool, userID)
 
 	// Conditionally register Zerodha investment tools if credentials are configured for this user.
 	if u != nil {

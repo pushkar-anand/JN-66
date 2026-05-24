@@ -2,15 +2,17 @@
 package app
 
 import (
-	"context"
-
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/pushkaranand/finagent/internal/store"
 	"github.com/pushkaranand/finagent/internal/tools"
 )
 
-// BuildToolRegistry wires the standard set of agent tools for userID.
+// BuildToolRegistry wires the standard set of agent tools for userID and
+// returns both the registry and the MemoryStore it wired internally.
+// The caller must pass the returned MemoryStore to agent.New so that the
+// agent's memory reader and the memory tools share a single instance.
+//
 // Zerodha investment tools are excluded here because they require a
 // different querier depending on the caller:
 //   - production (cmd/finagent): pass ZerodhaService for lazy-sync behaviour
@@ -18,7 +20,7 @@ import (
 //
 // Call registry.Register(tools.NewGetInvestmentSummary(...)) etc. after this
 // function returns to add the investment tools with the appropriate querier.
-func BuildToolRegistry(_ context.Context, pool *pgxpool.Pool, userID string) *tools.Registry {
+func BuildToolRegistry(pool *pgxpool.Pool, userID string) (*tools.Registry, *store.MemoryStore) {
 	txnStore := store.NewTransactionStore(pool)
 	accountStore := store.NewAccountStore(pool)
 	labelStore := store.NewLabelStore(pool)
@@ -33,5 +35,5 @@ func BuildToolRegistry(_ context.Context, pool *pgxpool.Pool, userID string) *to
 	registry.Register(tools.NewListRecurring(userID, recurringStore))
 	registry.Register(tools.NewRememberFact(userID, memoryStore))
 	registry.Register(tools.NewRecallFacts(userID, memoryStore))
-	return registry
+	return registry, memoryStore
 }

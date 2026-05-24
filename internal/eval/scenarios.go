@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/pushkaranand/finagent/internal/store"
 )
 
@@ -97,40 +98,42 @@ var Scenarios = []EvalCase{
 		OutputMustContain: []string{"zerodha"},
 	},
 	{
-		Name:          "equity_summary",
-		Input:         "What is my equity portfolio worth?",
-		MustCallTools: []string{"get_investment_summary"},
-		MaxLLMRounds:  3,
+		Name:              "equity_summary",
+		Input:             "What is my equity portfolio worth?",
+		MustCallTools:     []string{"get_investment_summary"},
+		MaxLLMRounds:      3,
+		OutputMustContain: []string{"₹"},
+		// Dynamic: verify the agent cites the correct current value from DB.
 		ComputeExpected: func(ctx context.Context, pool *pgxpool.Pool, userID string) ([]string, error) {
 			row, err := store.NewZerodhaStore(pool).GetEquitySummary(ctx, userID)
 			if err != nil {
 				return nil, err
 			}
-			cands := paiseToINRStrings(row.CurrentValuePaise)
-			cands = append(cands, strconv.Itoa(int(row.HoldingCount)))
-			return cands, nil
+			return paiseToINRStrings(row.CurrentValuePaise), nil
 		},
 	},
 	{
-		Name:          "mf_summary",
-		Input:         "What mutual funds do I hold?",
-		MustCallTools: []string{"get_mf_holdings"},
-		MaxLLMRounds:  3,
+		Name:              "mf_summary",
+		Input:             "What mutual funds do I hold?",
+		MustCallTools:     []string{"get_mf_holdings"},
+		MaxLLMRounds:      3,
+		OutputMustContain: []string{"₹"},
+		// Dynamic: verify the agent cites the correct current value from DB.
 		ComputeExpected: func(ctx context.Context, pool *pgxpool.Pool, userID string) ([]string, error) {
 			row, err := store.NewZerodhaStore(pool).GetMFSummary(ctx, userID)
 			if err != nil {
 				return nil, err
 			}
-			cands := paiseToINRStrings(row.CurrentValuePaise)
-			cands = append(cands, strconv.Itoa(int(row.HoldingCount)))
-			return cands, nil
+			return paiseToINRStrings(row.CurrentValuePaise), nil
 		},
 	},
 	{
-		Name:          "portfolio_total",
-		Input:         "What is my total investment portfolio value across equity and mutual funds?",
-		MustCallTools: []string{"get_investment_summary"},
-		MaxLLMRounds:  3,
+		Name:              "portfolio_total",
+		Input:             "What is my total investment portfolio value across equity and mutual funds?",
+		MustCallTools:     []string{"get_investment_summary"},
+		MaxLLMRounds:      3,
+		OutputMustContain: []string{"₹"},
+		// Dynamic: verify the agent cites the correct combined equity + MF value from DB.
 		ComputeExpected: func(ctx context.Context, pool *pgxpool.Pool, userID string) ([]string, error) {
 			zs := store.NewZerodhaStore(pool)
 			eq, err := zs.GetEquitySummary(ctx, userID)

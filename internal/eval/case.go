@@ -3,7 +3,6 @@ package eval
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"slices"
 	"strings"
 	"time"
@@ -70,13 +69,16 @@ func (c *EvalCase) Run(ctx context.Context, pool *pgxpool.Pool, handle channel.M
 		maxRounds = 4
 	}
 
-	// Resolve dynamic expected-value candidates from DB before sending any messages.
+	// Compute dynamic expected-value candidates before sending any messages.
+	// Use a local copy to avoid mutating the package-level Scenarios slice across runs.
+	mustContainOneOf := c.OutputMustContainOneOf
+	var computeErr error
 	if c.ComputeExpected != nil {
 		cands, err := c.ComputeExpected(ctx, pool, c.UserID)
 		if err != nil {
-			slog.WarnContext(ctx, "eval: ComputeExpected failed", "case", c.Name, "err", err)
+			computeErr = err
 		} else {
-			c.OutputMustContainOneOf = append(c.OutputMustContainOneOf, cands...)
+			mustContainOneOf = append(mustContainOneOf, cands...)
 		}
 	}
 
@@ -148,6 +150,12 @@ func (c *EvalCase) Run(ctx context.Context, pool *pgxpool.Pool, handle channel.M
 		res.Failures = append(res.Failures, fmt.Sprintf("llm_rounds=%d  max=%d", res.LLMRounds, maxRounds))
 	}
 
+	// Surface a ComputeExpected error as a failure — a skipped dynamic check
+	// is a false negative, not a pass.
+	if computeErr != nil {
+		res.Failures = append(res.Failures, fmt.Sprintf("ComputeExpected failed: %v", computeErr))
+	}
+
 	// Output assertions (case-insensitive).
 	lower := strings.ToLower(res.Output)
 	for _, sub := range c.OutputMustContain {
@@ -155,16 +163,16 @@ func (c *EvalCase) Run(ctx context.Context, pool *pgxpool.Pool, handle channel.M
 			res.Failures = append(res.Failures, fmt.Sprintf("output missing %q", sub))
 		}
 	}
-	if len(c.OutputMustContainOneOf) > 0 {
+	if len(mustContainOneOf) > 0 {
 		found := false
-		for _, sub := range c.OutputMustContainOneOf {
+		for _, sub := range mustContainOneOf {
 			if strings.Contains(lower, strings.ToLower(sub)) {
 				found = true
 				break
 			}
 		}
 		if !found {
-			res.Failures = append(res.Failures, fmt.Sprintf("output missing all of %v", c.OutputMustContainOneOf))
+			res.Failures = append(res.Failures, fmt.Sprintf("output missing all of %v", mustContainOneOf))
 		}
 	}
 	for _, sub := range c.OutputMustNotContain {
