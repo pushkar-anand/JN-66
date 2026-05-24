@@ -1,7 +1,6 @@
 package tools
 
 import (
-	"context"
 	"errors"
 	"testing"
 	"time"
@@ -45,7 +44,7 @@ func TestListRecurring_VariableAmount(t *testing.T) {
 		NextExpectedAt: pgtype.Date{Valid: false}, // null → unknown
 	}}, nil)
 
-	got, err := NewListRecurring(boundUser, q).Execute(context.Background(), "", `{}`)
+	got, err := NewListRecurring(boundUser, q).Execute(t.Context(), "", `{}`)
 	require.NoError(t, err)
 	assert.Contains(t, got, "variable")
 	assert.Contains(t, got, "unknown")
@@ -63,7 +62,7 @@ func TestListRecurring_FixedAmountAndDate(t *testing.T) {
 		NextExpectedAt: pgtype.Date{Time: nextDate, Valid: true},
 	}}, nil)
 
-	got, err := NewListRecurring(boundUser, q).Execute(context.Background(), "", `{}`)
+	got, err := NewListRecurring(boundUser, q).Execute(t.Context(), "", `{}`)
 	require.NoError(t, err)
 	assert.Contains(t, got, "₹25000.00")
 	assert.Contains(t, got, "2025-06-01")
@@ -75,7 +74,7 @@ func TestListRecurring_NoPayments(t *testing.T) {
 	q := NewMockrecurringQuerier(ctrl)
 	q.EXPECT().List(gomock.Any(), boundUser).Return(nil, nil)
 
-	got, err := NewListRecurring(boundUser, q).Execute(context.Background(), "", `{}`)
+	got, err := NewListRecurring(boundUser, q).Execute(t.Context(), "", `{}`)
 	require.NoError(t, err)
 	assert.Equal(t, "No active recurring payments found.", got)
 }
@@ -85,7 +84,7 @@ func TestListRecurring_StoreError(t *testing.T) {
 	q := NewMockrecurringQuerier(ctrl)
 	q.EXPECT().List(gomock.Any(), boundUser).Return(nil, errors.New("db down"))
 
-	_, err := NewListRecurring(boundUser, q).Execute(context.Background(), "", `{}`)
+	_, err := NewListRecurring(boundUser, q).Execute(t.Context(), "", `{}`)
 	require.Error(t, err)
 }
 
@@ -93,7 +92,7 @@ func TestListRecurring_InvalidJSON(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	q := NewMockrecurringQuerier(ctrl)
 
-	_, err := NewListRecurring(boundUser, q).Execute(context.Background(), "", `{bad`)
+	_, err := NewListRecurring(boundUser, q).Execute(t.Context(), "", `{bad`)
 	require.Error(t, err)
 }
 

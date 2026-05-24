@@ -55,7 +55,7 @@ func testStub() *stubUsers {
 }
 
 func TestResolveUser_EmptyIdentifier_SingleUser(t *testing.T) {
-	u, err := resolveUser(context.Background(), testStub(), "", "")
+	u, err := resolveUser(t.Context(), testStub(), "", "")
 	require.NoError(t, err)
 	assert.Equal(t, knownUID, u.ID)
 }
@@ -69,42 +69,42 @@ func TestResolveUser_EmptyIdentifier_MultipleUsers(t *testing.T) {
 			{ID: uuid.MustParse("22222222-2222-2222-2222-222222222222"), Username: "bob", Name: "Bob", Email: strPtr("bob@example.com")},
 		},
 	}
-	_, err := resolveUser(context.Background(), stub, "", "")
+	_, err := resolveUser(t.Context(), stub, "", "")
 	assert.Error(t, err)
 }
 
 func TestResolveUser_EmptyIdentifier_NoUsers(t *testing.T) {
 	stub := &stubUsers{byUsername: map[string]sqlcgen.User{}, byEmail: map[string]sqlcgen.User{}, all: []sqlcgen.User{}}
-	_, err := resolveUser(context.Background(), stub, "", "")
+	_, err := resolveUser(t.Context(), stub, "", "")
 	assert.Error(t, err)
 }
 
 func TestResolveUser_ByUsername(t *testing.T) {
-	u, err := resolveUser(context.Background(), testStub(), "alice", "")
+	u, err := resolveUser(t.Context(), testStub(), "alice", "")
 	require.NoError(t, err)
 	assert.Equal(t, knownUID, u.ID)
 }
 
 func TestResolveUser_ByEmail(t *testing.T) {
-	u, err := resolveUser(context.Background(), testStub(), "alice@example.com", "")
+	u, err := resolveUser(t.Context(), testStub(), "alice@example.com", "")
 	require.NoError(t, err)
 	assert.Equal(t, knownUID, u.ID)
 }
 
 func TestResolveUser_ByName(t *testing.T) {
-	u, err := resolveUser(context.Background(), testStub(), "Alice", "")
+	u, err := resolveUser(t.Context(), testStub(), "Alice", "")
 	require.NoError(t, err)
 	assert.Equal(t, knownUID, u.ID)
 }
 
 func TestResolveUser_NotFound(t *testing.T) {
 	stub := &stubUsers{byUsername: map[string]sqlcgen.User{}, byEmail: map[string]sqlcgen.User{}, all: []sqlcgen.User{}}
-	_, err := resolveUser(context.Background(), stub, "unknown@example.com", "")
+	_, err := resolveUser(t.Context(), stub, "unknown@example.com", "")
 	assert.Error(t, err)
 }
 
 func TestResolveUser_DefaultIdentifier(t *testing.T) {
-	u, err := resolveUser(context.Background(), testStub(), "", "alice@example.com")
+	u, err := resolveUser(t.Context(), testStub(), "", "alice@example.com")
 	require.NoError(t, err)
 	assert.Equal(t, knownUID, u.ID)
 }

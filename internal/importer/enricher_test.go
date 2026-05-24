@@ -67,7 +67,7 @@ func TestEnrich_ParsesValidJSON(t *testing.T) {
 		},
 	}, "model", nil)
 
-	res, err := e.Enrich(context.Background(), testTx())
+	res, err := e.Enrich(t.Context(), testTx())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -90,7 +90,7 @@ func TestEnrich_StripsMarkdownFences(t *testing.T) {
 		},
 	}, "model", nil)
 
-	res, err := e.Enrich(context.Background(), testTx())
+	res, err := e.Enrich(t.Context(), testTx())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -106,7 +106,7 @@ func TestEnrich_InvalidJSONError(t *testing.T) {
 		},
 	}, "model", nil)
 
-	_, err := e.Enrich(context.Background(), testTx())
+	_, err := e.Enrich(t.Context(), testTx())
 	if err == nil {
 		t.Fatal("expected error for invalid JSON, got nil")
 	}
@@ -123,7 +123,7 @@ func TestEnrich_LLMError(t *testing.T) {
 		},
 	}, "model", nil)
 
-	_, err := e.Enrich(context.Background(), testTx())
+	_, err := e.Enrich(t.Context(), testTx())
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
