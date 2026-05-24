@@ -51,10 +51,10 @@ func (s *ZerodhaStore) GetToken(ctx context.Context, userID uuid.UUID) (*sqlcgen
 // UpsertToken stores or refreshes the Zerodha access token and client ID.
 func (s *ZerodhaStore) UpsertToken(ctx context.Context, userID uuid.UUID, accessToken, zerodhaClientID string, expiresAt time.Time) error {
 	return s.q.UpsertZerodhaToken(ctx, sqlcgen.UpsertZerodhaTokenParams{
-		UserID:           userID,
-		AccessToken:      accessToken,
-		ZerodhaClientID:  zerodhaClientID,
-		ExpiresAt:        pgtype.Timestamptz{Time: expiresAt, Valid: true},
+		UserID:          userID,
+		AccessToken:     accessToken,
+		ZerodhaClientID: zerodhaClientID,
+		ExpiresAt:       pgtype.Timestamptz{Time: expiresAt, Valid: true},
 	})
 }
 
@@ -429,4 +429,3 @@ func (s *ZerodhaService) doSync(ctx context.Context, userID, accountID uuid.UUID
 
 	return len(holdings), len(mfHoldings), nil
 }
-
