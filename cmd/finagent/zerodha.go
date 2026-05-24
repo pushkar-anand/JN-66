@@ -164,7 +164,7 @@ func runZerodhaAuth(configPath, userIdentifier, callbackAddr string) error {
 	ist := time.FixedZone("IST", 5*60*60+30*60)
 	now := time.Now().In(ist)
 	midnight := time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, ist)
-	if err := zStore.UpsertToken(ctx, uid, tokenResp.AccessToken, midnight); err != nil {
+	if err := zStore.UpsertToken(ctx, uid, tokenResp.AccessToken, tokenResp.UserID, midnight); err != nil {
 		return fmt.Errorf("save token: %w", err)
 	}
 

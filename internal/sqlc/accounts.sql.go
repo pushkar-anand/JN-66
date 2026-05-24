@@ -168,6 +168,21 @@ func (q *Queries) ListAccountsByUser(ctx context.Context, userID uuid.UUID) ([]A
 	return items, nil
 }
 
+const setExternalAccountID = `-- name: SetExternalAccountID :exec
+UPDATE accounts SET external_account_id = $1, updated_at = NOW()
+WHERE id = $2 AND external_account_id = ''
+`
+
+type SetExternalAccountIDParams struct {
+	ExternalAccountID string    `json:"external_account_id"`
+	ID                uuid.UUID `json:"id"`
+}
+
+func (q *Queries) SetExternalAccountID(ctx context.Context, arg SetExternalAccountIDParams) error {
+	_, err := q.db.Exec(ctx, setExternalAccountID, arg.ExternalAccountID, arg.ID)
+	return err
+}
+
 const updateAccountBalance = `-- name: UpdateAccountBalance :exec
 UPDATE accounts
 SET current_balance = $1, balance_as_of = $2, updated_at = NOW()

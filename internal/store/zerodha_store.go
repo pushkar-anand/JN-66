@@ -48,34 +48,44 @@ func (s *ZerodhaStore) GetToken(ctx context.Context, userID uuid.UUID) (*sqlcgen
 	return &tok, nil
 }
 
-// UpsertToken stores or refreshes the Zerodha access token.
-func (s *ZerodhaStore) UpsertToken(ctx context.Context, userID uuid.UUID, accessToken string, expiresAt time.Time) error {
+// UpsertToken stores or refreshes the Zerodha access token and client ID.
+func (s *ZerodhaStore) UpsertToken(ctx context.Context, userID uuid.UUID, accessToken, zerodhaClientID string, expiresAt time.Time) error {
 	return s.q.UpsertZerodhaToken(ctx, sqlcgen.UpsertZerodhaTokenParams{
-		UserID:      userID,
-		AccessToken: accessToken,
-		ExpiresAt:   pgtype.Timestamptz{Time: expiresAt, Valid: true},
+		UserID:           userID,
+		AccessToken:      accessToken,
+		ZerodhaClientID:  zerodhaClientID,
+		ExpiresAt:        pgtype.Timestamptz{Time: expiresAt, Valid: true},
 	})
 }
 
-// FindOrCreateZerodhaAccount returns the Zerodha brokerage account ID for a user,
-// creating one (with AddAccountMember) if it does not yet exist.
-func (s *ZerodhaStore) FindOrCreateZerodhaAccount(ctx context.Context, userID uuid.UUID) (uuid.UUID, error) {
+// FindOrCreateZerodhaAccount returns the Zerodha brokerage account ID for a
+// user. clientID is the Zerodha-assigned client code (e.g. "KY1234"); it is
+// used as external_account_id at creation time and backfilled on existing
+// accounts that still have the empty placeholder.
+func (s *ZerodhaStore) FindOrCreateZerodhaAccount(ctx context.Context, userID uuid.UUID, clientID string) (uuid.UUID, error) {
 	accounts, err := s.q.ListAccountsByUser(ctx, userID)
 	if err != nil {
 		return uuid.UUID{}, fmt.Errorf("list accounts: %w", err)
 	}
 	for _, a := range accounts {
 		if strings.EqualFold(a.Institution, "Zerodha") {
+			if clientID != "" && a.ExternalAccountID == "" {
+				_ = s.q.SetExternalAccountID(ctx, sqlcgen.SetExternalAccountIDParams{
+					ID:                a.ID,
+					ExternalAccountID: clientID,
+				})
+			}
 			return a.ID, nil
 		}
 	}
 	a, err := s.q.CreateAccount(ctx, sqlcgen.CreateAccountParams{
-		Institution: "Zerodha",
-		Name:        "Zerodha",
-		AccountType: sqlcgen.AccountTypeEnumBrokerage,
-		Currency:    "INR",
-		IsActive:    true,
-		Metadata:    []byte("{}"),
+		Institution:       "Zerodha",
+		ExternalAccountID: clientID,
+		Name:              "Zerodha",
+		AccountType:       sqlcgen.AccountTypeEnumBrokerage,
+		Currency:          "INR",
+		IsActive:          true,
+		Metadata:          []byte("{}"),
 	})
 	if err != nil {
 		return uuid.UUID{}, fmt.Errorf("create zerodha account: %w", err)
@@ -277,7 +287,7 @@ func NewZerodhaService(store *ZerodhaStore, client *zerodha.Client) *ZerodhaServ
 func (s *ZerodhaService) UpsertToken(ctx context.Context, userID uuid.UUID, resp *zerodha.TokenResponse) error {
 	now := time.Now().In(ist)
 	midnight := time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, ist)
-	return s.store.UpsertToken(ctx, userID, resp.AccessToken, midnight)
+	return s.store.UpsertToken(ctx, userID, resp.AccessToken, resp.UserID, midnight)
 }
 
 // GetToken retrieves the raw token row (used by auth handlers).
@@ -288,15 +298,15 @@ func (s *ZerodhaService) GetToken(ctx context.Context, userID uuid.UUID) (*sqlcg
 // ForceSync fetches fresh holdings from Zerodha and replaces the cached data.
 // Returns ErrZerodhaTokenExpired if the stored token is missing or expired.
 func (s *ZerodhaService) ForceSync(ctx context.Context, userID uuid.UUID) (equityCount, mfCount int, err error) {
-	accessToken, err := s.loadToken(ctx, userID)
+	tok, err := s.loadToken(ctx, userID)
 	if err != nil {
 		return 0, 0, err
 	}
-	accountID, err := s.store.FindOrCreateZerodhaAccount(ctx, userID)
+	accountID, err := s.store.FindOrCreateZerodhaAccount(ctx, userID, tok.ZerodhaClientID)
 	if err != nil {
 		return 0, 0, err
 	}
-	return s.doSync(ctx, userID, accountID, accessToken)
+	return s.doSync(ctx, userID, accountID, tok.AccessToken)
 }
 
 // GetEquityHoldings returns equity + SGB holdings, triggering a sync if stale.
@@ -359,9 +369,29 @@ func (s *ZerodhaService) GetEquityHoldingsByType(ctx context.Context, userID str
 	return s.store.getEquityHoldingsByType(ctx, uid)
 }
 
+// loadToken retrieves the stored token, returning ErrZerodhaTokenExpired if
+// missing or past its expiry time.
+func (s *ZerodhaService) loadToken(ctx context.Context, userID uuid.UUID) (*sqlcgen.ZerodhaToken, error) {
+	tok, err := s.store.GetToken(ctx, userID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrZerodhaTokenExpired
+		}
+		return nil, fmt.Errorf("load token: %w", err)
+	}
+	if !tok.ExpiresAt.Valid || time.Now().After(tok.ExpiresAt.Time) {
+		return nil, ErrZerodhaTokenExpired
+	}
+	return tok, nil
+}
+
 // ensureFresh checks whether holdings are stale and syncs from the API if needed.
 func (s *ZerodhaService) ensureFresh(ctx context.Context, userID uuid.UUID) error {
-	accountID, err := s.store.FindOrCreateZerodhaAccount(ctx, userID)
+	tok, err := s.loadToken(ctx, userID)
+	if err != nil {
+		return err
+	}
+	accountID, err := s.store.FindOrCreateZerodhaAccount(ctx, userID, tok.ZerodhaClientID)
 	if err != nil {
 		return err
 	}
@@ -369,11 +399,7 @@ func (s *ZerodhaService) ensureFresh(ctx context.Context, userID uuid.UUID) erro
 	if time.Since(syncedAt) < holdingsCacheTTL {
 		return nil
 	}
-	accessToken, err := s.loadToken(ctx, userID)
-	if err != nil {
-		return err
-	}
-	_, _, err = s.doSync(ctx, userID, accountID, accessToken)
+	_, _, err = s.doSync(ctx, userID, accountID, tok.AccessToken)
 	return err
 }
 
@@ -404,18 +430,3 @@ func (s *ZerodhaService) doSync(ctx context.Context, userID, accountID uuid.UUID
 	return len(holdings), len(mfHoldings), nil
 }
 
-// loadToken retrieves the stored access token, returning ErrZerodhaTokenExpired
-// if it is missing or past its expiry time.
-func (s *ZerodhaService) loadToken(ctx context.Context, userID uuid.UUID) (string, error) {
-	tok, err := s.store.GetToken(ctx, userID)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return "", ErrZerodhaTokenExpired
-		}
-		return "", fmt.Errorf("load token: %w", err)
-	}
-	if !tok.ExpiresAt.Valid || time.Now().After(tok.ExpiresAt.Time) {
-		return "", ErrZerodhaTokenExpired
-	}
-	return tok.AccessToken, nil
-}

@@ -135,15 +135,21 @@ var Scenarios = []EvalCase{
 		// Dynamic: verify the agent cites the correct combined equity + MF value from DB.
 		ComputeExpected: func(ctx context.Context, pool *pgxpool.Pool, userID string) ([]string, error) {
 			zs := store.NewZerodhaStore(pool)
-			eq, err := zs.GetEquitySummary(ctx, userID)
+			rows, err := zs.GetEquityHoldingsByType(ctx, userID)
 			if err != nil {
 				return nil, err
+			}
+			var equityPaise int64
+			for _, r := range rows {
+				if fmt.Sprintf("%s", r.HoldingType) == "equity" {
+					equityPaise = r.CurrentValuePaise
+				}
 			}
 			mf, err := zs.GetMFSummary(ctx, userID)
 			if err != nil {
 				return nil, err
 			}
-			return paiseToINRStrings(eq.CurrentValuePaise + mf.CurrentValuePaise), nil
+			return paiseToINRStrings(equityPaise + mf.CurrentValuePaise), nil
 		},
 	},
 }

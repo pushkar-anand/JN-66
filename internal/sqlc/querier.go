@@ -71,6 +71,7 @@ type Querier interface {
 	RecallMemoriesByTags(ctx context.Context, arg RecallMemoriesByTagsParams) ([]AgentMemory, error)
 	RemoveTransactionLabel(ctx context.Context, arg RemoveTransactionLabelParams) error
 	SaveMessage(ctx context.Context, arg SaveMessageParams) (ConversationMessage, error)
+	SetExternalAccountID(ctx context.Context, arg SetExternalAccountIDParams) error
 	TouchSession(ctx context.Context, id uuid.UUID) error
 	UpdateAccountBalance(ctx context.Context, arg UpdateAccountBalanceParams) error
 	UpdateEnrichment(ctx context.Context, arg UpdateEnrichmentParams) error
