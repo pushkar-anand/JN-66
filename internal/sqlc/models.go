@@ -1074,7 +1074,7 @@ func AllTxnDirectionEnumValues() []TxnDirectionEnum {
 type Account struct {
 	ID                uuid.UUID          `json:"id"`
 	Institution       string             `json:"institution"`
-	ExternalAccountID *string            `json:"external_account_id"`
+	ExternalAccountID string             `json:"external_account_id"`
 	Name              string             `json:"name"`
 	AccountType       AccountTypeEnum    `json:"account_type"`
 	AccountClass      AccountClassEnum   `json:"account_class"`

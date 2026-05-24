@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pushkar-anand/build-with-go/http/middleware"
 	bwglogger "github.com/pushkar-anand/build-with-go/logger"
+	bwgvalidator "github.com/pushkar-anand/build-with-go/validator"
 
 	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
 
@@ -28,19 +29,40 @@ type dbPinger interface {
 
 // Server is the HTTP API server.
 type Server struct {
-	handler   channel.MessageHandler
-	userStore userLookup
-	db        dbPinger
-	zerodha   *ZerodhaCallbackConfig
-	srv       *http.Server
+	handler     channel.MessageHandler
+	userStore   userLookup
+	db          dbPinger
+	zerodha     *ZerodhaCallbackConfig
+	accountsCfg *AccountsConfig
+	importCfg   *ImportConfig
+	v           *bwgvalidator.Validator
+	srv         *http.Server
 }
 
 // New creates a Server that dispatches chat requests to handler.
 // userStore is used for Bearer token authentication; pass nil to disable auth (tests).
 // db is used for the readiness probe; pass nil to skip the DB check.
-// zerodha is optional; when non-nil it registers GET /api/zerodha/callback.
-func New(listen string, handler channel.MessageHandler, userStore userLookup, db dbPinger, zerodha *ZerodhaCallbackConfig) *Server {
-	s := &Server{handler: handler, userStore: userStore, db: db, zerodha: zerodha}
+// zerodha, accountsCfg, and importCfg are optional; non-nil values enable their routes.
+func New(listen string, handler channel.MessageHandler, userStore userLookup, db dbPinger, zerodha *ZerodhaCallbackConfig, accountsCfg *AccountsConfig, importCfg *ImportConfig) *Server {
+	// bwgvalidator.New uses sync.Once internally — this must be the only call site in the binary.
+	v, err := bwgvalidator.New(
+		bwgvalidator.WithCustomTags(map[string]bwgvalidator.ValidationFunc{
+			"txndate": validateTxnDate,
+		}),
+	)
+	if err != nil {
+		panic("api: failed to initialise validator: " + err.Error())
+	}
+
+	s := &Server{
+		handler:     handler,
+		userStore:   userStore,
+		db:          db,
+		zerodha:     zerodha,
+		accountsCfg: accountsCfg,
+		importCfg:   importCfg,
+		v:           v,
+	}
 
 	r := mux.NewRouter()
 	r.Use(recoveryMiddleware)
@@ -58,6 +80,14 @@ func New(listen string, handler channel.MessageHandler, userStore userLookup, db
 		protected.Use(s.authMiddleware)
 	}
 	protected.HandleFunc("/api/chat", s.handleChat).Methods(http.MethodPost)
+
+	if s.accountsCfg != nil {
+		protected.HandleFunc("/api/accounts", s.handleListAccounts).Methods(http.MethodGet)
+		protected.HandleFunc("/api/accounts", s.handleCreateAccount).Methods(http.MethodPost)
+	}
+	if s.importCfg != nil {
+		protected.HandleFunc("/api/import", s.handleImport).Methods(http.MethodPost)
+	}
 
 	s.srv = &http.Server{
 		Addr:         listen,

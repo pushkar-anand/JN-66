@@ -106,6 +106,10 @@ func run() error {
 
 	// Stores
 	userStore := store.NewUserStore(pool)
+	accountStore := store.NewAccountStore(pool)
+	txnStore := store.NewTransactionStore(pool)
+	runStore := store.NewImportRunStore(pool)
+	catStore := store.NewCategoryStore(pool)
 	convStore := store.NewConversationStore(pool)
 	zStore := store.NewZerodhaStore(pool)
 
@@ -155,7 +159,17 @@ func run() error {
 				UserByID:     userStore.GetByID,
 			}
 		}
-		srv := api.New(cfg.API.Listen, ag.HandleMessage, userStore, pool, zerCbCfg)
+		accountsCfg := &api.AccountsConfig{Store: accountStore}
+		importCfg := &api.ImportConfig{
+			UserGetter:   userStore,
+			AccountStore: accountStore,
+			TxnStore:     txnStore,
+			RunStore:     runStore,
+			CatStore:     catStore,
+			LLMProvider:  llmProvider,
+			TaggingModel: cfg.LLM.Routing.TaggingModel,
+		}
+		srv := api.New(cfg.API.Listen, ag.HandleMessage, userStore, pool, zerCbCfg, accountsCfg, importCfg)
 		return srv.Start(ctx)
 	}
 

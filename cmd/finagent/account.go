@@ -92,6 +92,11 @@ func runAccountAdd(configPath, userEmail string) error {
 		return fmt.Errorf("institution is required")
 	}
 
+	accountNumber := prompt(scanner, "Account number (e.g. 1234567890)", "")
+	if accountNumber == "" {
+		return fmt.Errorf("account number is required")
+	}
+
 	accountTypeName := prompt(scanner, "Account type (savings/current/salary/credit_card/loan/wallet/fd/ppf)", "savings")
 	accountType, err := parseAccountType(accountTypeName)
 	if err != nil {
@@ -104,11 +109,12 @@ func runAccountAdd(configPath, userEmail string) error {
 	}
 
 	p := store.CreateAccountParams{
-		Institution: institution,
-		Name:        nickname,
-		AccountType: accountType,
-		Currency:    "INR",
-		IsActive:    true,
+		Institution:       institution,
+		ExternalAccountID: accountNumber,
+		Name:              nickname,
+		AccountType:       accountType,
+		Currency:          "INR",
+		IsActive:          true,
 	}
 
 	acc, err := accountStore.Create(ctx, p, u.ID.String())

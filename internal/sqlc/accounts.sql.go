@@ -37,7 +37,7 @@ RETURNING id, institution, external_account_id, name, account_type, account_clas
 
 type CreateAccountParams struct {
 	Institution       string          `json:"institution"`
-	ExternalAccountID *string         `json:"external_account_id"`
+	ExternalAccountID string          `json:"external_account_id"`
 	Name              string          `json:"name"`
 	AccountType       AccountTypeEnum `json:"account_type"`
 	Currency          string          `json:"currency"`

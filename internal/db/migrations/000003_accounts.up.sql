@@ -1,7 +1,7 @@
 CREATE TABLE accounts (
     id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     institution         TEXT NOT NULL,
-    external_account_id TEXT,
+    external_account_id TEXT NOT NULL,
     name                TEXT NOT NULL,
     account_type        account_type_enum NOT NULL,
     account_class       account_class_enum NOT NULL GENERATED ALWAYS AS (
