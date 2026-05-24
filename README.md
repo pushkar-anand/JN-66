@@ -19,6 +19,7 @@ India-first: amounts in INR/paise, UPI/NACH/NEFT/IMPS payment modes, VPA-based c
 - **Label management** — tag any transaction mid-conversation: "Label the Zomato one as food-delivery"
 - **Memory** — tell it facts once, it remembers: "My Netflix ₹649 on HDFC CC every month is a subscription"
 - **Multi-user** — knows who it's talking to; scopes data per user, supports household queries
+- **Investments** — Zerodha equity, SGB, and mutual fund holdings with P&L (requires Zerodha config)
 
 See [AGENT.md](AGENT.md) for the full usage guide and example questions.
 
@@ -43,42 +44,57 @@ See [AGENT.md](AGENT.md) for the full usage guide and example questions.
 ## Quick start
 
 ```bash
-# 1. Start PostgreSQL
+# 1. Copy and edit config
+cp config.yaml.example config.yaml
+# edit config.yaml: set llm.base_url, users, api_keys
+
+# 2. Start PostgreSQL 18 + pgvector
 docker compose up -d
 
-# 2. Run migrations
+# 3. Run migrations
 make migrate-up
 
-# 3. Seed sample data (Alice + Bob, 3 accounts, ~40 transactions)
-psql $DATABASE_URL -f scripts/seed.sql
+# 4. Seed sample data (Alice + Bob, 3 accounts, ~40 transactions)
+make seed
 
-# 4. Run the CLI
+# 5. Build and run
+make build
 ./bin/finagent --user alice
-
-# Or build first
-make build && ./bin/finagent --user alice
 ```
 
-Point `llm.base_url` in `config/config.yaml` at your LLM endpoint (Ollama default: `http://localhost:11434/v1`).
+Ollama default LLM base URL is `http://localhost:11434/v1`. OpenWebUI or any hosted OpenAI-compatible provider works too.
 
 ---
 
 ## Configuration
 
-```yaml
-llm:
-  base_url: "http://localhost:11434/v1"
-  api_key: ""                    # or set FINAGENT_LLM__API_KEY env var
-  routing:
-    chat_model:     "qwen3:14b"
-    analysis_model: "qwen3:14b"
+Copy `config.yaml.example` to `config.yaml` and fill in the values. All keys can also be set via environment variables using the `FINAGENT_` prefix and `__` as the level separator (e.g. `FINAGENT_LLM__BASE_URL`).
 
-channel:
-  cli:
-    default_user: "alice"
-```
+### Reference
 
-All config values can be overridden via environment variables using the `FINAGENT_` prefix and `__` as the level separator (e.g. `FINAGENT_LLM__BASE_URL`).
+| Key | Default | Description |
+|-----|---------|-------------|
+| `database.url` | — | PostgreSQL connection string |
+| `database.max_connections` | `10` | pgxpool max connections |
+| `database.auto_migrate` | `true` | Run pending migrations on startup |
+| `llm.base_url` | — | OpenAI-compatible endpoint (e.g. `http://localhost:11434/v1`) |
+| `llm.api_key` | `""` | API key (empty for local Ollama) |
+| `llm.routing.chat_model` | — | Model for general conversation |
+| `llm.routing.analysis_model` | — | Model for calculations and breakdowns |
+| `llm.routing.tagging_model` | — | Model used by the enrichment pipeline |
+| `llm.routing.embed_model` | — | Embedding model (Phase 2) |
+| `llm.routing.summarize_model` | — | Model for session title generation |
+| `agent.max_tool_rounds` | `20` | Maximum ReAct loop iterations per message |
+| `agent.history_messages` | `20` | Conversation turns kept in LLM context |
+| `channel.cli.default_user` | — | Username used when `--user` flag is omitted |
+| `api.listen` | `:8082` | HTTP server bind address |
+| `log.level` | `info` | Log level: `debug` \| `info` \| `warn` \| `error` |
+| `log.format` | `text` | `text` (dev) or `json` (prod) |
+| `users[]` | — | Users to create/update on startup (username, name, email, timezone) |
+| `api_keys.<username>` | — | Bearer token for the HTTP API |
+| `zerodha.users[].username` | — | Username to attach Zerodha credentials to |
+| `zerodha.users[].api_key` | — | Kite Connect API key |
+| `zerodha.users[].api_secret` | — | Kite Connect API secret |
 
 ---
 
@@ -87,11 +103,25 @@ All config values can be overridden via environment variables using the `FINAGEN
 ```bash
 # Start in server mode
 ./bin/finagent --serve
+```
 
-# Chat endpoint
+All endpoints require `Authorization: Bearer <api_key>` (set per user in `api_keys` config).
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/health` | Liveness check — no auth required |
+| `POST` | `/api/chat` | Send a message, get an agent response |
+| `POST` | `/api/accounts` | Create an account |
+| `GET` | `/api/accounts` | List accounts for the authenticated user |
+| `POST` | `/api/import` | Import transactions from a bank statement file |
+
+**Chat example:**
+
+```bash
 curl -X POST http://localhost:8082/api/chat \
+  -H 'Authorization: Bearer <api_key>' \
   -H 'Content-Type: application/json' \
-  -d '{"user_id":"<uuid>","text":"What accounts do I have?"}'
+  -d '{"text": "What accounts do I have?", "session_id": "optional-uuid"}'
 ```
 
 ---
@@ -149,10 +179,10 @@ total:    ~6 min (33 cases, real LLM calls)
 
 ## What's not here yet (Phase 2+)
 
-- Investments, stocks, mutual funds, FDs
+- FD lifecycle tracking and physical assets (car, gold, property)
 - Automatic transaction tagging pipeline
 - Embedding-based semantic memory retrieval
-- Zerodha API and bank connectors
+- Additional bank connectors (auto-fetch, not just CSV/XLS import)
 - Slack / Signal channels
 - Tax assistance
 

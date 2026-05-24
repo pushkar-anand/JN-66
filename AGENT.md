@@ -10,6 +10,7 @@ finagent is a personal financial intelligence agent for your household. It can a
 - **Recurring payments** — subscriptions, EMIs, UPI AutoPay, NACH
 - **Labels** — custom tags you or the agent has applied to transactions
 - **Household facts** — anything you've asked the agent to remember
+- **Investments** — Zerodha equity, SGB, and mutual fund holdings with P&L (if Zerodha is configured)
 
 ## Example questions
 
@@ -22,6 +23,10 @@ Which account has the highest balance?
 Did I get a refund from Zomato recently?
 Show me transfers between me and my partner this month.
 What's my total spending by category for Q1?
+
+What's my current equity portfolio?
+Show me my mutual fund holdings.
+What's my total P&L across all investments?
 ```
 
 ## Teaching the agent
@@ -47,6 +52,11 @@ The agent stores these as memories and uses them when tagging future transaction
 | `list_recurring` | Show active recurring payments and upcoming expected charges |
 | `remember_fact` | Store a fact in memory; can also create a recurring payment rule |
 | `recall_facts` | Search memories by topic tags |
+| `get_investment_holdings` | List Zerodha equity and SGB holdings with quantity, price, and P&L |
+| `get_mf_holdings` | List Zerodha mutual fund holdings with units, NAV, and P&L |
+| `get_investment_summary` | Portfolio overview: total value, invested amount, and P&L by asset class |
+
+Investment tools are only registered when Zerodha credentials are configured for the user. Holdings are cached locally and auto-refreshed if the cache is older than 4 hours.
 
 ## Multi-user
 
@@ -68,18 +78,36 @@ Show me our combined household spending in March.
 
 ## Importing transactions
 
-Phase 1 supports CSV import. Place your bank CSV in the import directory and run:
+Supported formats: Axis Bank CSV, HDFC XLS/XLSX, ICICI XLS, IDFC CSV, SBI CSV/XLSX. Run:
 
 ```bash
-./bin/finagent import --account <account-id> --file transactions.csv
+./bin/finagent import --account <account-id> --file statement.csv
 ```
 
-(Zerodha API import and other bank connectors are planned for Phase 2.)
+The importer deduplicates automatically — re-importing the same file is safe.
 
-## Limitations (Phase 1)
+You can also import via the HTTP API:
 
-- Investments, stocks, mutual funds — not yet tracked
+```bash
+curl -X POST http://localhost:8082/api/import \
+  -H 'Authorization: Bearer <api_key>' \
+  -F 'account_id=<uuid>' \
+  -F 'file=@statement.csv'
+```
+
+## Using the HTTP API
+
+Start the server with `--serve`:
+
+```bash
+./bin/finagent --serve
+```
+
+The API listens on `:8082` by default (configure with `api.listen`). All requests require `Authorization: Bearer <api_key>`. See the [README](README.md#http-api) for the full endpoint list.
+
+## Limitations
+
 - Physical assets (car, gold, property) — not yet tracked
-- Automatic transaction tagging — not yet active (manual category assignment only)
+- Automatic transaction tagging — not yet active (manual or import-time enrichment only)
 - Tax calculations — not yet supported
-- Slack / Signal channels — CLI only for now
+- Slack / Signal channels — CLI and HTTP API only for now

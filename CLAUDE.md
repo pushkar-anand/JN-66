@@ -88,6 +88,8 @@ internal/
 - Modern Go 1.26 idioms: `any`, `new(val)`, `errors.AsType[T]`, `wg.Go`, `slices.*`, `maps.*`, `cmp.Or`, `omitzero`, `for i := range n`
 - Run `make fmt` before every commit
 
+When writing or reviewing Go code, follow `/modern-go-guidelines:use-modern-go` to apply Go 1.26 idioms consistently.
+
 ## sqlc
 
 Queries live in `internal/db/queries/`. Run `make generate` after editing queries or schema. The `internal/sqlc/` directory is auto-generated — never edit files there directly.

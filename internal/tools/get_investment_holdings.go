@@ -25,6 +25,7 @@ func NewGetInvestmentHoldings(userID string, zerodha zerodhaQuerier) *GetInvestm
 	return &GetInvestmentHoldings{userID: userID, zerodha: zerodha}
 }
 
+// Definition returns the tool descriptor.
 func (t *GetInvestmentHoldings) Definition() llm.ToolDefinition {
 	return llm.ToolDefinition{
 		Name:        "get_investment_holdings",
@@ -46,6 +47,7 @@ type getInvestmentHoldingsArgs struct {
 	FilterType string `json:"filter_type"`
 }
 
+// Execute returns the user's Zerodha equity and SGB holdings.
 func (t *GetInvestmentHoldings) Execute(ctx context.Context, _ string, argsJSON string) (string, error) {
 	var args getInvestmentHoldingsArgs
 	if err := json.Unmarshal([]byte(argsJSON), &args); err != nil {

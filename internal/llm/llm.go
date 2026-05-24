@@ -17,10 +17,10 @@ type Provider interface {
 type Role string
 
 const (
-	RoleSystem    Role = "system"
-	RoleUser      Role = "user"
-	RoleAssistant Role = "assistant"
-	RoleTool      Role = "tool"
+	RoleSystem    Role = "system"    // system instructions
+	RoleUser      Role = "user"      // user turn
+	RoleAssistant Role = "assistant" // model response
+	RoleTool      Role = "tool"      // tool result
 )
 
 // Message is a single turn in a conversation.
