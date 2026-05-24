@@ -1,7 +1,7 @@
 CREATE TABLE accounts (
     id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     institution         TEXT NOT NULL,
-    external_account_id TEXT,
+    external_account_id TEXT NOT NULL,
     name                TEXT NOT NULL,
     account_type        account_type_enum NOT NULL,
     account_class       account_class_enum NOT NULL GENERATED ALWAYS AS (
@@ -23,7 +23,7 @@ CREATE TABLE accounts (
     created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     deleted_at          TIMESTAMPTZ,
-    UNIQUE (institution, external_account_id)
+    CONSTRAINT uq_accounts_institution_ext_account_id UNIQUE (institution, external_account_id)
 );
 
 CREATE TABLE account_members (

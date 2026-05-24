@@ -248,3 +248,92 @@ func TestAccountStore_UpdateBalance_StoreError(t *testing.T) {
 	err := s.UpdateBalance(t.Context(), aid.String(), 0, time.Now())
 	require.Error(t, err)
 }
+
+func TestAccountStore_FindOrCreate_NoMatches_NoAccountNumber(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	q := NewMockQuerier(ctrl)
+	s := newAccountStoreForTest(q)
+
+	uid := uuid.MustParse(testUserID)
+	q.EXPECT().ListAccountsByUser(gomock.Any(), uid).Return([]sqlcgen.Account{}, nil)
+
+	_, _, err := s.FindOrCreate(t.Context(), testUserID, "HDFC", AccountMetaParams{})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "account number is required")
+}
+
+func TestAccountStore_FindOrCreate_NoMatches_AutoCreate(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	q := NewMockQuerier(ctrl)
+	s := newAccountStoreForTest(q)
+
+	uid := uuid.MustParse(testUserID)
+	created := sqlcgen.Account{ID: uuid.New(), Institution: "HDFC"}
+	q.EXPECT().ListAccountsByUser(gomock.Any(), uid).Return([]sqlcgen.Account{}, nil)
+	q.EXPECT().CreateAccount(gomock.Any(), gomock.Any()).Return(created, nil)
+	q.EXPECT().AddAccountMember(gomock.Any(), gomock.Any()).Return(nil)
+	q.EXPECT().UpsertAccountDetails(gomock.Any(), gomock.Any()).Return(nil)
+
+	a, wasCreated, err := s.FindOrCreate(t.Context(), testUserID, "HDFC", AccountMetaParams{AccountNumber: "123456789012"})
+	require.NoError(t, err)
+	assert.True(t, wasCreated)
+	assert.Equal(t, created.ID, a.ID)
+}
+
+func TestAccountStore_FindOrCreate_OneMatch(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	q := NewMockQuerier(ctrl)
+	s := newAccountStoreForTest(q)
+
+	uid := uuid.MustParse(testUserID)
+	existing := sqlcgen.Account{ID: uuid.New(), Institution: "hdfc"}
+	q.EXPECT().ListAccountsByUser(gomock.Any(), uid).Return([]sqlcgen.Account{existing}, nil)
+
+	a, wasCreated, err := s.FindOrCreate(t.Context(), testUserID, "HDFC", AccountMetaParams{})
+	require.NoError(t, err)
+	assert.False(t, wasCreated)
+	assert.Equal(t, existing.ID, a.ID)
+}
+
+func TestAccountStore_FindOrCreate_MultipleMatches(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	q := NewMockQuerier(ctrl)
+	s := newAccountStoreForTest(q)
+
+	uid := uuid.MustParse(testUserID)
+	accts := []sqlcgen.Account{
+		{ID: uuid.New(), Institution: "HDFC"},
+		{ID: uuid.New(), Institution: "HDFC"},
+	}
+	q.EXPECT().ListAccountsByUser(gomock.Any(), uid).Return(accts, nil)
+
+	_, _, err := s.FindOrCreate(t.Context(), testUserID, "HDFC", AccountMetaParams{})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "found 2")
+	assert.Contains(t, err.Error(), "HDFC")
+}
+
+func TestAccountStore_FindOrCreate_ListByUserError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	q := NewMockQuerier(ctrl)
+	s := newAccountStoreForTest(q)
+
+	uid := uuid.MustParse(testUserID)
+	q.EXPECT().ListAccountsByUser(gomock.Any(), uid).Return(nil, errors.New("db error"))
+
+	_, _, err := s.FindOrCreate(t.Context(), testUserID, "HDFC", AccountMetaParams{})
+	require.Error(t, err)
+}
+
+func TestAccountStore_FindOrCreate_AutoCreate_CreateError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	q := NewMockQuerier(ctrl)
+	s := newAccountStoreForTest(q)
+
+	uid := uuid.MustParse(testUserID)
+	q.EXPECT().ListAccountsByUser(gomock.Any(), uid).Return([]sqlcgen.Account{}, nil)
+	q.EXPECT().CreateAccount(gomock.Any(), gomock.Any()).Return(sqlcgen.Account{}, errors.New("insert failed"))
+
+	_, _, err := s.FindOrCreate(t.Context(), testUserID, "HDFC", AccountMetaParams{AccountNumber: "123456789012"})
+	require.Error(t, err)
+}

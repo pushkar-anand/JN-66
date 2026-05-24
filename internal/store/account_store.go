@@ -58,7 +58,7 @@ func (s *AccountStore) GetByID(ctx context.Context, accountID string) (*sqlcgen.
 // CreateAccountParams groups inputs for Create.
 type CreateAccountParams struct {
 	Institution       string
-	ExternalAccountID *string
+	ExternalAccountID string
 	Name              string
 	AccountType       sqlcgen.AccountTypeEnum
 	Currency          string
@@ -121,17 +121,18 @@ func (s *AccountStore) FindOrCreate(ctx context.Context, userID, institution str
 
 	switch len(matches) {
 	case 0:
-		// Auto-create.
-		name := strings.ToUpper(institution) + " Savings"
-		if len(meta.AccountNumber) >= 4 {
-			name += " ****" + meta.AccountNumber[len(meta.AccountNumber)-4:]
+		if meta.AccountNumber == "" {
+			return nil, false, fmt.Errorf("account number is required to create an account for institution %q", institution)
 		}
+		// Auto-create.
+		name := strings.ToUpper(institution) + " Savings ****" + meta.AccountNumber[max(0, len(meta.AccountNumber)-4):]
 		a, err := s.Create(ctx, CreateAccountParams{
-			Institution: institution,
-			Name:        name,
-			AccountType: sqlcgen.AccountTypeEnumBankSavings,
-			Currency:    "INR",
-			IsActive:    true,
+			Institution:       institution,
+			ExternalAccountID: meta.AccountNumber,
+			Name:              name,
+			AccountType:       sqlcgen.AccountTypeEnumBankSavings,
+			Currency:          "INR",
+			IsActive:          true,
 		}, userID)
 		if err != nil {
 			return nil, false, err
@@ -156,7 +157,7 @@ func (s *AccountStore) FindOrCreate(ctx context.Context, userID, institution str
 		return &matches[0], false, nil
 
 	default:
-		return nil, false, fmt.Errorf("found %d %s accounts for this user — pass --account <uuid> to disambiguate", len(matches), institution)
+		return nil, false, fmt.Errorf("found %d %s accounts for this user — specify which account to use", len(matches), institution)
 	}
 }
 
