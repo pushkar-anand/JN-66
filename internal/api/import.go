@@ -37,8 +37,7 @@ type importAccountStore interface {
 //
 // TxnStore, RunStore, and CatStore are concrete types because importer.NewImporter
 // requires *store.TransactionStore, *store.ImportRunStore, and *store.CategoryStore
-// directly. Extracting interfaces for those would require refactoring the importer
-// package, which is out of scope here.
+// directly. Interface extraction for these belongs in the importer package.
 type ImportConfig struct {
 	UserGetter   importUserGetter
 	AccountStore importAccountStore

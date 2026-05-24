@@ -23,7 +23,7 @@ CREATE TABLE accounts (
     created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     deleted_at          TIMESTAMPTZ,
-    UNIQUE (institution, external_account_id)
+    CONSTRAINT uq_accounts_institution_ext_account_id UNIQUE (institution, external_account_id)
 );
 
 CREATE TABLE account_members (

@@ -157,7 +157,7 @@ func (s *AccountStore) FindOrCreate(ctx context.Context, userID, institution str
 		return &matches[0], false, nil
 
 	default:
-		return nil, false, fmt.Errorf("found %d %s accounts for this user — pass --account <uuid> to disambiguate", len(matches), institution)
+		return nil, false, fmt.Errorf("found %d %s accounts for this user — specify which account to use", len(matches), institution)
 	}
 }
 
