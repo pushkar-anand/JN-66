@@ -111,8 +111,8 @@ func (t *GetInvestmentSummary) Execute(ctx context.Context, _ string, _ string) 
 		float64(totalInvestedPaise)/100,
 		sign, float64(totalPnlPaise)/100, totalPct)
 
-	if ts, ok := eqSummary.SyncedAt.(time.Time); ok {
-		sb.WriteString(syncedAtLine(ts, t.loc))
+	if eqSummary.SyncedAt.Valid {
+		sb.WriteString(syncedAtLine(eqSummary.SyncedAt.Time, t.loc))
 	}
 	return sb.String(), nil
 }

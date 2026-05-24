@@ -35,11 +35,11 @@ ORDER BY tradingsymbol;
 
 -- name: GetZerodhaEquitySummary :one
 SELECT
-    COUNT(*)                         AS holding_count,
-    SUM(quantity * last_price_paise) AS current_value_paise,
-    SUM(quantity * avg_price_paise)  AS invested_value_paise,
-    SUM(pnl_paise)                   AS total_pnl_paise,
-    MAX(synced_at)                   AS synced_at
+    COUNT(*)                              AS holding_count,
+    SUM(quantity * last_price_paise)      AS current_value_paise,
+    SUM(quantity * avg_price_paise)       AS invested_value_paise,
+    SUM(pnl_paise)                        AS total_pnl_paise,
+    MAX(synced_at)::TIMESTAMPTZ           AS synced_at
 FROM zerodha_equity_holdings
 WHERE user_id = @user_id;
 

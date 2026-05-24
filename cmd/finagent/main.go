@@ -127,12 +127,6 @@ func run() error {
 		userID = u.ID.String()
 	}
 
-	// Resolve display timezone from user profile (IANA name, e.g. "Asia/Kolkata").
-	loc, err := time.LoadLocation(cmp.Or(u.Timezone, "Asia/Kolkata"))
-	if err != nil {
-		return fmt.Errorf("user timezone %q: %w", u.Timezone, err)
-	}
-
 	// LLM provider
 	llmProvider := openai.New(cfg.LLM.BaseURL, cfg.LLM.APIKey)
 
@@ -141,6 +135,10 @@ func run() error {
 
 	// Conditionally register Zerodha investment tools if credentials are configured for this user.
 	if u != nil {
+		loc, err := time.LoadLocation(cmp.Or(u.Timezone, "Asia/Kolkata"))
+		if err != nil {
+			return fmt.Errorf("user timezone %q: %w", u.Timezone, err)
+		}
 		if zerCreds, ok := cfg.Zerodha.Users[u.Username]; ok {
 			zSvc := store.NewZerodhaService(zStore, zerodha.NewClient(zerCreds.APIKey))
 

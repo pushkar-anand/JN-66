@@ -90,5 +90,8 @@ type zerodhaSyncer interface {
 
 // syncedAtLine formats a sync timestamp as a "Last synced: ..." footer for tool output.
 func syncedAtLine(t time.Time, loc *time.Location) string {
+	if loc == nil {
+		loc = time.UTC
+	}
 	return "\nLast synced: " + t.In(loc).Format("2006-01-02 15:04 MST")
 }

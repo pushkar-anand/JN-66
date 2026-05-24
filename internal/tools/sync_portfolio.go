@@ -43,7 +43,7 @@ func (t *SyncPortfolio) Definition() llm.ToolDefinition {
 func (t *SyncPortfolio) Execute(ctx context.Context, _ string, _ string) (string, error) {
 	uid, err := uuid.Parse(t.userID)
 	if err != nil {
-		return "", fmt.Errorf("sync_portfolio: invalid user id %q: %w", t.userID, err)
+		return "", fmt.Errorf("sync portfolio: invalid user id %q: %w", t.userID, err)
 	}
 	slog.DebugContext(ctx, "tool:sync_portfolio start")
 	eq, mf, err := t.zerodha.ForceSync(ctx, uid)
