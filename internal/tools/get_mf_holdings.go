@@ -26,6 +26,7 @@ func NewGetMFHoldings(userID string, zerodha zerodhaQuerier) *GetMFHoldings {
 	return &GetMFHoldings{userID: userID, zerodha: zerodha}
 }
 
+// Definition returns the tool descriptor.
 func (t *GetMFHoldings) Definition() llm.ToolDefinition {
 	return llm.ToolDefinition{
 		Name:        "get_mf_holdings",
@@ -37,6 +38,7 @@ func (t *GetMFHoldings) Definition() llm.ToolDefinition {
 	}
 }
 
+// Execute returns the user's Zerodha mutual fund holdings.
 func (t *GetMFHoldings) Execute(ctx context.Context, _ string, argsJSON string) (string, error) {
 	// argsJSON may be empty or "{}"
 	_ = json.RawMessage(argsJSON)

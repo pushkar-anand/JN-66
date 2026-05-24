@@ -22,6 +22,7 @@ func NewGetInvestmentSummary(userID string, zerodha zerodhaQuerier) *GetInvestme
 	return &GetInvestmentSummary{userID: userID, zerodha: zerodha}
 }
 
+// Definition returns the tool descriptor.
 func (t *GetInvestmentSummary) Definition() llm.ToolDefinition {
 	return llm.ToolDefinition{
 		Name:        "get_investment_summary",
@@ -33,6 +34,7 @@ func (t *GetInvestmentSummary) Definition() llm.ToolDefinition {
 	}
 }
 
+// Execute returns a portfolio overview across equity, SGBs, and mutual funds.
 func (t *GetInvestmentSummary) Execute(ctx context.Context, _ string, _ string) (string, error) {
 	eqByType, err := t.zerodha.GetEquityHoldingsByType(ctx, t.userID)
 	if err != nil {
