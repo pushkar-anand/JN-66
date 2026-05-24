@@ -34,6 +34,11 @@ type importAccountStore interface {
 
 // ImportConfig holds dependencies for the POST /api/import handler.
 // Pass nil to api.New to disable the route.
+//
+// TxnStore, RunStore, and CatStore are concrete types because importer.NewImporter
+// requires *store.TransactionStore, *store.ImportRunStore, and *store.CategoryStore
+// directly. Extracting interfaces for those would require refactoring the importer
+// package, which is out of scope here.
 type ImportConfig struct {
 	UserGetter   importUserGetter
 	AccountStore importAccountStore
@@ -166,7 +171,10 @@ func (s *Server) handleImport(w http.ResponseWriter, r *http.Request) {
 	// Build enricher unless skipped.
 	var enricher *importer.Enricher
 	if !req.NoEnrich && s.importCfg.LLMProvider != nil {
-		cats, _ := s.importCfg.CatStore.List(ctx)
+		cats, err := s.importCfg.CatStore.List(ctx)
+		if err != nil {
+			slog.WarnContext(ctx, "import: failed to load categories, enrichment will be uncategorised", bwglogger.Error(err))
+		}
 		catInfos := make([]importer.CategoryInfo, len(cats))
 		for i, c := range cats {
 			catInfos[i] = importer.CategoryInfo{Slug: c.Slug, Description: c.Description}

@@ -122,7 +122,7 @@ func (s *AccountStore) FindOrCreate(ctx context.Context, userID, institution str
 	switch len(matches) {
 	case 0:
 		if meta.AccountNumber == "" {
-			return nil, false, fmt.Errorf("account number is required to create an account — pass --account <uuid> or provide a statement with account metadata")
+			return nil, false, fmt.Errorf("account number is required to create an account for institution %q", institution)
 		}
 		// Auto-create.
 		name := strings.ToUpper(institution) + " Savings ****" + meta.AccountNumber[max(0, len(meta.AccountNumber)-4):]
