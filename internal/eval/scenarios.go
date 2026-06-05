@@ -90,10 +90,10 @@ var Scenarios = []EvalCase{
 		OutputMustContain: []string{"7.50", "1,00,000"},
 	},
 	{
-		Name:          "fd_record",
-		Input:         "I opened an FD at SBI: ₹50,000 at 7.25%, 6 months, starts 2026-06-01, matures 2026-12-01",
-		MustCallTools: []string{"manage_fd"},
-		MaxLLMRounds:  4,
+		Name:                   "fd_record",
+		Input:                  "I opened an FD at SBI: ₹50,000 at 7.25%, 6 months, starts 2026-06-01, matures 2026-12-01",
+		MustCallTools:          []string{"manage_fd"},
+		MaxLLMRounds:           4,
 		OutputMustContainOneOf: []string{"created", "recorded", "saved", "FD"},
 	},
 	{
