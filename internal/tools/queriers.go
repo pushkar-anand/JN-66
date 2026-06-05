@@ -88,6 +88,17 @@ type zerodhaSyncer interface {
 	ForceSync(ctx context.Context, userID uuid.UUID) (equityCount, mfCount int, err error)
 }
 
+type fdManager interface {
+	CreateWithAccount(ctx context.Context, p store.CreateFDParams) (*sqlcgen.FixedDeposit, error)
+	Get(ctx context.Context, id, userID string) (*sqlcgen.FixedDeposit, error)
+	UpdateStatus(ctx context.Context, p store.UpdateStatusParams) (*sqlcgen.FixedDeposit, error)
+	RenewFD(ctx context.Context, p store.RenewFDParams) (*sqlcgen.FixedDeposit, error)
+}
+
+type fdLister interface {
+	ListByUser(ctx context.Context, p store.ListFDsParams) ([]sqlcgen.FixedDeposit, error)
+}
+
 // syncedAtLine formats a sync timestamp as a "Last synced: ..." footer for tool output.
 func syncedAtLine(t time.Time, loc *time.Location) string {
 	if loc == nil {

@@ -15,6 +15,7 @@ type Querier interface {
 	AddAccountMember(ctx context.Context, arg AddAccountMemberParams) error
 	AddTransactionLabel(ctx context.Context, arg AddTransactionLabelParams) error
 	CreateAccount(ctx context.Context, arg CreateAccountParams) (Account, error)
+	CreateFixedDeposit(ctx context.Context, arg CreateFixedDepositParams) (FixedDeposit, error)
 	CreateImportRun(ctx context.Context, arg CreateImportRunParams) (ImportRun, error)
 	CreateLabel(ctx context.Context, arg CreateLabelParams) (Label, error)
 	CreateMemory(ctx context.Context, arg CreateMemoryParams) (AgentMemory, error)
@@ -31,6 +32,7 @@ type Querier interface {
 	GetAccountDetails(ctx context.Context, accountID uuid.UUID) (AccountDetail, error)
 	GetCategoryByID(ctx context.Context, id uuid.UUID) (Category, error)
 	GetCategoryBySlug(ctx context.Context, slug string) (Category, error)
+	GetFixedDeposit(ctx context.Context, arg GetFixedDepositParams) (FixedDeposit, error)
 	GetIdempotencyKeyExists(ctx context.Context, idempotencyKey string) (bool, error)
 	GetLabelBySlug(ctx context.Context, slug string) (Label, error)
 	GetRecurringPaymentByID(ctx context.Context, id uuid.UUID) (RecurringPayment, error)
@@ -54,6 +56,7 @@ type Querier interface {
 	InsertZerodhaMFHolding(ctx context.Context, arg InsertZerodhaMFHoldingParams) error
 	ListAccountsByUser(ctx context.Context, userID uuid.UUID) ([]Account, error)
 	ListCategories(ctx context.Context) ([]Category, error)
+	ListFixedDeposits(ctx context.Context, arg ListFixedDepositsParams) ([]FixedDeposit, error)
 	ListImportRuns(ctx context.Context, userID uuid.UUID) ([]ImportRun, error)
 	ListLabels(ctx context.Context, userID pgtype.UUID) ([]Label, error)
 	ListMemories(ctx context.Context, arg ListMemoriesParams) ([]AgentMemory, error)
@@ -75,6 +78,7 @@ type Querier interface {
 	TouchSession(ctx context.Context, id uuid.UUID) error
 	UpdateAccountBalance(ctx context.Context, arg UpdateAccountBalanceParams) error
 	UpdateEnrichment(ctx context.Context, arg UpdateEnrichmentParams) error
+	UpdateFixedDepositStatus(ctx context.Context, arg UpdateFixedDepositStatusParams) (FixedDeposit, error)
 	UpdateImportRunCounts(ctx context.Context, arg UpdateImportRunCountsParams) error
 	UpdateRecurringLastCharged(ctx context.Context, arg UpdateRecurringLastChargedParams) error
 	UpdateSessionTitle(ctx context.Context, arg UpdateSessionTitleParams) error

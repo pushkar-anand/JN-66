@@ -19,6 +19,7 @@ India-first: amounts in INR/paise, UPI/NACH/NEFT/IMPS payment modes, VPA-based c
 - **Label management** — tag any transaction mid-conversation: "Label the Zomato one as food-delivery"
 - **Memory** — tell it facts once, it remembers: "My Netflix ₹649 on HDFC CC every month is a subscription"
 - **Multi-user** — knows who it's talking to; scopes data per user, supports household queries
+- **Fixed deposits** — record FDs, track maturity dates, mark renewals (with per-term rate history) and closures
 - **Investments** — Zerodha equity, SGB, and mutual fund holdings with P&L (requires Zerodha config)
 
 See [AGENT.md](AGENT.md) for the full usage guide and example questions.
@@ -179,7 +180,7 @@ total:    ~6 min (33 cases, real LLM calls)
 
 ## What's not here yet (Phase 2+)
 
-- FD lifecycle tracking and physical assets (car, gold, property)
+- Physical assets (car, gold, property)
 - Embedding-based semantic memory retrieval
 - Auto-fetch bank connectors (currently import is CSV/XLS upload only)
 - Slack / Signal channels

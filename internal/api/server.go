@@ -35,6 +35,7 @@ type Server struct {
 	zerodha     *ZerodhaCallbackConfig
 	accountsCfg *AccountsConfig
 	importCfg   *ImportConfig
+	fdCfg       *FDConfig
 	v           *bwgvalidator.Validator
 	srv         *http.Server
 }
@@ -42,8 +43,8 @@ type Server struct {
 // New creates a Server that dispatches chat requests to handler.
 // userStore is used for Bearer token authentication; pass nil to disable auth (tests).
 // db is used for the readiness probe; pass nil to skip the DB check.
-// zerodha, accountsCfg, and importCfg are optional; non-nil values enable their routes.
-func New(listen string, handler channel.MessageHandler, userStore userLookup, db dbPinger, zerodha *ZerodhaCallbackConfig, accountsCfg *AccountsConfig, importCfg *ImportConfig) *Server {
+// zerodha, accountsCfg, importCfg, and fdCfg are optional; non-nil values enable their routes.
+func New(listen string, handler channel.MessageHandler, userStore userLookup, db dbPinger, zerodha *ZerodhaCallbackConfig, accountsCfg *AccountsConfig, importCfg *ImportConfig, fdCfg *FDConfig) *Server {
 	// bwgvalidator.New uses sync.Once internally — this must be the only call site in the binary.
 	v, err := bwgvalidator.New(
 		bwgvalidator.WithCustomTags(map[string]bwgvalidator.ValidationFunc{
@@ -61,6 +62,7 @@ func New(listen string, handler channel.MessageHandler, userStore userLookup, db
 		zerodha:     zerodha,
 		accountsCfg: accountsCfg,
 		importCfg:   importCfg,
+		fdCfg:       fdCfg,
 		v:           v,
 	}
 
@@ -87,6 +89,9 @@ func New(listen string, handler channel.MessageHandler, userStore userLookup, db
 	}
 	if s.importCfg != nil {
 		protected.HandleFunc("/api/import", s.handleImport).Methods(http.MethodPost)
+	}
+	if s.fdCfg != nil {
+		protected.HandleFunc("/api/fds", s.handleCreateFD).Methods(http.MethodPost)
 	}
 
 	s.srv = &http.Server{

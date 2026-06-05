@@ -357,4 +357,63 @@ INSERT INTO agent_memories (user_id, content, memory_type, detection_source, tag
     'general', 'user', ARRAY['rent', 'household', 'transfer']
 );
 
+-- ── Fixed Deposits ───────────────────────────────────────────────────────────
+
+INSERT INTO accounts (id, institution, external_account_id, name, account_type, currency, is_active) VALUES
+    ('b4000000-0000-0000-0000-000000000004', 'hdfc', 'HDFD****3691', 'HDFC FD 12M ****3691', 'fd', 'INR', TRUE)
+ON CONFLICT (institution, external_account_id) DO NOTHING;
+
+UPDATE accounts SET current_balance = 10000000, balance_as_of = '2026-04-01'
+WHERE institution = 'hdfc' AND external_account_id = 'HDFD****3691';
+
+INSERT INTO account_members (account_id, user_id, role) VALUES
+    ('b4000000-0000-0000-0000-000000000004', (SELECT id FROM users WHERE username = 'alice'), 'owner')
+ON CONFLICT DO NOTHING;
+
+-- fixed_deposits row (principal ₹1,00,000 @ 7.50% for 12 months, cumulative, no auto-renewal)
+INSERT INTO fixed_deposits (
+    id, user_id, account_id, bank_fd_number,
+    principal_amount, interest_rate_bps, tenure_months,
+    start_date, maturity_date, expected_maturity_amount,
+    interest_payout, auto_renewal_type, status
+) VALUES (
+    'fd000001-0000-0000-0000-000000000001',
+    (SELECT id FROM users WHERE username = 'alice'),
+    'b4000000-0000-0000-0000-000000000004',
+    'HDFD****3691',
+    10000000, 750, 12,
+    '2026-04-01', '2027-04-01', 10750000,
+    'cumulative', 'none', 'active'
+) ON CONFLICT DO NOTHING;
+
+-- FD creation debit from HDFC savings
+INSERT INTO transactions (id, account_id, user_id, idempotency_key, amount, currency, direction,
+    description, counterparty_name, counterparty_identifier, payment_mode, txn_date) VALUES
+('c1800000-0000-0000-0000-000000000001',
+ 'b1000000-0000-0000-0000-000000000001', (SELECT id FROM users WHERE username = 'alice'),
+ 'seed-hdfc-savings-20260401-fd-open',
+ 10000000, 'INR', 'debit',
+ 'FD CREATED HDFC 12M @ 7.50%', 'HDFC Bank', NULL, 'neft', '2026-04-01'),
+
+-- FD interest credit (notional monthly accrual — cumulative FDs credit on maturity,
+-- but seeded here to cover the interest category in evals)
+('c1900000-0000-0000-0000-000000000001',
+ 'b4000000-0000-0000-0000-000000000004', (SELECT id FROM users WHERE username = 'alice'),
+ 'seed-hdfc-fd-20270401-maturity-interest',
+ 750000, 'INR', 'credit',
+ 'FD MATURITY CREDIT ****3691', 'HDFC Bank', NULL, 'neft', '2026-05-01')
+ON CONFLICT (idempotency_key) DO NOTHING;
+
+INSERT INTO transaction_enrichments (transaction_id)
+VALUES ('c1800000-0000-0000-0000-000000000001'), ('c1900000-0000-0000-0000-000000000001')
+ON CONFLICT DO NOTHING;
+
+UPDATE transaction_enrichments SET
+    category_id = (SELECT id FROM categories WHERE slug = 'investment'), tagging_status = 'manual'
+WHERE transaction_id = 'c1800000-0000-0000-0000-000000000001';
+
+UPDATE transaction_enrichments SET
+    category_id = (SELECT id FROM categories WHERE slug = 'interest'), tagging_status = 'manual'
+WHERE transaction_id = 'c1900000-0000-0000-0000-000000000001';
+
 COMMIT;
