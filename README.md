@@ -180,9 +180,8 @@ total:    ~6 min (33 cases, real LLM calls)
 ## What's not here yet (Phase 2+)
 
 - FD lifecycle tracking and physical assets (car, gold, property)
-- Automatic transaction tagging pipeline
 - Embedding-based semantic memory retrieval
-- Additional bank connectors (auto-fetch, not just CSV/XLS import)
+- Auto-fetch bank connectors (currently import is CSV/XLS upload only)
 - Slack / Signal channels
 - Tax assistance
 
