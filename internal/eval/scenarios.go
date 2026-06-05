@@ -97,6 +97,16 @@ var Scenarios = []EvalCase{
 		OutputMustContainOneOf: []string{"created", "recorded", "saved", "FD"},
 	},
 	{
+		// Agent must ask for missing details rather than calling manage_fd with incomplete data.
+		Name:             "fd_incomplete_prompts_for_details",
+		Input:            "I opened an FD",
+		MustNotCallTools: []string{"manage_fd"},
+		MaxLLMRounds:     3,
+		OutputMustContainOneOf: []string{
+			"principal", "amount", "interest", "rate", "tenure", "months", "maturity", "bank", "institution",
+		},
+	},
+	{
 		Name:         "max_rounds_respected",
 		Input:        "Analyse everything about my finances",
 		MaxLLMRounds: 8,
