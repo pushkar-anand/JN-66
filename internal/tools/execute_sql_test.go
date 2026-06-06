@@ -24,12 +24,12 @@ func newFakeRows(headers []string, data [][]any) *fakeRows {
 	return &fakeRows{headers: headers, data: data, pos: -1}
 }
 
-func (r *fakeRows) Close()                          {}
-func (r *fakeRows) Err() error                      { return r.err }
-func (r *fakeRows) CommandTag() pgconn.CommandTag   { return pgconn.CommandTag{} }
-func (r *fakeRows) RawValues() [][]byte             { return nil }
-func (r *fakeRows) Scan(dest ...any) error          { return nil }
-func (r *fakeRows) Conn() *pgx.Conn                 { return nil }
+func (r *fakeRows) Close()                        {}
+func (r *fakeRows) Err() error                    { return r.err }
+func (r *fakeRows) CommandTag() pgconn.CommandTag { return pgconn.CommandTag{} }
+func (r *fakeRows) RawValues() [][]byte           { return nil }
+func (r *fakeRows) Scan(dest ...any) error        { return nil }
+func (r *fakeRows) Conn() *pgx.Conn               { return nil }
 
 func (r *fakeRows) FieldDescriptions() []pgconn.FieldDescription {
 	descs := make([]pgconn.FieldDescription, len(r.headers))
