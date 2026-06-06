@@ -411,3 +411,126 @@ func (mr *MockzerodhaSyncerMockRecorder) ForceSync(ctx, userID any) *gomock.Call
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ForceSync", reflect.TypeOf((*MockzerodhaSyncer)(nil).ForceSync), ctx, userID)
 }
+
+// MockfdManager is a mock of fdManager interface.
+type MockfdManager struct {
+	ctrl     *gomock.Controller
+	recorder *MockfdManagerMockRecorder
+	isgomock struct{}
+}
+
+// MockfdManagerMockRecorder is the mock recorder for MockfdManager.
+type MockfdManagerMockRecorder struct {
+	mock *MockfdManager
+}
+
+// NewMockfdManager creates a new mock instance.
+func NewMockfdManager(ctrl *gomock.Controller) *MockfdManager {
+	mock := &MockfdManager{ctrl: ctrl}
+	mock.recorder = &MockfdManagerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockfdManager) EXPECT() *MockfdManagerMockRecorder {
+	return m.recorder
+}
+
+// CreateWithAccount mocks base method.
+func (m *MockfdManager) CreateWithAccount(ctx context.Context, p store.CreateFDParams) (*sqlcgen.FixedDeposit, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateWithAccount", ctx, p)
+	ret0, _ := ret[0].(*sqlcgen.FixedDeposit)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateWithAccount indicates an expected call of CreateWithAccount.
+func (mr *MockfdManagerMockRecorder) CreateWithAccount(ctx, p any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateWithAccount", reflect.TypeOf((*MockfdManager)(nil).CreateWithAccount), ctx, p)
+}
+
+// Get mocks base method.
+func (m *MockfdManager) Get(ctx context.Context, id, userID string) (*sqlcgen.FixedDeposit, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", ctx, id, userID)
+	ret0, _ := ret[0].(*sqlcgen.FixedDeposit)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get.
+func (mr *MockfdManagerMockRecorder) Get(ctx, id, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockfdManager)(nil).Get), ctx, id, userID)
+}
+
+// RenewFD mocks base method.
+func (m *MockfdManager) RenewFD(ctx context.Context, p store.RenewFDParams) (*sqlcgen.FixedDeposit, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RenewFD", ctx, p)
+	ret0, _ := ret[0].(*sqlcgen.FixedDeposit)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RenewFD indicates an expected call of RenewFD.
+func (mr *MockfdManagerMockRecorder) RenewFD(ctx, p any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RenewFD", reflect.TypeOf((*MockfdManager)(nil).RenewFD), ctx, p)
+}
+
+// UpdateStatus mocks base method.
+func (m *MockfdManager) UpdateStatus(ctx context.Context, p store.UpdateStatusParams) (*sqlcgen.FixedDeposit, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateStatus", ctx, p)
+	ret0, _ := ret[0].(*sqlcgen.FixedDeposit)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateStatus indicates an expected call of UpdateStatus.
+func (mr *MockfdManagerMockRecorder) UpdateStatus(ctx, p any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateStatus", reflect.TypeOf((*MockfdManager)(nil).UpdateStatus), ctx, p)
+}
+
+// MockfdLister is a mock of fdLister interface.
+type MockfdLister struct {
+	ctrl     *gomock.Controller
+	recorder *MockfdListerMockRecorder
+	isgomock struct{}
+}
+
+// MockfdListerMockRecorder is the mock recorder for MockfdLister.
+type MockfdListerMockRecorder struct {
+	mock *MockfdLister
+}
+
+// NewMockfdLister creates a new mock instance.
+func NewMockfdLister(ctrl *gomock.Controller) *MockfdLister {
+	mock := &MockfdLister{ctrl: ctrl}
+	mock.recorder = &MockfdListerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockfdLister) EXPECT() *MockfdListerMockRecorder {
+	return m.recorder
+}
+
+// ListByUser mocks base method.
+func (m *MockfdLister) ListByUser(ctx context.Context, p store.ListFDsParams) ([]sqlcgen.FixedDeposit, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListByUser", ctx, p)
+	ret0, _ := ret[0].([]sqlcgen.FixedDeposit)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListByUser indicates an expected call of ListByUser.
+func (mr *MockfdListerMockRecorder) ListByUser(ctx, p any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByUser", reflect.TypeOf((*MockfdLister)(nil).ListByUser), ctx, p)
+}

@@ -26,6 +26,7 @@ func BuildToolRegistry(pool *pgxpool.Pool, userID string) (*tools.Registry, *sto
 	labelStore := store.NewLabelStore(pool)
 	recurringStore := store.NewRecurringStore(pool)
 	memoryStore := store.NewMemoryStore(pool)
+	fdStore := store.NewFDStore(pool)
 
 	registry := tools.NewRegistry()
 	registry.Register(tools.NewQueryTransactions(userID, txnStore))
@@ -35,5 +36,7 @@ func BuildToolRegistry(pool *pgxpool.Pool, userID string) (*tools.Registry, *sto
 	registry.Register(tools.NewListRecurring(userID, recurringStore))
 	registry.Register(tools.NewRememberFact(userID, memoryStore))
 	registry.Register(tools.NewRecallFacts(userID, memoryStore))
+	registry.Register(tools.NewManageFD(userID, fdStore))
+	registry.Register(tools.NewListFDs(userID, fdStore))
 	return registry, memoryStore
 }

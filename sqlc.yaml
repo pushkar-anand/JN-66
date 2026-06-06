@@ -46,6 +46,21 @@ sql:
               import: github.com/pushkaranand/finagent/internal/model
               package: model
               type: Money
+          - column: "fixed_deposits.principal_amount"
+            go_type:
+              import: github.com/pushkaranand/finagent/internal/model
+              package: model
+              type: Money
+          - column: "fixed_deposits.expected_maturity_amount"
+            go_type:
+              import: github.com/pushkaranand/finagent/internal/model
+              package: model
+              type: Money
+          - column: "fixed_deposits.actual_payout_amount"
+            go_type:
+              import: github.com/pushkaranand/finagent/internal/model
+              package: model
+              type: Money
           - db_type: vector
             go_type:
               import: github.com/pgvector/pgvector-go

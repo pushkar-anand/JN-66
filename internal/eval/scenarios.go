@@ -83,6 +83,30 @@ var Scenarios = []EvalCase{
 		OutputMustContainOneOf: []string{"added", "labeled", "tagged", "applied"},
 	},
 	{
+		Name:              "fd_list",
+		Input:             "What fixed deposits do I have?",
+		MustCallTools:     []string{"list_fds"},
+		MaxLLMRounds:      3,
+		OutputMustContain: []string{"7.50", "1,00,000"},
+	},
+	{
+		Name:                   "fd_record",
+		Input:                  "I opened an FD at SBI: ₹50,000 at 7.25%, 6 months, starts 2026-06-01, matures 2026-12-01",
+		MustCallTools:          []string{"manage_fd"},
+		MaxLLMRounds:           4,
+		OutputMustContainOneOf: []string{"created", "recorded", "saved", "FD"},
+	},
+	{
+		// Agent must ask for missing details rather than calling manage_fd with incomplete data.
+		Name:             "fd_incomplete_prompts_for_details",
+		Input:            "I opened an FD",
+		MustNotCallTools: []string{"manage_fd"},
+		MaxLLMRounds:     3,
+		OutputMustContainOneOf: []string{
+			"principal", "amount", "interest", "rate", "tenure", "months", "maturity", "bank", "institution",
+		},
+	},
+	{
 		Name:         "max_rounds_respected",
 		Input:        "Analyse everything about my finances",
 		MaxLLMRounds: 8,

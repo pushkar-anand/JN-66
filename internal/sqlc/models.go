@@ -291,6 +291,195 @@ func AllDetectionSourceEnumValues() []DetectionSourceEnum {
 	}
 }
 
+type FdPayoutEnum string
+
+const (
+	FdPayoutEnumCumulative FdPayoutEnum = "cumulative"
+	FdPayoutEnumMonthly    FdPayoutEnum = "monthly"
+	FdPayoutEnumQuarterly  FdPayoutEnum = "quarterly"
+	FdPayoutEnumAnnual     FdPayoutEnum = "annual"
+)
+
+func (e *FdPayoutEnum) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = FdPayoutEnum(s)
+	case string:
+		*e = FdPayoutEnum(s)
+	default:
+		return fmt.Errorf("unsupported scan type for FdPayoutEnum: %T", src)
+	}
+	return nil
+}
+
+type NullFdPayoutEnum struct {
+	FdPayoutEnum FdPayoutEnum `json:"fd_payout_enum"`
+	Valid        bool         `json:"valid"` // Valid is true if FdPayoutEnum is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullFdPayoutEnum) Scan(value interface{}) error {
+	if value == nil {
+		ns.FdPayoutEnum, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.FdPayoutEnum.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullFdPayoutEnum) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.FdPayoutEnum), nil
+}
+
+func (e FdPayoutEnum) Valid() bool {
+	switch e {
+	case FdPayoutEnumCumulative,
+		FdPayoutEnumMonthly,
+		FdPayoutEnumQuarterly,
+		FdPayoutEnumAnnual:
+		return true
+	}
+	return false
+}
+
+func AllFdPayoutEnumValues() []FdPayoutEnum {
+	return []FdPayoutEnum{
+		FdPayoutEnumCumulative,
+		FdPayoutEnumMonthly,
+		FdPayoutEnumQuarterly,
+		FdPayoutEnumAnnual,
+	}
+}
+
+type FdRenewalTypeEnum string
+
+const (
+	FdRenewalTypeEnumNone                 FdRenewalTypeEnum = "none"
+	FdRenewalTypeEnumPrincipalOnly        FdRenewalTypeEnum = "principal_only"
+	FdRenewalTypeEnumPrincipalAndInterest FdRenewalTypeEnum = "principal_and_interest"
+)
+
+func (e *FdRenewalTypeEnum) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = FdRenewalTypeEnum(s)
+	case string:
+		*e = FdRenewalTypeEnum(s)
+	default:
+		return fmt.Errorf("unsupported scan type for FdRenewalTypeEnum: %T", src)
+	}
+	return nil
+}
+
+type NullFdRenewalTypeEnum struct {
+	FdRenewalTypeEnum FdRenewalTypeEnum `json:"fd_renewal_type_enum"`
+	Valid             bool              `json:"valid"` // Valid is true if FdRenewalTypeEnum is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullFdRenewalTypeEnum) Scan(value interface{}) error {
+	if value == nil {
+		ns.FdRenewalTypeEnum, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.FdRenewalTypeEnum.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullFdRenewalTypeEnum) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.FdRenewalTypeEnum), nil
+}
+
+func (e FdRenewalTypeEnum) Valid() bool {
+	switch e {
+	case FdRenewalTypeEnumNone,
+		FdRenewalTypeEnumPrincipalOnly,
+		FdRenewalTypeEnumPrincipalAndInterest:
+		return true
+	}
+	return false
+}
+
+func AllFdRenewalTypeEnumValues() []FdRenewalTypeEnum {
+	return []FdRenewalTypeEnum{
+		FdRenewalTypeEnumNone,
+		FdRenewalTypeEnumPrincipalOnly,
+		FdRenewalTypeEnumPrincipalAndInterest,
+	}
+}
+
+type FdStatusEnum string
+
+const (
+	FdStatusEnumActive            FdStatusEnum = "active"
+	FdStatusEnumMatured           FdStatusEnum = "matured"
+	FdStatusEnumPrematurelyClosed FdStatusEnum = "prematurely_closed"
+	FdStatusEnumRenewed           FdStatusEnum = "renewed"
+)
+
+func (e *FdStatusEnum) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = FdStatusEnum(s)
+	case string:
+		*e = FdStatusEnum(s)
+	default:
+		return fmt.Errorf("unsupported scan type for FdStatusEnum: %T", src)
+	}
+	return nil
+}
+
+type NullFdStatusEnum struct {
+	FdStatusEnum FdStatusEnum `json:"fd_status_enum"`
+	Valid        bool         `json:"valid"` // Valid is true if FdStatusEnum is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullFdStatusEnum) Scan(value interface{}) error {
+	if value == nil {
+		ns.FdStatusEnum, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.FdStatusEnum.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullFdStatusEnum) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.FdStatusEnum), nil
+}
+
+func (e FdStatusEnum) Valid() bool {
+	switch e {
+	case FdStatusEnumActive,
+		FdStatusEnumMatured,
+		FdStatusEnumPrematurelyClosed,
+		FdStatusEnumRenewed:
+		return true
+	}
+	return false
+}
+
+func AllFdStatusEnumValues() []FdStatusEnum {
+	return []FdStatusEnum{
+		FdStatusEnumActive,
+		FdStatusEnumMatured,
+		FdStatusEnumPrematurelyClosed,
+		FdStatusEnumRenewed,
+	}
+}
+
 type FrequencyEnum string
 
 const (
@@ -1158,6 +1347,27 @@ type ConversationSession struct {
 	StartedAt  pgtype.Timestamptz `json:"started_at"`
 	LastActive pgtype.Timestamptz `json:"last_active"`
 	Metadata   []byte             `json:"metadata"`
+}
+
+type FixedDeposit struct {
+	ID                     uuid.UUID          `json:"id"`
+	UserID                 uuid.UUID          `json:"user_id"`
+	AccountID              uuid.UUID          `json:"account_id"`
+	BankFdNumber           *string            `json:"bank_fd_number"`
+	PrincipalAmount        model.Money        `json:"principal_amount"`
+	InterestRateBps        int16              `json:"interest_rate_bps"`
+	TenureMonths           int16              `json:"tenure_months"`
+	StartDate              pgtype.Date        `json:"start_date"`
+	MaturityDate           pgtype.Date        `json:"maturity_date"`
+	ExpectedMaturityAmount model.Money        `json:"expected_maturity_amount"`
+	ActualPayoutAmount     model.Money        `json:"actual_payout_amount"`
+	InterestPayout         FdPayoutEnum       `json:"interest_payout"`
+	AutoRenewalType        FdRenewalTypeEnum  `json:"auto_renewal_type"`
+	Status                 FdStatusEnum       `json:"status"`
+	RenewedFromID          pgtype.UUID        `json:"renewed_from_id"`
+	Notes                  *string            `json:"notes"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
 }
 
 type ImportRun struct {

@@ -189,7 +189,8 @@ func run() error {
 			LLMProvider:  llmProvider,
 			TaggingModel: cfg.LLM.Routing.TaggingModel,
 		}
-		srv := api.New(cfg.API.Listen, ag.HandleMessage, userStore, pool, zerCbCfg, accountsCfg, importCfg)
+		fdCfg := &api.FDConfig{Store: store.NewFDStore(pool)}
+		srv := api.New(cfg.API.Listen, ag.HandleMessage, userStore, pool, zerCbCfg, accountsCfg, importCfg, fdCfg)
 		return srv.Start(ctx)
 	}
 

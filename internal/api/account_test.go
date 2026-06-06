@@ -32,7 +32,7 @@ func (m *mockAccountStore) ListByUser(ctx context.Context, userID string) ([]sql
 }
 
 func newAccountsTestServer(s accountStoreAPI) *Server {
-	return New(":0", okHandler, nil, nil, nil, &AccountsConfig{Store: s}, nil)
+	return New(":0", okHandler, nil, nil, nil, &AccountsConfig{Store: s}, nil, nil)
 }
 
 func TestHandleCreateAccount_HappyPath(t *testing.T) {

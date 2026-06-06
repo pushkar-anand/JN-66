@@ -86,6 +86,21 @@ func (mr *MockQuerierMockRecorder) CreateAccount(ctx, arg any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateAccount", reflect.TypeOf((*MockQuerier)(nil).CreateAccount), ctx, arg)
 }
 
+// CreateFixedDeposit mocks base method.
+func (m *MockQuerier) CreateFixedDeposit(ctx context.Context, arg sqlcgen.CreateFixedDepositParams) (sqlcgen.FixedDeposit, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateFixedDeposit", ctx, arg)
+	ret0, _ := ret[0].(sqlcgen.FixedDeposit)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateFixedDeposit indicates an expected call of CreateFixedDeposit.
+func (mr *MockQuerierMockRecorder) CreateFixedDeposit(ctx, arg any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateFixedDeposit", reflect.TypeOf((*MockQuerier)(nil).CreateFixedDeposit), ctx, arg)
+}
+
 // CreateImportRun mocks base method.
 func (m *MockQuerier) CreateImportRun(ctx context.Context, arg sqlcgen.CreateImportRunParams) (sqlcgen.ImportRun, error) {
 	m.ctrl.T.Helper()
@@ -318,6 +333,21 @@ func (m *MockQuerier) GetCategoryBySlug(ctx context.Context, slug string) (sqlcg
 func (mr *MockQuerierMockRecorder) GetCategoryBySlug(ctx, slug any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCategoryBySlug", reflect.TypeOf((*MockQuerier)(nil).GetCategoryBySlug), ctx, slug)
+}
+
+// GetFixedDeposit mocks base method.
+func (m *MockQuerier) GetFixedDeposit(ctx context.Context, arg sqlcgen.GetFixedDepositParams) (sqlcgen.FixedDeposit, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetFixedDeposit", ctx, arg)
+	ret0, _ := ret[0].(sqlcgen.FixedDeposit)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetFixedDeposit indicates an expected call of GetFixedDeposit.
+func (mr *MockQuerierMockRecorder) GetFixedDeposit(ctx, arg any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFixedDeposit", reflect.TypeOf((*MockQuerier)(nil).GetFixedDeposit), ctx, arg)
 }
 
 // GetIdempotencyKeyExists mocks base method.
@@ -662,6 +692,21 @@ func (mr *MockQuerierMockRecorder) ListCategories(ctx any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListCategories", reflect.TypeOf((*MockQuerier)(nil).ListCategories), ctx)
 }
 
+// ListFixedDeposits mocks base method.
+func (m *MockQuerier) ListFixedDeposits(ctx context.Context, arg sqlcgen.ListFixedDepositsParams) ([]sqlcgen.FixedDeposit, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListFixedDeposits", ctx, arg)
+	ret0, _ := ret[0].([]sqlcgen.FixedDeposit)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListFixedDeposits indicates an expected call of ListFixedDeposits.
+func (mr *MockQuerierMockRecorder) ListFixedDeposits(ctx, arg any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListFixedDeposits", reflect.TypeOf((*MockQuerier)(nil).ListFixedDeposits), ctx, arg)
+}
+
 // ListImportRuns mocks base method.
 func (m *MockQuerier) ListImportRuns(ctx context.Context, userID uuid.UUID) ([]sqlcgen.ImportRun, error) {
 	m.ctrl.T.Helper()
@@ -916,20 +961,6 @@ func (mr *MockQuerierMockRecorder) SaveMessage(ctx, arg any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveMessage", reflect.TypeOf((*MockQuerier)(nil).SaveMessage), ctx, arg)
 }
 
-// TouchSession mocks base method.
-func (m *MockQuerier) TouchSession(ctx context.Context, id uuid.UUID) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TouchSession", ctx, id)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// TouchSession indicates an expected call of TouchSession.
-func (mr *MockQuerierMockRecorder) TouchSession(ctx, id any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TouchSession", reflect.TypeOf((*MockQuerier)(nil).TouchSession), ctx, id)
-}
-
 // SetExternalAccountID mocks base method.
 func (m *MockQuerier) SetExternalAccountID(ctx context.Context, arg sqlcgen.SetExternalAccountIDParams) error {
 	m.ctrl.T.Helper()
@@ -942,6 +973,20 @@ func (m *MockQuerier) SetExternalAccountID(ctx context.Context, arg sqlcgen.SetE
 func (mr *MockQuerierMockRecorder) SetExternalAccountID(ctx, arg any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetExternalAccountID", reflect.TypeOf((*MockQuerier)(nil).SetExternalAccountID), ctx, arg)
+}
+
+// TouchSession mocks base method.
+func (m *MockQuerier) TouchSession(ctx context.Context, id uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TouchSession", ctx, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// TouchSession indicates an expected call of TouchSession.
+func (mr *MockQuerierMockRecorder) TouchSession(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TouchSession", reflect.TypeOf((*MockQuerier)(nil).TouchSession), ctx, id)
 }
 
 // UpdateAccountBalance mocks base method.
@@ -970,6 +1015,21 @@ func (m *MockQuerier) UpdateEnrichment(ctx context.Context, arg sqlcgen.UpdateEn
 func (mr *MockQuerierMockRecorder) UpdateEnrichment(ctx, arg any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEnrichment", reflect.TypeOf((*MockQuerier)(nil).UpdateEnrichment), ctx, arg)
+}
+
+// UpdateFixedDepositStatus mocks base method.
+func (m *MockQuerier) UpdateFixedDepositStatus(ctx context.Context, arg sqlcgen.UpdateFixedDepositStatusParams) (sqlcgen.FixedDeposit, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateFixedDepositStatus", ctx, arg)
+	ret0, _ := ret[0].(sqlcgen.FixedDeposit)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateFixedDepositStatus indicates an expected call of UpdateFixedDepositStatus.
+func (mr *MockQuerierMockRecorder) UpdateFixedDepositStatus(ctx, arg any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateFixedDepositStatus", reflect.TypeOf((*MockQuerier)(nil).UpdateFixedDepositStatus), ctx, arg)
 }
 
 // UpdateImportRunCounts mocks base method.

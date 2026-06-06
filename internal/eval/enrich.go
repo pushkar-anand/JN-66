@@ -265,4 +265,12 @@ var EnrichScenarios = []EnrichEvalCase{
 		Date:         time.Date(2024, 4, 10, 0, 0, 0, 0, time.UTC),
 		WantCategory: "insurance",
 	},
+	{
+		Name:         "fd_interest_credit",
+		Desc:         "FD MATURITY CREDIT ****3691",
+		Direction:    "credit",
+		AmountPaise:  750000,
+		Date:         time.Date(2027, 4, 1, 0, 0, 0, 0, time.UTC),
+		WantCategory: "interest",
+	},
 }

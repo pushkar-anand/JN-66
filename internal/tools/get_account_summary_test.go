@@ -116,7 +116,7 @@ func TestGetAccountSummary_AssetShowsBalance(t *testing.T) {
 
 	got, err := NewGetAccountSummary(boundUser, q).Execute(t.Context(), "", `{}`)
 	require.NoError(t, err)
-	assert.Contains(t, got, "Balance: ₹123456.78")
+	assert.Contains(t, got, "Balance: ₹1,23,456.78")
 	assert.Contains(t, got, "30 Apr 2025")
 	assert.NotContains(t, got, "Outstanding")
 }
@@ -139,7 +139,7 @@ func TestGetAccountSummary_LiabilityShowsOutstanding(t *testing.T) {
 
 	got, err := NewGetAccountSummary(boundUser, q).Execute(t.Context(), "", `{}`)
 	require.NoError(t, err)
-	assert.Contains(t, got, "Outstanding: ₹8200.00")
+	assert.Contains(t, got, "Outstanding: ₹8,200.00")
 	assert.Contains(t, got, "15 Apr 2025")
 	assert.NotContains(t, got, "Balance:")
 }
