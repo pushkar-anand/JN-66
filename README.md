@@ -152,7 +152,7 @@ See [CLAUDE.md](CLAUDE.md) for architecture details, conventions, and what's def
 | `--run <name>` | Filter to scenarios whose name contains the substring |
 | `--compare "model_a,model_b"` | Run both suites sequentially against two models and print a side-by-side comparison table |
 
-Model comparison results are logged in [evals.md](evals.md).
+Model comparison results are logged in [docs/evals.md](docs/evals.md).
 
 ### Agent evals
 
