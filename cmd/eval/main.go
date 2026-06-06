@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"slices"
 	"strings"
 	"syscall"
 	"time"
@@ -85,7 +86,7 @@ func run() error {
 		router := agent.NewRouter(cfg.LLM.Routing)
 		ag := agent.New(llmRec, convStore, memoryStore, userStore, regRec, router, true)
 
-		scenarios := eval.Scenarios
+		scenarios := slices.Clone(eval.Scenarios)
 		for i := range scenarios {
 			scenarios[i].UserID = userID
 		}
@@ -219,7 +220,7 @@ func collectAgentResults(ctx context.Context, cfg *config.Config, pool *pgxpool.
 	router := agent.NewRouter(routing)
 	ag := agent.New(llmRec, convStore, memoryStore, userStore, regRec, router, true)
 
-	scenarios := eval.Scenarios
+	scenarios := slices.Clone(eval.Scenarios)
 	for i := range scenarios {
 		scenarios[i].UserID = userID
 	}
@@ -257,6 +258,9 @@ func runCompare(ctx context.Context, cfg *config.Config, pool *pgxpool.Pool, use
 	}
 	modelA := strings.TrimSpace(parts[0])
 	modelB := strings.TrimSpace(parts[1])
+	if modelA == "" || modelB == "" {
+		return fmt.Errorf("--compare: model names must not be empty")
+	}
 
 	userStore := store.NewUserStore(pool)
 	u, err := userStore.GetByEmail(ctx, userEmail)
@@ -349,11 +353,9 @@ func printComparison(a, b *modelRun) {
 
 	aTotal := time.Duration(aTotalMs) * time.Millisecond
 	bTotal := time.Duration(bTotalMs) * time.Millisecond
-	fmt.Printf("%-*s  %d/%d passed  %-8s  %d/%d passed  %-8s\n",
-		nameW, "TOTAL",
-		aPass, len(a.results), fmt.Sprintf("%.0fs", aTotal.Seconds()),
-		bPass, len(b.results), fmt.Sprintf("%.0fs", bTotal.Seconds()),
-	)
+	aSummary := fmt.Sprintf("%d/%d passed  %.0fs", aPass, len(a.results), aTotal.Seconds())
+	bSummary := fmt.Sprintf("%d/%d passed  %.0fs", bPass, len(b.results), bTotal.Seconds())
+	fmt.Printf("%-*s  %-22s  %-22s\n", nameW, "TOTAL", aSummary, bSummary)
 
 	if aFaster+bFaster > 0 {
 		fmt.Printf("\nSpeed: %s faster on %d scenario(s), %s faster on %d scenario(s)\n",
@@ -364,16 +366,17 @@ func printComparison(a, b *modelRun) {
 // formatCell formats a single EvalResult into a fixed-width column string.
 func formatCell(r eval.EvalResult) string {
 	if !r.Passed {
-		return "✗ fail"
+		return "✗ " + truncate(r.Failures[0], 18)
 	}
 	return fmt.Sprintf("✓ %dr %.1fs", r.LLMRounds, r.Duration.Seconds())
 }
 
 func truncate(s string, max int) string {
-	if len(s) <= max {
+	r := []rune(s)
+	if len(r) <= max {
 		return s
 	}
-	return s[:max-1] + "…"
+	return string(r[:max-1]) + "…"
 }
 
 // printTrace prints the full LLM turn and tool call log for an agent scenario result.
