@@ -289,4 +289,3 @@ func (t *ManageFD) renew(ctx context.Context, userID string, args manageFDArgs) 
 		fd.MaturityDate.Time.Format("2 Jan 2006"),
 	), nil
 }
-
