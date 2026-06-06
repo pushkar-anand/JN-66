@@ -5,12 +5,12 @@ Run with: `./bin/eval --config config.yaml --compare "model_a,model_b"`
 
 ## Summary
 
-| Model | Agent pass | Enrichment pass | Total time | Notes |
-|---|---|---|---|---|
-| gemma4:e4b-it-qat | 16/16 ✓ | — | 168s | Fastest tested; best overall |
-| gemma4:12b-it-qat | 16/16 ✓ | — | 330s | Slower but same accuracy as e4b-it-qat |
-| qwen3:14b | 15/16 | — | 521s | Fails label_transaction; very slow on investment queries |
-| gemma4:e4b | 12/16 | — | 187s | Base model; fails tool selection without instruction tuning |
+| Rank | Model | Agent pass | Enrichment pass | Total time | Notes |
+|---|---|---|---|---|---|
+| 1 | gemma4:e4b-it-qat | 16/16 ✓ | — | 168s | Fastest tested; best overall |
+| 2 | gemma4:12b-it-qat | 16/16 ✓ | — | 330s | Same accuracy, 2× slower |
+| 3 | qwen3:14b | 15/16 | — | 521s | Fails label_transaction; very slow on investment queries |
+| 4 | gemma4:e4b | 12/16 | — | 187s | Base model; fails tool selection without instruction tuning |
 
 Hardware: RTX 3060 12 GB VRAM. Enrichment evals not yet run per-model (only agent evals compared so far).
 
