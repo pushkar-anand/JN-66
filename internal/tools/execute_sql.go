@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	maxSQLRows  = 50
-	maxCellLen  = 80 // cap per-cell to avoid runaway output on free-text columns
+	maxSQLRows = 50
+	maxCellLen = 80 // cap per-cell to avoid runaway output on free-text columns
 )
 
 // ExecuteSQL runs a read-only SELECT query against the database via the
