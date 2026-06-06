@@ -6,7 +6,7 @@ JN-66 is a self-hosted personal financial intelligence agent for households. Ask
 
 India-first: amounts in INR/paise, UPI/NACH/NEFT/IMPS payment modes, VPA-based counterparty identity.
 
-**Fully local. Zero data sharing.** Designed to run entirely on your own hardware — your financial data stays in your local PostgreSQL instance and the LLM runs locally. Nothing leaves your network. Tested end-to-end on an RTX 3060 12 GB with `qwen3:14b` via Ollama.
+**Fully local. Zero data sharing.** Designed to run entirely on your own hardware — your financial data stays in your local PostgreSQL instance and the LLM runs locally. Nothing leaves your network. Tested end-to-end on an RTX 3060 12 GB with multiple local LLMs via Ollama and OpenWebUI.
 
 ---
 
@@ -143,7 +143,16 @@ See [CLAUDE.md](CLAUDE.md) for architecture details, conventions, and what's def
 
 ## Eval results
 
-`make eval` runs two suites back-to-back against the real LLM and a seeded database. Pass `--verbose` to print full LLM round traces for failed agent scenarios, or `--only-enrich` to run just the enrichment suite.
+`make eval` runs two suites back-to-back against the real LLM and a seeded database. Useful flags:
+
+| Flag | Effect |
+|---|---|
+| `--verbose` | Print full LLM round traces for failed agent scenarios |
+| `--only-enrich` | Run just the enrichment suite |
+| `--run <name>` | Filter to scenarios whose name contains the substring |
+| `--compare "model_a,model_b"` | Run both suites sequentially against two models and print a side-by-side comparison table |
+
+Model comparison results are logged in [evals.md](evals.md).
 
 ### Agent evals
 
@@ -159,21 +168,27 @@ Fixed natural-language prompts fired at the full ReAct agent. Assertions check w
 | `remember_fact` | Calls `remember_fact` to store a user-stated fact |
 | `recall_after_remember` | Recalls a fact stored earlier in the same session |
 | `label_transaction` | Lists transactions then calls `manage_labels` to tag one |
+| `fd_list` | Calls `list_fds`, output contains rate and maturity year |
+| `fd_record` | Calls `manage_fd` to create a new FD from natural language |
+| `fd_incomplete_prompts_for_details` | Asks for missing FD details rather than assuming |
 | `max_rounds_respected` | Handles an ambiguous query without exceeding the round limit |
-| `no_hallucinated_accounts` | Does not invent accounts that don't exist in the database |
+| `has_zerodha_account` | Calls `get_investment_summary`, confirms Zerodha is mentioned |
+| `equity_summary` | Calls `get_investment_summary`, output contains equity holdings |
+| `mf_summary` | Calls `get_mf_holdings`, output contains MF details |
+| `portfolio_total` | Calls `get_investment_summary`, output contains portfolio total |
 
-**Latest: 10 / 10 passed**
+**Latest: 16 / 16 passed**
 
 ### Enrichment evals
 
 Raw transaction descriptions sent directly to the enrichment pipeline. Asserts the correct `category_slug` is returned. Covers the previously misclassified cases (credit card payments, bank charges, SIP) and golden-path categories.
 
-**Latest: 23 / 23 passed**
+**Latest: 24 / 24 passed**
 
 ```
-model:    qwen3:14b via Ollama
+model:    gemma4:12b-it-qat via OpenWebUI
 hardware: RTX 3060 12 GB VRAM
-total:    ~6 min (33 cases, real LLM calls)
+total:    ~6 min (40 cases, real LLM calls)
 ```
 
 ---
