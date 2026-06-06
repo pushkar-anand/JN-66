@@ -305,7 +305,7 @@ func TestManageFD_Renew_MissingInstitution(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	m := NewMockfdManager(ctrl)
 	fdID := uuid.New()
-	m.EXPECT().Get(gomock.Any(), fdID.String(), boundUser).Return(stubFD(fdID), nil)
+	// No Get call expected — institution is validated before hitting the DB.
 
 	_, err := NewManageFD(boundUser, m).Execute(t.Context(), "", `{
 		"action":"mark_renewed","fd_id":"`+fdID.String()+`",
@@ -313,6 +313,7 @@ func TestManageFD_Renew_MissingInstitution(t *testing.T) {
 	}`)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "institution")
+	_ = ctrl // no expectations, but keep controller for cleanup
 }
 
 func TestManageFD_Renew_PayoutTypePropagated(t *testing.T) {

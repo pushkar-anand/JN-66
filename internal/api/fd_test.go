@@ -83,6 +83,17 @@ func TestHandleCreateFD_MissingInstitution(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
+func TestHandleCreateFD_RateOverflow(t *testing.T) {
+	body := `{"institution":"sbi","principal_amount":50000,"interest_rate":40,"tenure_months":6,"start_date":"2026-06-01","maturity_date":"2026-12-01"}`
+	s := newFDTestServer(&mockFDStore{})
+	w := httptest.NewRecorder()
+	r := requestWithUser(httptest.NewRequest(http.MethodPost, "/api/fds", strings.NewReader(body)), "uid-1")
+
+	s.handleCreateFD(w, r)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
 func TestHandleCreateFD_ZeroPrincipal(t *testing.T) {
 	body := `{"institution":"sbi","principal_amount":0,"interest_rate":7.25,"tenure_months":6,"start_date":"2026-06-01","maturity_date":"2026-12-01"}`
 	s := newFDTestServer(&mockFDStore{})

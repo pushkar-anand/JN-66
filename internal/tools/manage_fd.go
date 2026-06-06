@@ -236,6 +236,9 @@ func (t *ManageFD) renew(ctx context.Context, userID string, args manageFDArgs) 
 	if args.ActualPayoutAmount <= 0 {
 		return "", fmt.Errorf("actual_payout_amount is required")
 	}
+	if args.Institution == "" {
+		return "", fmt.Errorf("institution is required for renewal")
+	}
 
 	old, err := t.fds.Get(ctx, args.FDID, userID)
 	if err != nil {
@@ -250,10 +253,6 @@ func (t *ManageFD) renew(ctx context.Context, userID string, args manageFDArgs) 
 	newPrincipal := model.FromRupees(args.ActualPayoutAmount)
 	if old.AutoRenewalType == sqlcgen.FdRenewalTypeEnumPrincipalOnly {
 		newPrincipal = old.PrincipalAmount
-	}
-
-	if args.Institution == "" {
-		return "", fmt.Errorf("institution is required for renewal")
 	}
 	var newBankFDNum *string
 	if args.NewBankFDNum != "" {
