@@ -202,6 +202,12 @@ type modelRun struct {
 	results []eval.EvalResult
 }
 
+// enrichRun holds the results of running all enrichment scenarios against one model.
+type enrichRun struct {
+	model   string
+	results []eval.EnrichEvalResult
+}
+
 // collectAgentResults builds an agent wired to the given routing config and runs
 // all (optionally filtered) scenarios against it, printing progress as it goes.
 func collectAgentResults(ctx context.Context, cfg *config.Config, pool *pgxpool.Pool, userID, filter string, routing config.RoutingConfig) (*modelRun, error) {
@@ -249,6 +255,46 @@ func collectAgentResults(ctx context.Context, cfg *config.Config, pool *pgxpool.
 	return run, nil
 }
 
+// collectEnrichResults runs all enrichment scenarios against the given model and prints progress.
+func collectEnrichResults(ctx context.Context, cfg *config.Config, pool *pgxpool.Pool, model, filter string) (*enrichRun, error) {
+	catStore := store.NewCategoryStore(pool)
+	cats, err := catStore.List(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("load categories: %w", err)
+	}
+	catInfos := make([]importer.CategoryInfo, len(cats))
+	for i, c := range cats {
+		catInfos[i] = importer.CategoryInfo{Slug: c.Slug, Description: c.Description}
+	}
+
+	realLLM := openai.New(cfg.LLM.BaseURL, cfg.LLM.APIKey)
+	enricher := importer.NewEnricher(realLLM, model, catInfos)
+
+	scenarios := eval.EnrichScenarios
+	if filter != "" {
+		var filtered []eval.EnrichEvalCase
+		for _, s := range scenarios {
+			if strings.Contains(s.Name, filter) {
+				filtered = append(filtered, s)
+			}
+		}
+		scenarios = filtered
+	}
+
+	run := &enrichRun{model: model}
+	for _, sc := range scenarios {
+		fmt.Printf("  %-32s", sc.Name)
+		res := eval.RunEnrichEval(ctx, enricher, sc)
+		run.results = append(run.results, res)
+		if res.Passed {
+			fmt.Printf("✓  %-28s  %.1fs\n", res.GotCategory, res.Duration.Seconds())
+		} else {
+			fmt.Printf("✗  %v\n", res.Failures[0])
+		}
+	}
+	return run, nil
+}
+
 // runCompare runs the agent eval suite sequentially against two models and prints
 // a side-by-side comparison table. Only one model is active at a time.
 func runCompare(ctx context.Context, cfg *config.Config, pool *pgxpool.Pool, userEmail, compareFlag, filter string) error {
@@ -271,19 +317,30 @@ func runCompare(ctx context.Context, cfg *config.Config, pool *pgxpool.Pool, use
 
 	fmt.Printf("\n=== model compare: %s  vs  %s ===\n\n", modelA, modelB)
 
-	fmt.Printf("--- %s ---\n", modelA)
-	runA, err := collectAgentResults(ctx, cfg, pool, userID, filter, routingAllModel(cfg.LLM.Routing, modelA))
+	fmt.Printf("--- %s (agent) ---\n", modelA)
+	agentA, err := collectAgentResults(ctx, cfg, pool, userID, filter, routingAllModel(cfg.LLM.Routing, modelA))
 	if err != nil {
 		return fmt.Errorf("run %s: %w", modelA, err)
 	}
+	fmt.Printf("\n--- %s (enrich) ---\n", modelA)
+	enrichA, err := collectEnrichResults(ctx, cfg, pool, modelA, filter)
+	if err != nil {
+		return fmt.Errorf("enrich %s: %w", modelA, err)
+	}
 
-	fmt.Printf("\n--- %s ---\n", modelB)
-	runB, err := collectAgentResults(ctx, cfg, pool, userID, filter, routingAllModel(cfg.LLM.Routing, modelB))
+	fmt.Printf("\n--- %s (agent) ---\n", modelB)
+	agentB, err := collectAgentResults(ctx, cfg, pool, userID, filter, routingAllModel(cfg.LLM.Routing, modelB))
 	if err != nil {
 		return fmt.Errorf("run %s: %w", modelB, err)
 	}
+	fmt.Printf("\n--- %s (enrich) ---\n", modelB)
+	enrichB, err := collectEnrichResults(ctx, cfg, pool, modelB, filter)
+	if err != nil {
+		return fmt.Errorf("enrich %s: %w", modelB, err)
+	}
 
-	printComparison(runA, runB)
+	printComparison(agentA, agentB)
+	printEnrichComparison(enrichA, enrichB)
 	return nil
 }
 
@@ -361,6 +418,57 @@ func printComparison(a, b *modelRun) {
 		fmt.Printf("\nSpeed: %s faster on %d scenario(s), %s faster on %d scenario(s)\n",
 			a.model, aFaster, b.model, bFaster)
 	}
+}
+
+// printEnrichComparison prints a side-by-side enrichment eval comparison table.
+func printEnrichComparison(a, b *enrichRun) {
+	const nameW = 32
+
+	ha := truncate(a.model, 22)
+	hb := truncate(b.model, 22)
+
+	fmt.Printf("\n=== enrichment comparison ===\n\n")
+	fmt.Printf("%-*s  %-22s  %-22s\n", nameW, "Scenario", ha, hb)
+	fmt.Printf("%s  %s  %s\n", strings.Repeat("─", nameW), strings.Repeat("─", 22), strings.Repeat("─", 22))
+
+	bByName := make(map[string]eval.EnrichEvalResult, len(b.results))
+	for _, r := range b.results {
+		bByName[r.Case.Name] = r
+	}
+
+	var aPass, bPass int
+
+	for _, ra := range a.results {
+		rb, ok := bByName[ra.Case.Name]
+
+		aCell := formatEnrichCell(ra)
+		bCell := "—"
+		if ok {
+			bCell = formatEnrichCell(rb)
+		}
+
+		fmt.Printf("%-*s  %-22s  %-22s\n", nameW, ra.Case.Name, aCell, bCell)
+
+		if ra.Passed {
+			aPass++
+		}
+		if ok && rb.Passed {
+			bPass++
+		}
+	}
+
+	fmt.Printf("\n%-*s  %-22s  %-22s\n", nameW, "─────", strings.Repeat("─", 22), strings.Repeat("─", 22))
+	aSummary := fmt.Sprintf("%d/%d passed", aPass, len(a.results))
+	bSummary := fmt.Sprintf("%d/%d passed", bPass, len(b.results))
+	fmt.Printf("%-*s  %-22s  %-22s\n", nameW, "TOTAL", aSummary, bSummary)
+}
+
+// formatEnrichCell formats a single EnrichEvalResult for the comparison table.
+func formatEnrichCell(r eval.EnrichEvalResult) string {
+	if !r.Passed {
+		return "✗ " + truncate(r.Failures[0], 18)
+	}
+	return fmt.Sprintf("✓ %-16s %.1fs", truncate(r.GotCategory, 16), r.Duration.Seconds())
 }
 
 // formatCell formats a single EvalResult into a fixed-width column string.
