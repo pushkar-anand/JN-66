@@ -70,7 +70,7 @@ func (t *ListRecurring) Execute(ctx context.Context, _ string, argsJSON string) 
 			next = r.NextExpectedAt.Time.Format("2006-01-02")
 		}
 		fmt.Fprintf(&sb, "• %s — %s/%s, next: %s  id:%s\n",
-			r.Name, amount, r.Frequency, next, r.ID)
+			sanitizeField(r.Name), amount, r.Frequency, next, r.ID)
 	}
 	return sb.String(), nil
 }

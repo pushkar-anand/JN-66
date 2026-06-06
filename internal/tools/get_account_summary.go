@@ -67,8 +67,8 @@ func (t *GetAccountSummary) Execute(ctx context.Context, _ string, argsJSON stri
 			active = " [inactive]"
 		}
 		fmt.Fprintf(&sb, "• %s (%s) — %s/%s%s  %s  id:%s\n",
-			a.Name,
-			a.Institution,
+			sanitizeField(a.Name),
+			sanitizeField(a.Institution),
 			a.AccountType,
 			a.AccountClass,
 			active,

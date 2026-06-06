@@ -82,7 +82,7 @@ func (t *ExecuteSQL) Execute(ctx context.Context, _ string, argsJSON string) (st
 			if v == nil {
 				row[i] = "NULL"
 			} else {
-				row[i] = fmt.Sprintf("%v", v)
+				row[i] = sanitizeField(fmt.Sprintf("%v", v))
 				if len(row[i]) > maxCellLen {
 					row[i] = row[i][:maxCellLen] + "…"
 				}

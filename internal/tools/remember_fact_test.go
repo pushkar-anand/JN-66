@@ -34,7 +34,10 @@ func TestRememberFact_UsesBoundUserWhenNoOverride(t *testing.T) {
 	assert.Equal(t, boundUser, gotUserID)
 }
 
-func TestRememberFact_ExplicitUserIDOverrides(t *testing.T) {
+func TestRememberFact_UserIDArgIsIgnored(t *testing.T) {
+	// user_id was removed from the tool schema to prevent cross-user memory
+	// poisoning via indirect prompt injection. Any user_id in the JSON payload
+	// must be silently ignored — the bound user is always used.
 	ctrl := gomock.NewController(t)
 	q := NewMockmemoryQuerier(ctrl)
 
@@ -49,7 +52,7 @@ func TestRememberFact_ExplicitUserIDOverrides(t *testing.T) {
 
 	_, err := NewRememberFact(boundUser, q).Execute(t.Context(), "", `{"content":"fact","user_id":"other-user"}`)
 	require.NoError(t, err)
-	assert.Equal(t, "other-user", gotUserID)
+	assert.Equal(t, boundUser, gotUserID, "user_id arg must not override the bound user")
 }
 
 func TestRememberFact_MemoryTypeTaggingHint(t *testing.T) {

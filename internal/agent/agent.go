@@ -56,9 +56,10 @@ func (a *Agent) HandleMessage(ctx context.Context, msg channel.Message) (channel
 	)
 
 	// Resolve the user's display name for the system prompt.
+	// Strip newlines before interpolation to prevent name-based prompt injection.
 	userName := msg.UserID
 	if u, err := a.users.GetByID(ctx, msg.UserID); err == nil {
-		userName = u.Name
+		userName = sanitizePromptField(u.Name)
 	}
 
 	// Get or create a conversation session.
@@ -81,7 +82,7 @@ func (a *Agent) HandleMessage(ctx context.Context, msg channel.Message) (channel
 	recalledMems, _ := a.memories.Recall(ctx, msg.UserID, extractTags(msg.Text), 5)
 	memStrings := make([]string, len(recalledMems))
 	for i, m := range recalledMems {
-		memStrings[i] = m.Content
+		memStrings[i] = sanitizePromptField(m.Content)
 	}
 	slog.Debug("agent setup", "elapsed_ms", time.Since(t0).Milliseconds())
 
