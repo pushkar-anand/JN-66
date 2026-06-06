@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pushkaranand/finagent/config"
 	"github.com/pushkaranand/finagent/internal/agent"
 	"github.com/pushkaranand/finagent/internal/app"
@@ -35,6 +36,7 @@ func run() error {
 	filter := flag.String("run", "", "run only scenarios whose name contains this substring")
 	verbose := flag.Bool("verbose", false, "print full message trace for failed (or all) agent scenarios")
 	onlyEnrich := flag.Bool("only-enrich", false, "run only enrichment evals, skip agent evals")
+	compare := flag.String("compare", "", "compare two models sequentially: 'model_a,model_b'")
 	flag.Parse()
 
 	cfg, err := config.Load(*configPath)
@@ -51,6 +53,10 @@ func run() error {
 		return fmt.Errorf("open db: %w", err)
 	}
 	defer pool.Close()
+
+	if *compare != "" {
+		return runCompare(ctx, cfg, pool, *userEmail, *compare, *filter)
+	}
 
 	realLLM := openai.New(cfg.LLM.BaseURL, cfg.LLM.APIKey)
 
@@ -69,8 +75,6 @@ func run() error {
 
 		llmRec := eval.NewRecordingLLM(realLLM)
 
-		// Shared base tools + Zerodha investment tools via ZerodhaStore (DB-only, no API key needed).
-		// Use UTC for display timezone in eval — accuracy of sync timestamps is not eval-critical.
 		registry, memoryStore := app.BuildToolRegistry(pool, userID)
 		zStore := store.NewZerodhaStore(pool)
 		registry.Register(tools.NewGetInvestmentSummary(userID, zStore, time.UTC))
@@ -177,6 +181,199 @@ func run() error {
 		return fmt.Errorf("%d eval(s) failed", totalFailed)
 	}
 	return nil
+}
+
+// routingAllModel returns a RoutingConfig with all LLM slots set to model,
+// preserving the embed model which is not used for generation.
+func routingAllModel(base config.RoutingConfig, model string) config.RoutingConfig {
+	return config.RoutingConfig{
+		ChatModel:      model,
+		AnalysisModel:  model,
+		TaggingModel:   model,
+		EmbedModel:     base.EmbedModel,
+		SummarizeModel: model,
+	}
+}
+
+// modelRun holds the results of running all agent scenarios against one model.
+type modelRun struct {
+	model   string
+	results []eval.EvalResult
+}
+
+// collectAgentResults builds an agent wired to the given routing config and runs
+// all (optionally filtered) scenarios against it, printing progress as it goes.
+func collectAgentResults(ctx context.Context, cfg *config.Config, pool *pgxpool.Pool, userID, filter string, routing config.RoutingConfig) (*modelRun, error) {
+	realLLM := openai.New(cfg.LLM.BaseURL, cfg.LLM.APIKey)
+	llmRec := eval.NewRecordingLLM(realLLM)
+
+	registry, memoryStore := app.BuildToolRegistry(pool, userID)
+	zStore := store.NewZerodhaStore(pool)
+	registry.Register(tools.NewGetInvestmentSummary(userID, zStore, time.UTC))
+	registry.Register(tools.NewGetInvestmentHoldings(userID, zStore, time.UTC))
+	registry.Register(tools.NewGetMFHoldings(userID, zStore, time.UTC))
+	regRec := eval.NewRecordingRegistry(registry)
+
+	userStore := store.NewUserStore(pool)
+	convStore := store.NewConversationStore(pool)
+	router := agent.NewRouter(routing)
+	ag := agent.New(llmRec, convStore, memoryStore, userStore, regRec, router, true)
+
+	scenarios := eval.Scenarios
+	for i := range scenarios {
+		scenarios[i].UserID = userID
+	}
+	if filter != "" {
+		var filtered []eval.EvalCase
+		for _, s := range scenarios {
+			if strings.Contains(s.Name, filter) {
+				filtered = append(filtered, s)
+			}
+		}
+		scenarios = filtered
+	}
+
+	run := &modelRun{model: routing.ChatModel}
+	for i := range scenarios {
+		sc := &scenarios[i]
+		fmt.Printf("  %-32s", sc.Name)
+		res := sc.Run(ctx, pool, ag.HandleMessage, llmRec, regRec)
+		run.results = append(run.results, res)
+		if res.Passed {
+			fmt.Printf("✓  %dr  %.1fs\n", res.LLMRounds, res.Duration.Seconds())
+		} else {
+			fmt.Printf("✗  %v\n", res.Failures[0])
+		}
+	}
+	return run, nil
+}
+
+// runCompare runs the agent eval suite sequentially against two models and prints
+// a side-by-side comparison table. Only one model is active at a time.
+func runCompare(ctx context.Context, cfg *config.Config, pool *pgxpool.Pool, userEmail, compareFlag, filter string) error {
+	parts := strings.SplitN(compareFlag, ",", 2)
+	if len(parts) != 2 {
+		return fmt.Errorf("--compare requires exactly two comma-separated model names, got %q", compareFlag)
+	}
+	modelA := strings.TrimSpace(parts[0])
+	modelB := strings.TrimSpace(parts[1])
+
+	userStore := store.NewUserStore(pool)
+	u, err := userStore.GetByEmail(ctx, userEmail)
+	if err != nil {
+		return fmt.Errorf("user %q not found in database (run make seed first): %w", userEmail, err)
+	}
+	userID := u.ID.String()
+
+	fmt.Printf("\n=== model compare: %s  vs  %s ===\n\n", modelA, modelB)
+
+	fmt.Printf("--- %s ---\n", modelA)
+	runA, err := collectAgentResults(ctx, cfg, pool, userID, filter, routingAllModel(cfg.LLM.Routing, modelA))
+	if err != nil {
+		return fmt.Errorf("run %s: %w", modelA, err)
+	}
+
+	fmt.Printf("\n--- %s ---\n", modelB)
+	runB, err := collectAgentResults(ctx, cfg, pool, userID, filter, routingAllModel(cfg.LLM.Routing, modelB))
+	if err != nil {
+		return fmt.Errorf("run %s: %w", modelB, err)
+	}
+
+	printComparison(runA, runB)
+	return nil
+}
+
+// printComparison prints a side-by-side table comparing two model runs.
+func printComparison(a, b *modelRun) {
+	const nameW = 32
+
+	// Truncate model names for column headers if needed.
+	ha := truncate(a.model, 22)
+	hb := truncate(b.model, 22)
+
+	fmt.Printf("\n%-*s  %-22s  %-22s\n", nameW, "Scenario", ha, hb)
+	fmt.Printf("%s  %s  %s\n", strings.Repeat("─", nameW), strings.Repeat("─", 22), strings.Repeat("─", 22))
+
+	// Index B results by scenario name for alignment (order may differ if filter is used).
+	bByName := make(map[string]eval.EvalResult, len(b.results))
+	for _, r := range b.results {
+		bByName[r.Case.Name] = r
+	}
+
+	var (
+		aPass, bPass     int
+		aTotalMs, bTotalMs int64
+		aFaster, bFaster int
+	)
+
+	for _, ra := range a.results {
+		rb, ok := bByName[ra.Case.Name]
+
+		aCell := formatCell(ra)
+		bCell := ""
+		if ok {
+			bCell = formatCell(rb)
+		} else {
+			bCell = "—"
+		}
+
+		// Highlight winner in time (only when both passed).
+		marker := ""
+		if ok && ra.Passed && rb.Passed {
+			diff := rb.Duration - ra.Duration
+			switch {
+			case diff > 500*time.Millisecond:
+				marker = fmt.Sprintf("  A faster +%.1fs", diff.Seconds())
+				aFaster++
+			case diff < -500*time.Millisecond:
+				marker = fmt.Sprintf("  B faster +%.1fs", (-diff).Seconds())
+				bFaster++
+			}
+		}
+
+		fmt.Printf("%-*s  %-22s  %-22s%s\n", nameW, ra.Case.Name, aCell, bCell, marker)
+
+		if ra.Passed {
+			aPass++
+		}
+		aTotalMs += ra.Duration.Milliseconds()
+		if ok {
+			if rb.Passed {
+				bPass++
+			}
+			bTotalMs += rb.Duration.Milliseconds()
+		}
+	}
+
+	fmt.Printf("\n%-*s  %-22s  %-22s\n", nameW, "─────", strings.Repeat("─", 22), strings.Repeat("─", 22))
+
+	aTotal := time.Duration(aTotalMs) * time.Millisecond
+	bTotal := time.Duration(bTotalMs) * time.Millisecond
+	fmt.Printf("%-*s  %d/%d passed  %-8s  %d/%d passed  %-8s\n",
+		nameW, "TOTAL",
+		aPass, len(a.results), fmt.Sprintf("%.0fs", aTotal.Seconds()),
+		bPass, len(b.results), fmt.Sprintf("%.0fs", bTotal.Seconds()),
+	)
+
+	if aFaster+bFaster > 0 {
+		fmt.Printf("\nSpeed: %s faster on %d scenario(s), %s faster on %d scenario(s)\n",
+			a.model, aFaster, b.model, bFaster)
+	}
+}
+
+// formatCell formats a single EvalResult into a fixed-width column string.
+func formatCell(r eval.EvalResult) string {
+	if !r.Passed {
+		return "✗ fail"
+	}
+	return fmt.Sprintf("✓ %dr %.1fs", r.LLMRounds, r.Duration.Seconds())
+}
+
+func truncate(s string, max int) string {
+	if len(s) <= max {
+		return s
+	}
+	return s[:max-1] + "…"
 }
 
 // printTrace prints the full LLM turn and tool call log for an agent scenario result.
