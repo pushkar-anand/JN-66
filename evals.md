@@ -5,6 +5,40 @@ Run with: `./bin/eval --config config.yaml --compare "model_a,model_b"`
 
 ---
 
+## 2026-06-06 — gemma4:e4b vs gemma4:e4b-it-qat
+
+**Setup**: 16 agent scenarios, seeded DB + real Zerodha holdings imported, UTC timezone.
+
+| Scenario | gemma4:e4b | gemma4:e4b-it-qat |
+|---|---|---|
+| account_summary | ✓ 2r 7.4s | ✓ 2r 11.3s |
+| spending_breakdown | ✓ 2r 16.1s | ✓ 2r 9.6s |
+| investment_direct | ✓ 2r 11.8s | ✓ 2r 12.0s |
+| transactions_list | ✓ 2r 15.1s | ✓ 2r 10.5s |
+| recurring_list | ✓ 2r 8.4s | ✓ 2r 5.9s |
+| remember_fact | ✓ 2r 7.1s | ✓ 2r 10.0s |
+| recall_after_remember | ✓ 2r 11.6s | ✓ 2r 8.9s |
+| label_transaction | ✓ 3r 16.8s | ✓ 3r 22.5s |
+| fd_list | ✓ 2r 15.7s | ✓ 2r 9.8s |
+| fd_record | ✗ output missing confirmation | ✓ 2r 8.4s |
+| fd_incomplete_prompts_for_details | ✓ 1r 8.4s | ✓ 1r 5.3s |
+| max_rounds_respected | ✓ 2r 16.1s | ✓ 2r 15.8s |
+| has_zerodha_account | ✗ output missing "zerodha" | ✓ 2r 8.3s |
+| equity_summary | ✗ get_investment_summary not called | ✓ 2r 7.1s |
+| mf_summary | ✓ 2r 12.6s | ✓ 2r 11.7s |
+| portfolio_total | ✗ output missing portfolio total | ✓ 2r 10.5s |
+| **TOTAL** | **12/16 · 187s** | **16/16 · 168s** |
+
+**Winner: gemma4:e4b-it-qat** — perfect pass rate, slightly faster, and instruction tuning makes a significant difference.
+
+**Notes:**
+- `gemma4:e4b` (base model) fails 4 scenarios — all instruction-following failures: wrong tool selection, missing output fields. Instruction tuning (`-it-qat`) fixes all of them.
+- Both e4b variants are dramatically faster than the 12b models (168–187s vs 330s for gemma4:12b-it-qat).
+- `gemma4:e4b-it-qat` is the fastest model tested so far at 168s total, while matching gemma4:12b-it-qat's perfect 16/16 pass rate.
+- Speed winner is close — e4b wins 3 scenarios, e4b-it-qat wins 7; the -it-qat overhead per token is minimal.
+
+---
+
 ## 2026-06-06 — qwen3:14b vs gemma4:12b-it-qat
 
 **Setup**: 16 agent scenarios, seeded DB + real Zerodha holdings imported, UTC timezone.
