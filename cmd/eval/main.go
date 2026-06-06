@@ -301,9 +301,9 @@ func printComparison(a, b *modelRun) {
 	}
 
 	var (
-		aPass, bPass     int
+		aPass, bPass       int
 		aTotalMs, bTotalMs int64
-		aFaster, bFaster int
+		aFaster, bFaster   int
 	)
 
 	for _, ra := range a.results {
