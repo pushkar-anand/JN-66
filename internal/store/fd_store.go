@@ -135,6 +135,7 @@ type RenewFDParams struct {
 	NewTenureMonths    int16
 	NewStartDate       time.Time
 	NewMaturityDate    time.Time
+	NewInterestPayout  sqlcgen.FdPayoutEnum
 	NewAutoRenewalType sqlcgen.FdRenewalTypeEnum
 	Notes              *string
 }
@@ -199,7 +200,7 @@ func (s *FDStore) RenewFD(ctx context.Context, p RenewFDParams) (*sqlcgen.FixedD
 		StartDate:              pgDate(p.NewStartDate),
 		MaturityDate:           pgDate(p.NewMaturityDate),
 		ExpectedMaturityAmount: 0,
-		InterestPayout:         sqlcgen.FdPayoutEnumCumulative,
+		InterestPayout:         p.NewInterestPayout,
 		AutoRenewalType:        p.NewAutoRenewalType,
 		RenewedFromID:          renewedFrom,
 		Notes:                  p.Notes,

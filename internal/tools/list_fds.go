@@ -71,8 +71,8 @@ func (t *ListFDs) Execute(ctx context.Context, _ string, argsJSON string) (strin
 
 	var maturingBefore *time.Time
 	if args.MaturingWithinDays > 0 {
-		t := time.Now().AddDate(0, 0, args.MaturingWithinDays)
-		maturingBefore = &t
+		cutoff := time.Now().AddDate(0, 0, args.MaturingWithinDays)
+		maturingBefore = &cutoff
 	}
 
 	fds, err := t.fds.ListByUser(ctx, store.ListFDsParams{

@@ -32,7 +32,7 @@ type createFDRequest struct {
 	AccountName            string  `json:"account_name"`
 	BankFDNumber           string  `json:"bank_fd_number"`
 	PrincipalAmount        float64 `json:"principal_amount"         validate:"required,gt=0"`
-	InterestRate           float64 `json:"interest_rate"            validate:"required,gt=0"`
+	InterestRate           float64 `json:"interest_rate"            validate:"required,gt=0,lte=30"`
 	TenureMonths           int     `json:"tenure_months"            validate:"required,gt=0"`
 	StartDate              string  `json:"start_date"               validate:"required"`
 	MaturityDate           string  `json:"maturity_date"            validate:"required"`
@@ -122,12 +122,12 @@ func (s *Server) handleCreateFD(w http.ResponseWriter, r *http.Request) {
 		Institution:            req.Institution,
 		AccountName:            accountName,
 		BankFDNumber:           bankFDNum,
-		PrincipalAmount:        model.Money(math.Round(req.PrincipalAmount * 100)),
+		PrincipalAmount:        model.FromRupees(req.PrincipalAmount),
 		InterestRateBps:        int16(math.Round(req.InterestRate * 100)),
 		TenureMonths:           int16(req.TenureMonths),
 		StartDate:              startDate,
 		MaturityDate:           maturityDate,
-		ExpectedMaturityAmount: model.Money(math.Round(req.ExpectedMaturityAmount * 100)),
+		ExpectedMaturityAmount: model.FromRupees(req.ExpectedMaturityAmount),
 		InterestPayout:         payout,
 		AutoRenewalType:        renewal,
 		Notes:                  notes,

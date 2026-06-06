@@ -248,7 +248,7 @@ func TestManageFD_Renew_HappyPath_PrincipalOnly(t *testing.T) {
 		})
 
 	got, err := NewManageFD(boundUser, m).Execute(t.Context(), "", `{
-		"action":"mark_renewed","fd_id":"`+oldID.String()+`",
+		"action":"mark_renewed","fd_id":"`+oldID.String()+`","institution":"sbi",
 		"actual_payout_amount":53625,"new_interest_rate":7.5,"new_tenure_months":12
 	}`)
 	require.NoError(t, err)
@@ -272,7 +272,7 @@ func TestManageFD_Renew_PrincipalAndInterest(t *testing.T) {
 		})
 
 	_, err := NewManageFD(boundUser, m).Execute(t.Context(), "", `{
-		"action":"mark_renewed","fd_id":"`+oldID.String()+`",
+		"action":"mark_renewed","fd_id":"`+oldID.String()+`","institution":"sbi",
 		"actual_payout_amount":53625,"new_interest_rate":7.5,"new_tenure_months":12
 	}`)
 	require.NoError(t, err)
@@ -295,10 +295,56 @@ func TestManageFD_Renew_NewStartDateDerivedFromOldMaturity(t *testing.T) {
 		})
 
 	_, err := NewManageFD(boundUser, m).Execute(t.Context(), "", `{
-		"action":"mark_renewed","fd_id":"`+oldID.String()+`",
+		"action":"mark_renewed","fd_id":"`+oldID.String()+`","institution":"sbi",
 		"actual_payout_amount":53625,"new_interest_rate":7.5,"new_tenure_months":12
 	}`)
 	require.NoError(t, err)
+}
+
+func TestManageFD_Renew_MissingInstitution(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	m := NewMockfdManager(ctrl)
+	fdID := uuid.New()
+	m.EXPECT().Get(gomock.Any(), fdID.String(), boundUser).Return(stubFD(fdID), nil)
+
+	_, err := NewManageFD(boundUser, m).Execute(t.Context(), "", `{
+		"action":"mark_renewed","fd_id":"`+fdID.String()+`",
+		"actual_payout_amount":53625,"new_interest_rate":7.5,"new_tenure_months":12
+	}`)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "institution")
+}
+
+func TestManageFD_Renew_PayoutTypePropagated(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	m := NewMockfdManager(ctrl)
+	oldID := uuid.New()
+
+	old := stubFD(oldID)
+	old.InterestPayout = sqlcgen.FdPayoutEnumMonthly
+
+	m.EXPECT().Get(gomock.Any(), oldID.String(), boundUser).Return(old, nil)
+	m.EXPECT().RenewFD(gomock.Any(), gomock.AssignableToTypeOf(store.RenewFDParams{})).
+		DoAndReturn(func(_ any, p store.RenewFDParams) (*sqlcgen.FixedDeposit, error) {
+			assert.Equal(t, sqlcgen.FdPayoutEnumMonthly, p.NewInterestPayout)
+			return stubFD(uuid.New()), nil
+		})
+
+	_, err := NewManageFD(boundUser, m).Execute(t.Context(), "", `{
+		"action":"mark_renewed","fd_id":"`+oldID.String()+`","institution":"sbi",
+		"actual_payout_amount":53625,"new_interest_rate":7.5,"new_tenure_months":12
+	}`)
+	require.NoError(t, err)
+}
+
+func TestManageFD_Create_RateOverflow(t *testing.T) {
+	_, err := NewManageFD(boundUser, NewMockfdManager(gomock.NewController(t))).Execute(t.Context(), "", `{
+		"action":"create","institution":"sbi","principal_amount":50000,
+		"interest_rate":99,"tenure_months":6,
+		"start_date":"2026-06-01","maturity_date":"2026-12-01"
+	}`)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "interest_rate")
 }
 
 func TestManageFD_Renew_MissingFDID(t *testing.T) {
@@ -323,7 +369,7 @@ func TestManageFD_Renew_GetError(t *testing.T) {
 	m.EXPECT().Get(gomock.Any(), fdID.String(), boundUser).Return(nil, errors.New("not found"))
 
 	_, err := NewManageFD(boundUser, m).Execute(t.Context(), "", `{
-		"action":"mark_renewed","fd_id":"`+fdID.String()+`",
+		"action":"mark_renewed","fd_id":"`+fdID.String()+`","institution":"sbi",
 		"actual_payout_amount":53625,"new_interest_rate":7.5,"new_tenure_months":12
 	}`)
 	require.Error(t, err)

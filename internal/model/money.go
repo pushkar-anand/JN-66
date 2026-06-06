@@ -3,6 +3,7 @@ package model
 
 import (
 	"fmt"
+	"math"
 
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
@@ -31,5 +32,5 @@ func (m Money) String() string {
 	return fmt.Sprintf("%s₹%s.%02d", sign, inrPrinter.Sprintf("%d", rupees), paise)
 }
 
-// FromRupees converts a rupee float to Money (paise).
-func FromRupees(r float64) Money { return Money(r * 100) }
+// FromRupees converts a rupee float to Money (paise), rounding to the nearest paise.
+func FromRupees(r float64) Money { return Money(math.Round(r * 100)) }

@@ -127,6 +127,9 @@ func (t *ManageFD) create(ctx context.Context, userID string, args manageFDArgs)
 	if args.InterestRate <= 0 {
 		return "", fmt.Errorf("interest_rate is required")
 	}
+	if args.InterestRate > 30 {
+		return "", fmt.Errorf("interest_rate %g%% is unreasonably high for an FD (max 30%%)", args.InterestRate)
+	}
 	if args.TenureMonths <= 0 {
 		return "", fmt.Errorf("tenure_months is required")
 	}
@@ -171,12 +174,12 @@ func (t *ManageFD) create(ctx context.Context, userID string, args manageFDArgs)
 		Institution:            args.Institution,
 		AccountName:            accountName,
 		BankFDNumber:           bankFDNum,
-		PrincipalAmount:        rupeesToPaise(args.PrincipalAmount),
+		PrincipalAmount:        model.FromRupees(args.PrincipalAmount),
 		InterestRateBps:        int16(math.Round(args.InterestRate * 100)),
 		TenureMonths:           int16(args.TenureMonths),
 		StartDate:              startDate,
 		MaturityDate:           maturityDate,
-		ExpectedMaturityAmount: rupeesToPaise(args.ExpectedMaturityAmount),
+		ExpectedMaturityAmount: model.FromRupees(args.ExpectedMaturityAmount),
 		InterestPayout:         payout,
 		AutoRenewalType:        renewal,
 		Notes:                  notes,
@@ -204,7 +207,7 @@ func (t *ManageFD) updateStatus(ctx context.Context, userID string, args manageF
 		UserID:             userID,
 		FDID:               args.FDID,
 		Status:             status,
-		ActualPayoutAmount: rupeesToPaise(args.ActualPayoutAmount),
+		ActualPayoutAmount: model.FromRupees(args.ActualPayoutAmount),
 	})
 	if err != nil {
 		return "", fmt.Errorf("update fd: %w", err)
@@ -224,6 +227,9 @@ func (t *ManageFD) renew(ctx context.Context, userID string, args manageFDArgs) 
 	if args.NewInterestRate <= 0 {
 		return "", fmt.Errorf("new_interest_rate is required")
 	}
+	if args.NewInterestRate > 30 {
+		return "", fmt.Errorf("new_interest_rate %g%% is unreasonably high for an FD (max 30%%)", args.NewInterestRate)
+	}
 	if args.NewTenureMonths <= 0 {
 		return "", fmt.Errorf("new_tenure_months is required")
 	}
@@ -241,23 +247,25 @@ func (t *ManageFD) renew(ctx context.Context, userID string, args manageFDArgs) 
 	newMaturity := newStart.AddDate(0, args.NewTenureMonths, 0)
 
 	// new principal depends on renewal type
-	newPrincipal := rupeesToPaise(args.ActualPayoutAmount)
+	newPrincipal := model.FromRupees(args.ActualPayoutAmount)
 	if old.AutoRenewalType == sqlcgen.FdRenewalTypeEnumPrincipalOnly {
 		newPrincipal = old.PrincipalAmount
 	}
 
-	institution := cmp.Or(args.Institution, "unknown")
+	if args.Institution == "" {
+		return "", fmt.Errorf("institution is required for renewal")
+	}
 	var newBankFDNum *string
 	if args.NewBankFDNum != "" {
 		newBankFDNum = &args.NewBankFDNum
 	}
-	newAccountName := cmp.Or(args.AccountName, fmt.Sprintf("%s FD %dM (renewal)", institution, args.NewTenureMonths))
+	newAccountName := cmp.Or(args.AccountName, fmt.Sprintf("%s FD %dM (renewal)", args.Institution, args.NewTenureMonths))
 
 	fd, err := t.fds.RenewFD(ctx, store.RenewFDParams{
 		UserID:             userID,
 		OldFDID:            args.FDID,
-		ActualPayoutAmount: rupeesToPaise(args.ActualPayoutAmount),
-		Institution:        institution,
+		ActualPayoutAmount: model.FromRupees(args.ActualPayoutAmount),
+		Institution:        args.Institution,
 		NewAccountName:     newAccountName,
 		NewBankFDNumber:    newBankFDNum,
 		NewPrincipalAmount: newPrincipal,
@@ -265,6 +273,7 @@ func (t *ManageFD) renew(ctx context.Context, userID string, args manageFDArgs) 
 		NewTenureMonths:    int16(args.NewTenureMonths),
 		NewStartDate:       newStart,
 		NewMaturityDate:    newMaturity,
+		NewInterestPayout:  old.InterestPayout,
 		NewAutoRenewalType: old.AutoRenewalType,
 	})
 	if err != nil {
@@ -281,7 +290,3 @@ func (t *ManageFD) renew(ctx context.Context, userID string, args manageFDArgs) 
 	), nil
 }
 
-// rupeesToPaise converts a float rupee amount to model.Money paise.
-func rupeesToPaise(rupees float64) model.Money {
-	return model.Money(math.Round(rupees * 100))
-}
