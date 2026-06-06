@@ -1,7 +1,7 @@
 -include .env
 export
 
-.PHONY: generate mocks test fmt migrate-up migrate-down seed build run eval
+.PHONY: generate mocks test test-cover fmt migrate-up migrate-down seed build run eval
 
 generate:
 	go tool sqlc generate
@@ -11,6 +11,10 @@ mocks:
 
 test:
 	go test ./...
+
+test-cover:
+	go test -race -count=1 -coverprofile=coverage.out -covermode=atomic ./...
+	go tool cover -func=coverage.out | tail -1
 
 fmt:
 	gofmt -w .
