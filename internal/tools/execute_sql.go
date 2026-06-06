@@ -9,7 +9,10 @@ import (
 	"github.com/pushkaranand/finagent/internal/llm"
 )
 
-const maxSQLRows = 50
+const (
+	maxSQLRows  = 50
+	maxCellLen  = 80 // cap per-cell to avoid runaway output on free-text columns
+)
 
 // ExecuteSQL runs a read-only SELECT query against the database via the
 // finagent_ro role. Two-layer protection: syntactic check (must start with
@@ -80,6 +83,9 @@ func (t *ExecuteSQL) Execute(ctx context.Context, _ string, argsJSON string) (st
 				row[i] = "NULL"
 			} else {
 				row[i] = fmt.Sprintf("%v", v)
+				if len(row[i]) > maxCellLen {
+					row[i] = row[i][:maxCellLen] + "…"
+				}
 			}
 		}
 		result = append(result, row)

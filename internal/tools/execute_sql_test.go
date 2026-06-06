@@ -158,6 +158,16 @@ func TestExecuteSQL_NullValueRendered(t *testing.T) {
 	assert.Contains(t, got, "NULL")
 }
 
+func TestExecuteSQL_CellsTruncatedAt80Chars(t *testing.T) {
+	long := strings.Repeat("a", maxCellLen+10)
+	rows := newFakeRows([]string{"notes"}, [][]any{{long}})
+	q := &fakeRawQuerier{rows: rows}
+	got, err := NewExecuteSQL(q).Execute(t.Context(), "", `{"query":"SELECT notes FROM t"}`)
+	require.NoError(t, err)
+	assert.Contains(t, got, "…")
+	assert.NotContains(t, got, long)
+}
+
 func TestExecuteSQL_TruncatesAt50Rows(t *testing.T) {
 	data := make([][]any, maxSQLRows+1)
 	for i := range data {
