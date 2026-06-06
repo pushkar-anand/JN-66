@@ -54,6 +54,7 @@ type UserSeed struct {
 // DatabaseConfig holds PostgreSQL connection settings.
 type DatabaseConfig struct {
 	URL         string `koanf:"url"`
+	ReadOnlyURL string `koanf:"readonly_url"` // optional — enables get_schema and execute_sql agent tools
 	MaxConns    int32  `koanf:"max_connections"`
 	AutoMigrate bool   `koanf:"auto_migrate"`
 }

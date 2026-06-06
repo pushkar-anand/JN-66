@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 
 	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
 	"github.com/pushkaranand/finagent/internal/store"
@@ -97,6 +98,11 @@ type fdManager interface {
 
 type fdLister interface {
 	ListByUser(ctx context.Context, p store.ListFDsParams) ([]sqlcgen.FixedDeposit, error)
+}
+
+// rawQuerier is the minimal interface for running arbitrary SQL. Satisfied by *pgxpool.Pool.
+type rawQuerier interface {
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 }
 
 // syncedAtLine formats a sync timestamp as a "Last synced: ..." footer for tool output.

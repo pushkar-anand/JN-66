@@ -1,5 +1,7 @@
 database:
   url: "postgres://finagent:secret@localhost:5432/finagent?sslmode=disable"
+  # readonly_url: "postgres://finagent_ro:finagent_ro_secret@localhost:5432/finagent?sslmode=disable"
+  # Run scripts/setup_readonly_role.sql as superuser first, then set this to enable SQL agent tools.
   max_connections: 10
   auto_migrate: true
 

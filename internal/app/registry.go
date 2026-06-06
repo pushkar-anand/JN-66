@@ -20,7 +20,10 @@ import (
 //
 // Call registry.Register(tools.NewGetInvestmentSummary(...)) etc. after this
 // function returns to add the investment tools with the appropriate querier.
-func BuildToolRegistry(pool *pgxpool.Pool, userID string) (*tools.Registry, *store.MemoryStore) {
+//
+// roPool and schema are optional: when roPool is non-nil, get_schema and
+// execute_sql are registered using the pre-built schema string.
+func BuildToolRegistry(pool *pgxpool.Pool, roPool *pgxpool.Pool, schema string, userID string) (*tools.Registry, *store.MemoryStore) {
 	txnStore := store.NewTransactionStore(pool)
 	accountStore := store.NewAccountStore(pool)
 	labelStore := store.NewLabelStore(pool)
@@ -38,5 +41,9 @@ func BuildToolRegistry(pool *pgxpool.Pool, userID string) (*tools.Registry, *sto
 	registry.Register(tools.NewRecallFacts(userID, memoryStore))
 	registry.Register(tools.NewManageFD(userID, fdStore))
 	registry.Register(tools.NewListFDs(userID, fdStore))
+	if roPool != nil {
+		registry.Register(tools.NewGetSchema(schema))
+		registry.Register(tools.NewExecuteSQL(roPool))
+	}
 	return registry, memoryStore
 }

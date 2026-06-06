@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pushkaranand/finagent/config"
 	"github.com/pushkaranand/finagent/internal/agent"
 	"github.com/pushkaranand/finagent/internal/api"
@@ -99,6 +100,15 @@ func run() error {
 	}
 	defer pool.Close()
 
+	var roPool *pgxpool.Pool
+	if cfg.Database.ReadOnlyURL != "" {
+		roPool, err = db.Open(ctx, cfg.Database.ReadOnlyURL, 5)
+		if err != nil {
+			return fmt.Errorf("open readonly db: %w", err)
+		}
+		defer roPool.Close()
+	}
+
 	if cfg.Database.AutoMigrate {
 		slog.Info("running migrations")
 		if err := db.Migrate(cfg.Database.URL); err != nil {
@@ -131,7 +141,15 @@ func run() error {
 	llmProvider := openai.New(cfg.LLM.BaseURL, cfg.LLM.APIKey)
 
 	// Tool registry — shared base tools.
-	registry, memoryStore := app.BuildToolRegistry(pool, userID)
+	var schemaStr string
+	if roPool != nil {
+		schemaStr, err = tools.BuildSchemaString(ctx, roPool)
+		if err != nil {
+			slog.Warn("could not build schema string — SQL agent tools disabled", "err", err)
+			roPool = nil
+		}
+	}
+	registry, memoryStore := app.BuildToolRegistry(pool, roPool, schemaStr, userID)
 
 	// Conditionally register Zerodha investment tools if credentials are configured for this user.
 	if u != nil {
