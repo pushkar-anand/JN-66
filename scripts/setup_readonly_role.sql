@@ -18,4 +18,7 @@ $$;
 GRANT CONNECT ON DATABASE finagent TO finagent_ro;
 GRANT USAGE ON SCHEMA public TO finagent_ro;
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO finagent_ro;
+-- Cover tables created by the superuser running this script.
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO finagent_ro;
+-- Cover tables created by the finagent app role (e.g. future migrations).
+ALTER DEFAULT PRIVILEGES FOR ROLE finagent IN SCHEMA public GRANT SELECT ON TABLES TO finagent_ro;

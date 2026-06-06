@@ -3,6 +3,8 @@ package tools
 import (
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 )
 
@@ -52,8 +54,8 @@ func BuildSchemaString(ctx context.Context, db rawQuerier) (string, error) {
 
 	if len(enums) > 0 {
 		b.WriteByte('\n')
-		for name, vals := range enums {
-			b.WriteString("ENUM " + name + ": " + strings.Join(vals, ", ") + "\n")
+		for _, name := range slices.Sorted(maps.Keys(enums)) {
+			b.WriteString("ENUM " + name + ": " + strings.Join(enums[name], ", ") + "\n")
 		}
 	}
 

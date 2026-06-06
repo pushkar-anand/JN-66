@@ -104,9 +104,13 @@ func (t *ExecuteSQL) Execute(ctx context.Context, _ string, argsJSON string) (st
 }
 
 // validateSelectQuery rejects anything that doesn't start with SELECT or WITH.
+// This is a best-effort syntactic guard — it does NOT catch writable CTEs such as
+// WITH x AS (UPDATE ... RETURNING *) SELECT * FROM x, which start with WITH and
+// therefore pass this check. The read-only DB role (finagent_ro) is the real
+// enforcement layer and will reject any write attempt regardless.
 func validateSelectQuery(query string) error {
 	trimmed := strings.TrimSpace(query)
-	// Strip leading line comments.
+	// Strip leading line comments (--).
 	for strings.HasPrefix(trimmed, "--") {
 		rest := strings.IndexByte(trimmed, '\n')
 		if rest < 0 {
@@ -114,6 +118,15 @@ func validateSelectQuery(query string) error {
 			break
 		}
 		trimmed = strings.TrimSpace(trimmed[rest+1:])
+	}
+	// Strip leading block comments (/* ... */).
+	for strings.HasPrefix(trimmed, "/*") {
+		end := strings.Index(trimmed, "*/")
+		if end < 0 {
+			trimmed = ""
+			break
+		}
+		trimmed = strings.TrimSpace(trimmed[end+2:])
 	}
 	lower := strings.ToLower(trimmed)
 	if !strings.HasPrefix(lower, "select") && !strings.HasPrefix(lower, "with") {

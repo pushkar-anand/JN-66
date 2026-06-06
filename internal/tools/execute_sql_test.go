@@ -96,12 +96,26 @@ func TestExecuteSQL_AcceptsSelectAndWith(t *testing.T) {
 		`{"query":"  SELECT 1"}`,
 		`{"query":"WITH x AS (SELECT 1) SELECT * FROM x"}`,
 		`{"query":"-- comment\nSELECT 1"}`,
+		`{"query":"/* comment */ SELECT 1"}`,
 	}
 	for _, c := range cases {
 		rows.pos = -1 // reset
 		_, err := NewExecuteSQL(q).Execute(t.Context(), "", c)
 		require.NoError(t, err, "expected acceptance for %s", c)
 	}
+}
+
+// TestExecuteSQL_WritableCTEPassesSyntacticCheck documents an intentional gap:
+// writable CTEs (WITH ... UPDATE/DELETE ... RETURNING) start with WITH and pass
+// the syntactic guard. The read-only DB role (finagent_ro) is the real enforcement
+// layer that blocks these at the database level.
+func TestExecuteSQL_WritableCTEPassesSyntacticCheck(t *testing.T) {
+	rows := newFakeRows([]string{"id"}, [][]any{{"1"}})
+	q := &fakeRawQuerier{rows: rows}
+	_, err := NewExecuteSQL(q).Execute(t.Context(), "",
+		`{"query":"WITH x AS (UPDATE transactions SET amount=0 RETURNING id) SELECT * FROM x"}`)
+	// Syntactic check passes — DB role blocks this in production.
+	require.NoError(t, err)
 }
 
 func TestExecuteSQL_DBError(t *testing.T) {
