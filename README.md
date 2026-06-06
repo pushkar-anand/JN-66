@@ -6,7 +6,7 @@ JN-66 is a self-hosted personal financial intelligence agent for households. Ask
 
 India-first: amounts in INR/paise, UPI/NACH/NEFT/IMPS payment modes, VPA-based counterparty identity.
 
-**Fully local. Zero data sharing.** Designed to run entirely on your own hardware — your financial data stays in your local PostgreSQL instance and the LLM runs locally. Nothing leaves your network. Tested end-to-end on an RTX 3060 12 GB with `qwen3:14b` via Ollama.
+**Fully local. Zero data sharing.** Designed to run entirely on your own hardware — your financial data stays in your local PostgreSQL instance and the LLM runs locally. Nothing leaves your network. Tested end-to-end on an RTX 3060 12 GB with multiple local LLMs via Ollama and OpenWebUI.
 
 ---
 
