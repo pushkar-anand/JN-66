@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/pushkaranand/finagent/internal/channel"
+	"github.com/pushkar-anand/agentrig/channel"
 )
 
 // EvalCase defines a single behavioural eval scenario.

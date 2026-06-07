@@ -20,6 +20,7 @@ import (
 	"github.com/pushkaranand/finagent/internal/eval"
 	"github.com/pushkaranand/finagent/internal/importer"
 	"github.com/pushkaranand/finagent/internal/llm/openai"
+	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
 	"github.com/pushkaranand/finagent/internal/store"
 	"github.com/pushkaranand/finagent/internal/tools"
 )
@@ -86,7 +87,7 @@ func run() error {
 		regRec := eval.NewRecordingRegistry(registry)
 
 		router := agent.NewRouter(cfg.LLM.Routing)
-		ag := agent.New(llmRec, convStore, memoryStore, userStore, regRec, router, true)
+		ag := agent.New(llmRec, convStore, memoryStore, userStore, regRec, router, true, sqlcgen.ChannelEnumCli)
 
 		scenarios := slices.Clone(eval.Scenarios)
 		for i := range scenarios {
@@ -226,7 +227,7 @@ func collectAgentResults(ctx context.Context, cfg *config.Config, pool *pgxpool.
 	userStore := store.NewUserStore(pool)
 	convStore := store.NewConversationStore(pool)
 	router := agent.NewRouter(routing)
-	ag := agent.New(llmRec, convStore, memoryStore, userStore, regRec, router, true)
+	ag := agent.New(llmRec, convStore, memoryStore, userStore, regRec, router, true, sqlcgen.ChannelEnumCli)
 
 	scenarios := slices.Clone(eval.Scenarios)
 	for i := range scenarios {

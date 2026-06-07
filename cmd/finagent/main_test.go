@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/pushkaranand/finagent/config"
 	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
 )
 
@@ -107,4 +108,33 @@ func TestResolveUser_DefaultIdentifier(t *testing.T) {
 	u, err := resolveUser(t.Context(), testStub(), "", "alice@example.com")
 	require.NoError(t, err)
 	assert.Equal(t, knownUID, u.ID)
+}
+
+func TestToMatrixChannelConfig(t *testing.T) {
+	in := config.MatrixConfig{
+		HomeserverURL:     "https://matrix.example.com",
+		UserID:            "@bot:example.com",
+		AccessToken:       "syt_token",
+		EncryptionEnabled: true,
+		CryptoStorePath:   "/var/lib/bot/crypto.db",
+		PickleKey:         "s3cr3t",
+		RecoveryKey:       "EsTkey",
+		AllowedUsers:      []string{"@alice:example.com", "@bob:example.com"},
+		Users: map[string]string{
+			"@alice:example.com": "uuid-alice",
+			"@bob:example.com":   "uuid-bob",
+		},
+	}
+
+	out := toMatrixChannelConfig(in)
+
+	assert.Equal(t, in.HomeserverURL, out.HomeserverURL)
+	assert.Equal(t, in.UserID, out.UserID)
+	assert.Equal(t, in.AccessToken, out.AccessToken)
+	assert.Equal(t, in.EncryptionEnabled, out.EncryptionEnabled)
+	assert.Equal(t, in.CryptoStorePath, out.CryptoStorePath)
+	assert.Equal(t, in.PickleKey, out.PickleKey)
+	assert.Equal(t, in.RecoveryKey, out.RecoveryKey)
+	assert.Equal(t, in.AllowedUsers, out.AllowedUsers)
+	assert.Equal(t, in.Users, out.Users)
 }

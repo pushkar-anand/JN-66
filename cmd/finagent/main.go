@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	matrixchannel "github.com/pushkar-anand/agentrig/channel/matrix"
 	"github.com/pushkaranand/finagent/config"
 	"github.com/pushkaranand/finagent/internal/agent"
 	"github.com/pushkaranand/finagent/internal/api"
@@ -26,6 +27,7 @@ import (
 	"github.com/pushkaranand/finagent/internal/store"
 	"github.com/pushkaranand/finagent/internal/tools"
 	"github.com/pushkaranand/finagent/internal/zerodha"
+	"golang.org/x/sync/errgroup"
 )
 
 func main() {
@@ -181,7 +183,7 @@ func run() error {
 
 	// Agent
 	router := agent.NewRouter(cfg.LLM.Routing)
-	ag := agent.New(llmProvider, convStore, memoryStore, userStore, registry, router, registry.Has("get_investment_holdings"))
+	ag := agent.New(llmProvider, convStore, memoryStore, userStore, registry, router, registry.Has("get_investment_holdings"), sqlcgen.ChannelEnumCli)
 
 	if *serveFlag {
 		var zerCbCfg *api.ZerodhaCallbackConfig
@@ -209,6 +211,19 @@ func run() error {
 		}
 		fdCfg := &api.FDConfig{Store: store.NewFDStore(pool)}
 		srv := api.New(cfg.API.Listen, ag.HandleMessage, userStore, pool, zerCbCfg, accountsCfg, importCfg, fdCfg)
+
+		// Start Matrix channel alongside the HTTP API when configured.
+		// errgroup cancels the shared context when either child fails,
+		// ensuring both goroutines shut down cleanly.
+		if cfg.Channel.Matrix.HomeserverURL != "" {
+			g, gctx := errgroup.WithContext(ctx)
+			g.Go(func() error {
+				return startMatrix(gctx, cfg, pool, roPool, schemaStr, llmProvider, convStore, userStore, zStore, router)
+			})
+			g.Go(func() error { return srv.Start(gctx) })
+			return g.Wait()
+		}
+
 		return srv.Start(ctx)
 	}
 
@@ -249,6 +264,72 @@ func bootstrapUsers(ctx context.Context, us *store.UserStore, cfg *config.Config
 		}
 	}
 	return nil
+}
+
+// startMatrix starts the Matrix channel. It blocks until ctx is cancelled.
+// Agents are built lazily per user so each household member gets a properly
+// scoped tool registry.
+func startMatrix(
+	ctx context.Context,
+	cfg *config.Config,
+	pool, roPool *pgxpool.Pool,
+	schemaStr string,
+	llmProvider *openai.Client,
+	convStore *store.ConversationStore,
+	userStore *store.UserStore,
+	zStore *store.ZerodhaStore,
+	router *agent.Router,
+) error {
+	agPool := agent.NewPool(func(ctx context.Context, userID string) (*agent.Agent, error) {
+		u, err := userStore.GetByID(ctx, userID)
+		if err != nil {
+			return nil, fmt.Errorf("load user %s: %w", userID, err)
+		}
+
+		loc, err := time.LoadLocation(cmp.Or(u.Timezone, "Asia/Kolkata"))
+		if err != nil {
+			return nil, fmt.Errorf("user timezone %q: %w", u.Timezone, err)
+		}
+
+		registry, memoryStore := app.BuildToolRegistry(pool, roPool, schemaStr, userID)
+
+		if zerCreds, ok := cfg.Zerodha.Users[u.Username]; ok {
+			zSvc := store.NewZerodhaService(zStore, zerodha.NewClient(zerCreds.APIKey))
+			registry.Register(tools.NewGetInvestmentHoldings(userID, zSvc, loc))
+			registry.Register(tools.NewGetMFHoldings(userID, zSvc, loc))
+			registry.Register(tools.NewGetInvestmentSummary(userID, zSvc, loc))
+			registry.Register(tools.NewSyncPortfolio(userID, zSvc, nil))
+		}
+
+		return agent.New(
+			llmProvider, convStore, memoryStore, userStore, registry, router,
+			registry.Has("get_investment_holdings"), sqlcgen.ChannelEnumMatrix,
+		), nil
+	})
+
+	ch, err := matrixchannel.New(toMatrixChannelConfig(cfg.Channel.Matrix))
+	if err != nil {
+		return fmt.Errorf("create matrix channel: %w", err)
+	}
+
+	slog.Info("starting matrix channel", "homeserver", cfg.Channel.Matrix.HomeserverURL)
+	return ch.Start(ctx, agPool.HandleMessage)
+}
+
+// toMatrixChannelConfig converts finagent's MatrixConfig to agentrig's matrix.Config.
+// Kept as a named function so it can be unit-tested independently.
+func toMatrixChannelConfig(cfg config.MatrixConfig) matrixchannel.Config {
+	return matrixchannel.Config{
+		HomeserverURL:     cfg.HomeserverURL,
+		UserID:            cfg.UserID,
+		AccessToken:       cfg.AccessToken,
+		EncryptionEnabled: cfg.EncryptionEnabled,
+		CryptoStorePath:   cfg.CryptoStorePath,
+		PickleKey:         cfg.PickleKey,
+		RecoveryKey:       cfg.RecoveryKey,
+		AllowedUsers:      cfg.AllowedUsers,
+		Users:             cfg.Users,
+	}
 }
 
 // userLookup is the subset of store.UserStore used by resolveUser.

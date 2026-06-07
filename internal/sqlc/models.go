@@ -173,6 +173,7 @@ const (
 	ChannelEnumSlack  ChannelEnum = "slack"
 	ChannelEnumSignal ChannelEnum = "signal"
 	ChannelEnumApi    ChannelEnum = "api"
+	ChannelEnumMatrix ChannelEnum = "matrix"
 )
 
 func (e *ChannelEnum) Scan(src interface{}) error {
@@ -215,7 +216,8 @@ func (e ChannelEnum) Valid() bool {
 	case ChannelEnumCli,
 		ChannelEnumSlack,
 		ChannelEnumSignal,
-		ChannelEnumApi:
+		ChannelEnumApi,
+		ChannelEnumMatrix:
 		return true
 	}
 	return false
@@ -227,6 +229,7 @@ func AllChannelEnumValues() []ChannelEnum {
 		ChannelEnumSlack,
 		ChannelEnumSignal,
 		ChannelEnumApi,
+		ChannelEnumMatrix,
 	}
 }
 

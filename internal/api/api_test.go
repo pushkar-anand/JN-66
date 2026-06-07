@@ -13,8 +13,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/pushkar-anand/agentrig/channel"
 	"github.com/pushkaranand/finagent/internal/apikey"
-	"github.com/pushkaranand/finagent/internal/channel"
 	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
 )
 

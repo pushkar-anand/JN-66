@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
+	"github.com/pushkar-anand/agentrig/channel"
 	"github.com/pushkaranand/finagent/config"
-	"github.com/pushkaranand/finagent/internal/channel"
 	"github.com/pushkaranand/finagent/internal/llm"
 	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
 )
@@ -37,7 +37,7 @@ func newTestAgent(
 		ChatModel:      "chat-model",
 		AnalysisModel:  "analysis-model",
 		SummarizeModel: "summarize-model",
-	}), false)
+	}), false, sqlcgen.ChannelEnumCli)
 }
 
 func TestHandleMessage_HappyPath(t *testing.T) {
@@ -406,4 +406,36 @@ func TestSplitWords_EarlyStop(t *testing.T) {
 		break
 	}
 	assert.Equal(t, []string{"hello"}, got)
+}
+
+func TestHandleMessage_UsesMatrixChannelType(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockLLM := NewMockchatProvider(ctrl)
+	mockConv := NewMockconvStore(ctrl)
+	mockMem := NewMockmemStore(ctrl)
+	mockUsers := NewMockuserStore(ctrl)
+	mockReg := NewMocktoolRegistry(ctrl)
+
+	sess := testSession()
+	msg := channel.Message{UserID: testUserID, SessionID: "!dm:example.com", Text: "hi"}
+
+	mockUsers.EXPECT().GetByID(gomock.Any(), testUserID).Return(&sqlcgen.User{Name: "Alice"}, nil)
+	// Must receive ChannelEnumMatrix — not ChannelEnumCli.
+	mockConv.EXPECT().GetOrCreateSession(gomock.Any(), testUserID, "!dm:example.com", sqlcgen.ChannelEnumMatrix).Return(sess, nil)
+	mockConv.EXPECT().SaveMessage(gomock.Any(), sess.ID, sqlcgen.MsgRoleEnumUser, msg.Text).Return(nil)
+	mockConv.EXPECT().RecentMessages(gomock.Any(), sess.ID, int32(20)).Return(nil, nil)
+	mockMem.EXPECT().Recall(gomock.Any(), testUserID, gomock.Any(), int32(5)).Return(nil, nil)
+	mockReg.EXPECT().Definitions().Return(nil)
+	mockLLM.EXPECT().Chat(gomock.Any(), gomock.Any()).Return(llm.ChatResponse{
+		Message:    llm.Message{Role: llm.RoleAssistant, Content: "Hello!"},
+		StopReason: "stop",
+	}, nil)
+	mockConv.EXPECT().SaveMessage(gomock.Any(), sess.ID, sqlcgen.MsgRoleEnumAssistant, "Hello!").Return(nil)
+
+	ag := New(mockLLM, mockConv, mockMem, mockUsers, mockReg, NewRouter(config.RoutingConfig{
+		ChatModel: "chat-model",
+	}), false, sqlcgen.ChannelEnumMatrix)
+	resp, err := ag.HandleMessage(t.Context(), msg)
+	require.NoError(t, err)
+	assert.Equal(t, "Hello!", resp.Text)
 }

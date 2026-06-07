@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 	bwglogger "github.com/pushkar-anand/build-with-go/logger"
 
-	"github.com/pushkaranand/finagent/internal/channel"
+	"github.com/pushkar-anand/agentrig/channel"
 )
 
 type chatRequest struct {
