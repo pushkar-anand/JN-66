@@ -146,11 +146,11 @@ func (t *QueryTransactions) Execute(ctx context.Context, _ string, argsJSON stri
 			r.ID,
 			r.TxnDate.Time.Format("2006-01-02"),
 			dir,
-			r.Description,
+			sanitizeField(r.Description),
 			float64(r.Amount)/100,
 		)
 		if r.CounterpartyName != nil {
-			fmt.Fprintf(&sb, " (from/to: %s)", *r.CounterpartyName)
+			fmt.Fprintf(&sb, " (from/to: %s)", sanitizeField(*r.CounterpartyName))
 		}
 		if r.PaymentMode != nil {
 			fmt.Fprintf(&sb, " [%s]", *r.PaymentMode)

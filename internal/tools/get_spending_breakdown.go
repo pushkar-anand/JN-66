@@ -92,7 +92,7 @@ func (t *GetSpendingBreakdown) Execute(ctx context.Context, _ string, argsJSON s
 			indent = "  "
 		}
 		fmt.Fprintf(&sb, "%s• %s: ₹%.2f (%d txns)\n",
-			indent, r.CategoryName, float64(r.TotalAmount)/100, r.TxnCount)
+			indent, sanitizeField(r.CategoryName), float64(r.TotalAmount)/100, r.TxnCount)
 		total += r.TotalAmount
 	}
 	fmt.Fprintf(&sb, "\nTotal: ₹%.2f", float64(total)/100)

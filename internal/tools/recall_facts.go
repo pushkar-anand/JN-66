@@ -68,7 +68,7 @@ func (t *RecallFacts) Execute(ctx context.Context, _ string, argsJSON string) (s
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "Recalled %d fact(s):\n\n", len(rows))
 	for _, m := range rows {
-		fmt.Fprintf(&sb, "• [%s] %s\n", m.MemoryType, m.Content)
+		fmt.Fprintf(&sb, "• [%s] %s\n", m.MemoryType, sanitizeField(m.Content))
 	}
 	return sb.String(), nil
 }

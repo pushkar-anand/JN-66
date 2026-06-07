@@ -82,9 +82,13 @@ func (t *ExecuteSQL) Execute(ctx context.Context, _ string, argsJSON string) (st
 			if v == nil {
 				row[i] = "NULL"
 			} else {
-				row[i] = fmt.Sprintf("%v", v)
+				row[i] = sanitizeField(fmt.Sprintf("%v", v))
 				if len(row[i]) > maxCellLen {
-					row[i] = row[i][:maxCellLen] + "…"
+					// Slice at a rune boundary to avoid splitting multi-byte UTF-8 sequences.
+					runes := []rune(row[i])
+					if len(runes) > maxCellLen {
+						row[i] = string(runes[:maxCellLen]) + "…"
+					}
 				}
 			}
 		}

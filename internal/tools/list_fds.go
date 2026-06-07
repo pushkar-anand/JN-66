@@ -108,7 +108,7 @@ func (t *ListFDs) Execute(ctx context.Context, _ string, argsJSON string) (strin
 
 		fdNum := ""
 		if fd.BankFdNumber != nil {
-			fdNum = " [" + *fd.BankFdNumber + "]"
+			fdNum = " [" + sanitizeField(*fd.BankFdNumber) + "]"
 		}
 
 		fmt.Fprintf(&sb, "• %s%s  %s @ %.2f%%  %d months\n",

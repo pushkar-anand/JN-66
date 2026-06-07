@@ -190,7 +190,7 @@ func (t *ManageFD) create(ctx context.Context, userID string, args manageFDArgs)
 
 	return fmt.Sprintf("Fixed deposit created. ID: %s\nAccount: %s\nPrincipal: %s  Rate: %.2f%%  Tenure: %d months\nMatures: %s  Renewal: %s",
 		fd.ID,
-		accountName,
+		sanitizeField(accountName),
 		model.Money(fd.PrincipalAmount).String(),
 		float64(fd.InterestRateBps)/100,
 		fd.TenureMonths,
