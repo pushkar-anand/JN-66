@@ -57,7 +57,7 @@ func (a *Agent) HandleMessage(ctx context.Context, msg channel.Message) (channel
 
 	// Resolve the user's display name for the system prompt.
 	// Strip newlines before interpolation to prevent name-based prompt injection.
-	userName := msg.UserID
+	userName := sanitizePromptField(msg.UserID)
 	if u, err := a.users.GetByID(ctx, msg.UserID); err == nil {
 		userName = sanitizePromptField(u.Name)
 	}

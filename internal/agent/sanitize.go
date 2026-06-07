@@ -1,17 +1,11 @@
 package agent
 
-import "strings"
+import "github.com/pushkaranand/finagent/internal/model"
 
-// sanitizePromptField strips newlines and ASCII control characters from a
+// sanitizePromptField removes newlines and control characters from a
 // DB-sourced string before it is interpolated into the system prompt.
-// Newlines in the system prompt allow attacker-controlled data (e.g. a crafted
-// user display name or a poisoned memory entry) to inject new "lines" that the
-// LLM may interpret as additional instructions.
+// Delegates to model.SanitizeText so both the agent and tools layers share
+// a single implementation.
 func sanitizePromptField(s string) string {
-	return strings.Map(func(r rune) rune {
-		if r == '\n' || r == '\r' || (r < 0x20 && r != '\t') {
-			return ' '
-		}
-		return r
-	}, s)
+	return model.SanitizeText(s)
 }
