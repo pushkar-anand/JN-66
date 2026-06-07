@@ -85,3 +85,44 @@ func TestLoad_MissingFile(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "load config file")
 }
+
+const matrixYAML = `
+database:
+  url: "postgres://test:test@localhost/test"
+llm:
+  base_url: "http://localhost:3000/api"
+channel:
+  matrix:
+    homeserver_url: "https://matrix.example.com"
+    user_id: "@bot:example.com"
+    access_token: "syt_token"
+    encryption_enabled: true
+    crypto_store_path: "/var/lib/bot/crypto.db"
+    pickle_key: "s3cr3t"
+    recovery_key: "EsTkey"
+    allowed_users:
+      - "@alice:example.com"
+      - "@partner:example.com"
+    users:
+      "@alice:example.com": "uuid-alice"
+      "@partner:example.com": "uuid-partner"
+`
+
+func TestLoad_MatrixConfig(t *testing.T) {
+	cfg, err := Load(writeTempConfig(t, matrixYAML))
+	require.NoError(t, err)
+
+	m := cfg.Channel.Matrix
+	assert.Equal(t, "https://matrix.example.com", m.HomeserverURL)
+	assert.Equal(t, "@bot:example.com", m.UserID)
+	assert.Equal(t, "syt_token", m.AccessToken)
+	assert.True(t, m.EncryptionEnabled)
+	assert.Equal(t, "/var/lib/bot/crypto.db", m.CryptoStorePath)
+	assert.Equal(t, "s3cr3t", m.PickleKey)
+	assert.Equal(t, "EsTkey", m.RecoveryKey)
+	assert.Equal(t, []string{"@alice:example.com", "@partner:example.com"}, m.AllowedUsers)
+	assert.Equal(t, map[string]string{
+		"@alice:example.com":   "uuid-alice",
+		"@partner:example.com": "uuid-partner",
+	}, m.Users)
+}

@@ -14,7 +14,7 @@ import (
 
 	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
 
-	"github.com/pushkaranand/finagent/internal/channel"
+	"github.com/pushkar-anand/agentrig/channel"
 )
 
 // userLookup is the store interface required for API authentication.

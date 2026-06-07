@@ -33,7 +33,7 @@ CREATE TYPE detection_source_enum AS ENUM ('llm', 'user', 'rule');
 
 CREATE TYPE memory_type_enum AS ENUM ('general', 'tagging_hint', 'recurring_hint', 'preference');
 
-CREATE TYPE channel_enum AS ENUM ('cli', 'slack', 'signal', 'api');
+CREATE TYPE channel_enum AS ENUM ('cli', 'slack', 'signal', 'api', 'matrix');
 
 CREATE TYPE msg_role_enum AS ENUM ('system', 'user', 'assistant', 'tool');
 

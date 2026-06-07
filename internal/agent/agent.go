@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/pushkaranand/finagent/internal/channel"
+	"github.com/pushkar-anand/agentrig/channel"
 	"github.com/pushkaranand/finagent/internal/llm"
 	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
 )
@@ -16,17 +16,19 @@ const maxToolRounds = 8
 // Agent is the core ReAct loop. It receives messages from any channel,
 // calls the LLM, dispatches tool calls, and returns a response.
 type Agent struct {
-	llm        chatProvider
-	conv       convStore
-	memories   memStore
-	users      userStore
-	registry   toolRegistry
-	router     *Router
-	hasZerodha bool
+	llm         chatProvider
+	conv        convStore
+	memories    memStore
+	users       userStore
+	registry    toolRegistry
+	router      *Router
+	hasZerodha  bool
+	channelType sqlcgen.ChannelEnum
 }
 
 // New creates an Agent with all dependencies wired in.
 // hasZerodha should be true when Zerodha investment tools are registered in registry.
+// channelType is stored in conversation_sessions for provenance tracking.
 func New(
 	provider chatProvider,
 	conv convStore,
@@ -35,15 +37,17 @@ func New(
 	registry toolRegistry,
 	router *Router,
 	hasZerodha bool,
+	channelType sqlcgen.ChannelEnum,
 ) *Agent {
 	return &Agent{
-		llm:        provider,
-		conv:       conv,
-		memories:   memories,
-		users:      users,
-		registry:   registry,
-		router:     router,
-		hasZerodha: hasZerodha,
+		llm:         provider,
+		conv:        conv,
+		memories:    memories,
+		users:       users,
+		registry:    registry,
+		router:      router,
+		hasZerodha:  hasZerodha,
+		channelType: channelType,
 	}
 }
 
@@ -62,7 +66,7 @@ func (a *Agent) HandleMessage(ctx context.Context, msg channel.Message) (channel
 	}
 
 	// Get or create a conversation session.
-	sess, err := a.conv.GetOrCreateSession(ctx, msg.UserID, msg.SessionID, sqlcgen.ChannelEnumCli)
+	sess, err := a.conv.GetOrCreateSession(ctx, msg.UserID, msg.SessionID, a.channelType)
 	if err != nil {
 		return channel.Response{}, fmt.Errorf("get session: %w", err)
 	}

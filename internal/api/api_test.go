@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/pushkaranand/finagent/internal/apikey"
-	"github.com/pushkaranand/finagent/internal/channel"
+	"github.com/pushkar-anand/agentrig/channel"
 	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
 )
 

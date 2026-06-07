@@ -83,12 +83,28 @@ type AgentConfig struct {
 
 // ChannelConfig holds per-channel configuration.
 type ChannelConfig struct {
-	CLI CLIConfig `koanf:"cli"`
+	CLI    CLIConfig    `koanf:"cli"`
+	Matrix MatrixConfig `koanf:"matrix"`
 }
 
 // CLIConfig holds CLI-specific configuration.
 type CLIConfig struct {
 	DefaultUser string `koanf:"default_user"`
+}
+
+// MatrixConfig holds Matrix channel configuration for server deployments.
+// Fields mirror agentrig's matrix.Config and share the same koanf tags so
+// callers can unmarshal directly: k.Unmarshal("channel.matrix", &cfg).
+type MatrixConfig struct {
+	HomeserverURL     string            `koanf:"homeserver_url"`
+	UserID            string            `koanf:"user_id"`
+	AccessToken       string            `koanf:"access_token"`
+	EncryptionEnabled bool              `koanf:"encryption_enabled"`
+	CryptoStorePath   string            `koanf:"crypto_store_path"`
+	PickleKey         string            `koanf:"pickle_key"`
+	RecoveryKey       string            `koanf:"recovery_key"`
+	AllowedUsers      []string          `koanf:"allowed_users"`
+	Users             map[string]string `koanf:"users"` // "@alice:hs" → finagent UUID
 }
 
 // APIConfig holds HTTP server configuration.

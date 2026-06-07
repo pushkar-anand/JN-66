@@ -10,10 +10,10 @@ mocks:
 	go generate ./internal/tools/...
 
 test:
-	go test ./...
+	go test -tags goolm -race -count=1 ./...
 
 test-cover:
-	go test -race -count=1 -coverprofile=coverage.out -covermode=atomic ./...
+	go test -tags goolm -race -count=1 -coverprofile=coverage.out -covermode=atomic ./...
 	go tool cover -func=coverage.out | tail -1
 
 fmt:
@@ -32,10 +32,10 @@ seed:
 	docker compose exec -T postgres psql -U finagent -d finagent -f - < scripts/seed.sql
 
 build:
-	go build -o bin/finagent ./cmd/finagent
+	go build -tags goolm -o bin/finagent ./cmd/finagent
 
 run:
-	go run ./cmd/finagent
+	go run -tags goolm ./cmd/finagent
 
 eval:
 	go run ./cmd/eval/... --config config/config.yaml

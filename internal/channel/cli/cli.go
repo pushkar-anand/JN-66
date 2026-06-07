@@ -14,7 +14,7 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/term"
 
-	"github.com/pushkaranand/finagent/internal/channel"
+	"github.com/pushkar-anand/agentrig/channel"
 )
 
 // CLI is a readline-backed interactive channel. UserID is resolved from the
