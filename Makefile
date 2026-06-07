@@ -38,7 +38,7 @@ run:
 	go run -tags goolm ./cmd/finagent
 
 eval:
-	go run ./cmd/eval/... --config config/config.yaml
+	go run -tags goolm ./cmd/eval/... --config config/config.yaml
 
 docker-run:
 	docker compose up -d

@@ -15,6 +15,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	matrixchannel "github.com/pushkar-anand/agentrig/channel/matrix"
+	"golang.org/x/sync/errgroup"
 	"github.com/pushkaranand/finagent/config"
 	"github.com/pushkaranand/finagent/internal/agent"
 	"github.com/pushkaranand/finagent/internal/api"
@@ -212,20 +213,15 @@ func run() error {
 		srv := api.New(cfg.API.Listen, ag.HandleMessage, userStore, pool, zerCbCfg, accountsCfg, importCfg, fdCfg)
 
 		// Start Matrix channel alongside the HTTP API when configured.
+		// errgroup cancels the shared context when either child fails,
+		// ensuring both goroutines shut down cleanly.
 		if cfg.Channel.Matrix.HomeserverURL != "" {
-			matrixErrCh := make(chan error, 1)
-			go func() {
-				matrixErrCh <- startMatrix(ctx, cfg, pool, roPool, schemaStr, llmProvider, convStore, userStore, zStore, router)
-			}()
-			// Run HTTP API in a separate goroutine so both channels run concurrently.
-			apiErrCh := make(chan error, 1)
-			go func() { apiErrCh <- srv.Start(ctx) }()
-			select {
-			case err := <-matrixErrCh:
-				return fmt.Errorf("matrix channel: %w", err)
-			case err := <-apiErrCh:
-				return err
-			}
+			g, gctx := errgroup.WithContext(ctx)
+			g.Go(func() error {
+				return startMatrix(gctx, cfg, pool, roPool, schemaStr, llmProvider, convStore, userStore, zStore, router)
+			})
+			g.Go(func() error { return srv.Start(gctx) })
+			return g.Wait()
 		}
 
 		return srv.Start(ctx)

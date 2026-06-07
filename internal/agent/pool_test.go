@@ -7,6 +7,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/pushkar-anand/agentrig/channel"
 	"github.com/stretchr/testify/assert"
@@ -71,6 +72,38 @@ func TestPool_FactoryErrorPropagates(t *testing.T) {
 }
 
 func TestPool_ConcurrentAccess(t *testing.T) {
+	// N goroutines for N distinct users: factory called exactly once per user,
+	// and different users' constructions run in parallel (total wall time < n×delay).
+	const n = 5
+	const delay = 20 * time.Millisecond
+	var callCount atomic.Int64
+
+	pool := NewPool(func(_ context.Context, _ string) (*Agent, error) {
+		callCount.Add(1)
+		time.Sleep(delay) // simulate DB lookup + registry build
+		return minimalAgent(), nil
+	})
+
+	start := time.Now()
+	var wg sync.WaitGroup
+	for i := range n {
+		userID := fmt.Sprintf("user-%d", i)
+		wg.Go(func() {
+			_, _ = pool.get(t.Context(), userID)
+		})
+	}
+	wg.Wait()
+	elapsed := time.Since(start)
+
+	assert.Equal(t, int64(n), callCount.Load(), "factory must be called exactly once per unique user")
+	// If constructions were serialised the total would be ≥ n×delay.
+	// With singleflight they run in parallel so elapsed ≪ n×delay.
+	assert.Less(t, elapsed, time.Duration(n)*delay, "different users' agent construction must run in parallel")
+}
+
+func TestPool_ConcurrentSameUser(t *testing.T) {
+	// N goroutines all request the agent for the same user simultaneously.
+	// The factory must be called exactly once regardless of the race.
 	const n = 20
 	var callCount atomic.Int64
 
@@ -80,13 +113,12 @@ func TestPool_ConcurrentAccess(t *testing.T) {
 	})
 
 	var wg sync.WaitGroup
-	for i := range n {
-		userID := fmt.Sprintf("user-%d", i)
+	for range n {
 		wg.Go(func() {
-			_, _ = pool.get(t.Context(), userID)
+			_, _ = pool.get(t.Context(), "alice")
 		})
 	}
 	wg.Wait()
 
-	assert.Equal(t, int64(n), callCount.Load(), "factory must be called exactly once per unique user")
+	assert.Equal(t, int64(1), callCount.Load(), "factory must be called exactly once for the same user")
 }
