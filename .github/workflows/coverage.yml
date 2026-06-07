@@ -33,7 +33,7 @@ jobs:
           restore-keys: go-coverage-main-
 
       - name: Test with coverage
-        run: go test -race -count=1 -coverprofile=coverage.out -covermode=atomic ./...
+        run: go test -tags goolm -race -count=1 -coverprofile=coverage.out -covermode=atomic ./...
 
       - name: Save main coverage
         if: github.ref == 'refs/heads/main'
