@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	"github.com/pushkaranand/finagent/config"
 	"github.com/pushkar-anand/agentrig/channel"
+	"github.com/pushkaranand/finagent/config"
 	"github.com/pushkaranand/finagent/internal/llm"
 	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
 )
