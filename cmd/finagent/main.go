@@ -15,7 +15,6 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	matrixchannel "github.com/pushkar-anand/agentrig/channel/matrix"
-	"golang.org/x/sync/errgroup"
 	"github.com/pushkaranand/finagent/config"
 	"github.com/pushkaranand/finagent/internal/agent"
 	"github.com/pushkaranand/finagent/internal/api"
@@ -28,6 +27,7 @@ import (
 	"github.com/pushkaranand/finagent/internal/store"
 	"github.com/pushkaranand/finagent/internal/tools"
 	"github.com/pushkaranand/finagent/internal/zerodha"
+	"golang.org/x/sync/errgroup"
 )
 
 func main() {
