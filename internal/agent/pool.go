@@ -62,7 +62,10 @@ func (p *Pool) get(ctx context.Context, userID string) (*Agent, error) {
 			return ag, nil
 		}
 
-		ag, err := p.newAgent(ctx, userID)
+		// Use context.WithoutCancel so that a single caller's timeout or
+		// cancellation does not abort construction for all concurrent waiters
+		// sharing this singleflight call.
+		ag, err := p.newAgent(context.WithoutCancel(ctx), userID)
 		if err != nil {
 			return nil, err
 		}

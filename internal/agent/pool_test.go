@@ -101,6 +101,25 @@ func TestPool_ConcurrentAccess(t *testing.T) {
 	assert.Less(t, elapsed, time.Duration(n)*delay, "different users' agent construction must run in parallel")
 }
 
+func TestPool_CancelledCallerContextDoesNotAbortConstruction(t *testing.T) {
+	// If the caller's context is cancelled, the factory must still succeed because
+	// the pool passes context.WithoutCancel(ctx). Without that guard, a cancelled
+	// context would propagate into DB calls inside newAgent and fail all waiters.
+	pool := NewPool(func(ctx context.Context, _ string) (*Agent, error) {
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+		return minimalAgent(), nil
+	})
+
+	cancelCtx, cancel := context.WithCancel(t.Context())
+	cancel() // cancel before calling get
+
+	ag, err := pool.get(cancelCtx, "alice")
+	require.NoError(t, err, "cancelled caller context must not abort agent construction")
+	require.NotNil(t, ag)
+}
+
 func TestPool_ConcurrentSameUser(t *testing.T) {
 	// N goroutines all request the agent for the same user simultaneously.
 	// The factory must be called exactly once regardless of the race.
