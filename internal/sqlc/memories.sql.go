@@ -117,18 +117,25 @@ WHERE is_active = TRUE
   AND (expires_at IS NULL OR expires_at > NOW())
   AND (user_id = $1 OR user_id IS NULL)
   AND embedding IS NOT NULL
+  AND embedding <=> $2 < $3::float8
 ORDER BY embedding <=> $2
-LIMIT $3
+LIMIT $4
 `
 
 type RecallMemoriesByEmbeddingParams struct {
-	UserID    pgtype.UUID      `json:"user_id"`
-	Embedding *pgvector.Vector `json:"embedding"`
-	PageLimit int32            `json:"page_limit"`
+	UserID      pgtype.UUID      `json:"user_id"`
+	Embedding   *pgvector.Vector `json:"embedding"`
+	MaxDistance float64          `json:"max_distance"`
+	PageLimit   int32            `json:"page_limit"`
 }
 
 func (q *Queries) RecallMemoriesByEmbedding(ctx context.Context, arg RecallMemoriesByEmbeddingParams) ([]AgentMemory, error) {
-	rows, err := q.db.Query(ctx, recallMemoriesByEmbedding, arg.UserID, arg.Embedding, arg.PageLimit)
+	rows, err := q.db.Query(ctx, recallMemoriesByEmbedding,
+		arg.UserID,
+		arg.Embedding,
+		arg.MaxDistance,
+		arg.PageLimit,
+	)
 	if err != nil {
 		return nil, err
 	}

@@ -18,6 +18,7 @@ WHERE is_active = TRUE
   AND (expires_at IS NULL OR expires_at > NOW())
   AND (user_id = sqlc.narg(user_id) OR user_id IS NULL)
   AND embedding IS NOT NULL
+  AND embedding <=> @embedding < sqlc.arg(max_distance)::float8
 ORDER BY embedding <=> @embedding
 LIMIT sqlc.arg(page_limit);
 

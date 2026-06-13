@@ -88,9 +88,10 @@ func (s *MemoryStore) Recall(ctx context.Context, userID string, query string, l
 		if embedErr == nil {
 			v := pgvector.NewVector(vec)
 			rows, dbErr := s.q.RecallMemoriesByEmbedding(ctx, sqlcgen.RecallMemoriesByEmbeddingParams{
-				UserID:    pgUID,
-				Embedding: &v,
-				PageLimit: limit,
+				UserID:      pgUID,
+				Embedding:   &v,
+				MaxDistance: 0.5,
+				PageLimit:   limit,
 			})
 			if dbErr == nil {
 				slog.DebugContext(ctx, "memory recall", slog.String("path", "vector"), slog.Int("results", len(rows)))
@@ -160,9 +161,7 @@ func memoryKeywords(text string) []string {
 		}
 	}
 	if len(tags) == 0 {
-		if first := strings.Fields(strings.ToLower(text)); len(first) > 0 {
-			return first[:1]
-		}
+		return strings.Fields(strings.ToLower(text))
 	}
 	return tags
 }
