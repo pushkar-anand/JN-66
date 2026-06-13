@@ -156,6 +156,8 @@ type updateBalanceRequest struct {
 }
 
 func (s *Server) handleUpdateAccountBalance(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+
 	accountID := mux.Vars(r)["id"]
 
 	userID := UserIDFromContext(r.Context())
@@ -180,7 +182,6 @@ func (s *Server) handleUpdateAccountBalance(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 	var req updateBalanceRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
