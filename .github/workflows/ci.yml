@@ -6,39 +6,9 @@ on:
   pull_request:
     branches: [main]
 
-permissions:
-  contents: read
-
 jobs:
   ci:
-    name: Build, Vet & Test
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-
-      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
-        with:
-          go-version: "1.26"
-          cache: true
-
-      - name: Verify dependencies
-        run: go mod verify
-
-      - name: Build
-        run: go build -tags goolm ./...
-
-      - name: Vet
-        run: go vet -tags goolm ./...
-
-      - name: Format check
-        run: |
-          unformatted=$(gofmt -l .)
-          if [ -n "$unformatted" ]; then
-            echo "Unformatted files:"
-            echo "$unformatted"
-            exit 1
-          fi
-
-      - name: Test
-        run: go test -tags goolm -race -count=1 ./...
+    uses: pushkar-anand/.github/.github/workflows/go-ci.yml@main
+    with:
+      build-tags: "goolm"
+      run-lint: false
