@@ -22,7 +22,6 @@ func minimalAgent() *Agent {
 	return &Agent{channelType: sqlcgen.ChannelEnumCli}
 }
 
-
 func TestPool_LazyCreation(t *testing.T) {
 	var calls atomic.Int64
 	pool := NewPool(func(_ context.Context, _ string) (*Agent, string, error) {
