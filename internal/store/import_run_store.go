@@ -64,6 +64,19 @@ func (s *ImportRunStore) UpdateCounts(ctx context.Context, id uuid.UUID, parsed,
 	return nil
 }
 
+// Get returns a single import run owned by userID. Returns an error wrapping
+// pgx.ErrNoRows if the run does not exist or belongs to a different user.
+func (s *ImportRunStore) Get(ctx context.Context, userID, runID uuid.UUID) (*sqlcgen.ImportRun, error) {
+	run, err := s.q.GetImportRun(ctx, sqlcgen.GetImportRunParams{
+		ID:     runID,
+		UserID: userID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("get import run: %w", err)
+	}
+	return &run, nil
+}
+
 // Finish marks the run as complete (success or failed) with an optional error message.
 func (s *ImportRunStore) Finish(ctx context.Context, id uuid.UUID, status sqlcgen.ImportStatusEnum, errDetail string) error {
 	var detail *string

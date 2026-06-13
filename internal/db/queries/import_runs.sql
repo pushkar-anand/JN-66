@@ -18,5 +18,8 @@ SET status       = @status,
     error_detail = @error_detail
 WHERE id = @id;
 
+-- name: GetImportRun :one
+SELECT * FROM import_runs WHERE id = @id AND user_id = @user_id;
+
 -- name: ListImportRuns :many
 SELECT * FROM import_runs WHERE user_id = @user_id ORDER BY started_at DESC LIMIT 20;

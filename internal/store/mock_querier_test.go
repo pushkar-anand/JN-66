@@ -365,6 +365,21 @@ func (mr *MockQuerierMockRecorder) GetIdempotencyKeyExists(ctx, idempotencyKey a
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIdempotencyKeyExists", reflect.TypeOf((*MockQuerier)(nil).GetIdempotencyKeyExists), ctx, idempotencyKey)
 }
 
+// GetImportRun mocks base method.
+func (m *MockQuerier) GetImportRun(ctx context.Context, arg sqlcgen.GetImportRunParams) (sqlcgen.ImportRun, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetImportRun", ctx, arg)
+	ret0, _ := ret[0].(sqlcgen.ImportRun)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetImportRun indicates an expected call of GetImportRun.
+func (mr *MockQuerierMockRecorder) GetImportRun(ctx, arg any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImportRun", reflect.TypeOf((*MockQuerier)(nil).GetImportRun), ctx, arg)
+}
+
 // GetLabelBySlug mocks base method.
 func (m *MockQuerier) GetLabelBySlug(ctx context.Context, slug string) (sqlcgen.Label, error) {
 	m.ctrl.T.Helper()

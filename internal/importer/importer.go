@@ -191,6 +191,49 @@ func (imp *Importer) Run(ctx context.Context, p RunParams) (*Result, error) {
 	return res, nil
 }
 
+// EnrichRows enriches already-inserted transactions identified by rows.
+// It resolves each row back to its DB transaction via idempotency key, calls the
+// enricher, and writes the result. Designed to be called from a background goroutine
+// after Run() has returned — the context must outlive the HTTP request.
+// Silently skips rows whose transaction cannot be found (e.g. rows that were
+// rejected by Insert).
+func (imp *Importer) EnrichRows(ctx context.Context, accountID uuid.UUID, rows []parser.RawTransaction) {
+	if imp.enricher == nil {
+		return
+	}
+	total := len(rows)
+	for i, row := range rows {
+		key := idempotencyKey(accountID, row.Date, row.Amount, row.Description)
+		txnID, err := imp.txnStore.GetIDByIdempotencyKey(ctx, key)
+		if err != nil {
+			// Row was likely a failed insert; skip silently.
+			continue
+		}
+		slog.InfoContext(ctx, "enriching", "n", i+1, "total", total, "desc", truncateStr(row.Description, 50))
+		enriched, err := imp.enricher.Enrich(ctx, row)
+		if err != nil {
+			slog.WarnContext(ctx, "enrichment failed — leaving pending", "err", err, "txn", txnID)
+			continue
+		}
+		ep := store.EnrichmentParams{
+			TransactionID:         txnID.String(),
+			DescriptionNormalized: nilIfEmpty(enriched.DescriptionNormalized),
+		}
+		auto := sqlcgen.TaggingStatusEnumAuto
+		ep.TaggingStatus = &auto
+		if enriched.CategorySlug != "" {
+			if cat, err := imp.catStore.GetBySlug(ctx, enriched.CategorySlug); err == nil {
+				id := cat.ID.String()
+				ep.CategoryID = &id
+			}
+		}
+		if err := imp.txnStore.UpdateEnrichment(ctx, ep); err != nil {
+			slog.WarnContext(ctx, "update enrichment failed", "err", err, "txn", txnID)
+		}
+	}
+	slog.InfoContext(ctx, "background enrichment complete", "total", total)
+}
+
 func truncateStr(s string, n int) string {
 	if len(s) <= n {
 		return s

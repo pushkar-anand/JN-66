@@ -34,6 +34,7 @@ type Querier interface {
 	GetCategoryBySlug(ctx context.Context, slug string) (Category, error)
 	GetFixedDeposit(ctx context.Context, arg GetFixedDepositParams) (FixedDeposit, error)
 	GetIdempotencyKeyExists(ctx context.Context, idempotencyKey string) (bool, error)
+	GetImportRun(ctx context.Context, arg GetImportRunParams) (ImportRun, error)
 	GetLabelBySlug(ctx context.Context, slug string) (Label, error)
 	GetRecurringPaymentByID(ctx context.Context, id uuid.UUID) (RecurringPayment, error)
 	GetSession(ctx context.Context, id uuid.UUID) (ConversationSession, error)
