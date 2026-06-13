@@ -22,12 +22,6 @@ func minimalAgent() *Agent {
 	return &Agent{channelType: sqlcgen.ChannelEnumCli}
 }
 
-// stubFactory returns a factory that builds a minimalAgent and echoes userID as the uid.
-func stubFactory() func(context.Context, string) (*Agent, string, error) {
-	return func(_ context.Context, userID string) (*Agent, string, error) {
-		return minimalAgent(), userID + "-uid", nil
-	}
-}
 
 func TestPool_LazyCreation(t *testing.T) {
 	var calls atomic.Int64
