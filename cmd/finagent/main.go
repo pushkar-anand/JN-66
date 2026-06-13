@@ -280,34 +280,35 @@ func startMatrix(
 	zStore *store.ZerodhaStore,
 	router *agent.Router,
 ) error {
-	agPool := agent.NewPool(func(ctx context.Context, userID string) (*agent.Agent, error) {
-		u, err := userStore.GetByID(ctx, userID)
+	agPool := agent.NewPool(func(ctx context.Context, username string) (*agent.Agent, string, error) {
+		u, err := userStore.GetByUsername(ctx, username)
 		if err != nil {
-			return nil, fmt.Errorf("load user %s: %w", userID, err)
+			return nil, "", fmt.Errorf("load user %s: %w", username, err)
 		}
 
 		loc, err := time.LoadLocation(cmp.Or(u.Timezone, "Asia/Kolkata"))
 		if err != nil {
-			return nil, fmt.Errorf("user timezone %q: %w", u.Timezone, err)
+			return nil, "", fmt.Errorf("user timezone %q: %w", u.Timezone, err)
 		}
 
-		registry, memoryStore := app.BuildToolRegistry(pool, roPool, schemaStr, userID)
+		uid := u.ID.String()
+		registry, memoryStore := app.BuildToolRegistry(pool, roPool, schemaStr, uid)
 
 		if zerCreds, ok := cfg.Zerodha.Users[u.Username]; ok {
 			zSvc := store.NewZerodhaService(zStore, zerodha.NewClient(zerCreds.APIKey))
-			registry.Register(tools.NewGetInvestmentHoldings(userID, zSvc, loc))
-			registry.Register(tools.NewGetMFHoldings(userID, zSvc, loc))
-			registry.Register(tools.NewGetInvestmentSummary(userID, zSvc, loc))
-			registry.Register(tools.NewSyncPortfolio(userID, zSvc, nil))
+			registry.Register(tools.NewGetInvestmentHoldings(uid, zSvc, loc))
+			registry.Register(tools.NewGetMFHoldings(uid, zSvc, loc))
+			registry.Register(tools.NewGetInvestmentSummary(uid, zSvc, loc))
+			registry.Register(tools.NewSyncPortfolio(uid, zSvc, nil))
 		}
 
 		return agent.New(
 			llmProvider, convStore, memoryStore, userStore, registry, router,
 			registry.Has("get_investment_holdings"), sqlcgen.ChannelEnumMatrix,
-		), nil
+		), uid, nil
 	})
 
-	ch, err := matrixchannel.New(toMatrixChannelConfig(cfg.Channel.Matrix))
+	ch, err := matrixchannel.New(toMatrixChannelConfig(cfg.Channel.Matrix), matrixchannel.WithLogger(slog.Default()))
 	if err != nil {
 		return fmt.Errorf("create matrix channel: %w", err)
 	}
