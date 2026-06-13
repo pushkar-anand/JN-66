@@ -553,9 +553,10 @@ func AllFrequencyEnumValues() []FrequencyEnum {
 type ImportProviderEnum string
 
 const (
-	ImportProviderEnumCsv     ImportProviderEnum = "csv"
-	ImportProviderEnumZerodha ImportProviderEnum = "zerodha"
-	ImportProviderEnumManual  ImportProviderEnum = "manual"
+	ImportProviderEnumCsv      ImportProviderEnum = "csv"
+	ImportProviderEnumZerodha  ImportProviderEnum = "zerodha"
+	ImportProviderEnumManual   ImportProviderEnum = "manual"
+	ImportProviderEnumExternal ImportProviderEnum = "external"
 )
 
 func (e *ImportProviderEnum) Scan(src interface{}) error {
@@ -597,7 +598,8 @@ func (e ImportProviderEnum) Valid() bool {
 	switch e {
 	case ImportProviderEnumCsv,
 		ImportProviderEnumZerodha,
-		ImportProviderEnumManual:
+		ImportProviderEnumManual,
+		ImportProviderEnumExternal:
 		return true
 	}
 	return false
@@ -608,6 +610,7 @@ func AllImportProviderEnumValues() []ImportProviderEnum {
 		ImportProviderEnumCsv,
 		ImportProviderEnumZerodha,
 		ImportProviderEnumManual,
+		ImportProviderEnumExternal,
 	}
 }
 

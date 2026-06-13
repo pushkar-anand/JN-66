@@ -8,10 +8,13 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v5/pgconn"
 	bwglogger "github.com/pushkar-anand/build-with-go/logger"
 
+	"github.com/pushkaranand/finagent/internal/model"
 	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
 	"github.com/pushkaranand/finagent/internal/store"
 )
@@ -20,6 +23,7 @@ import (
 type accountStoreAPI interface {
 	Create(ctx context.Context, p store.CreateAccountParams, userID string) (*sqlcgen.Account, error)
 	ListByUser(ctx context.Context, userID string) ([]sqlcgen.Account, error)
+	UpdateBalance(ctx context.Context, accountID string, balance model.Money, asOf time.Time) error
 }
 
 // AccountsConfig holds dependencies for the accounts API routes.
@@ -144,6 +148,80 @@ func (s *Server) handleListAccounts(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(resp)
+}
+
+type updateBalanceRequest struct {
+	BalancePaise *int64 `json:"balance_paise" validate:"required,min=0"`
+	AsOf         string `json:"as_of"         validate:"required,txndate"`
+}
+
+func (s *Server) handleUpdateAccountBalance(w http.ResponseWriter, r *http.Request) {
+	accountID := mux.Vars(r)["id"]
+
+	userID := UserIDFromContext(r.Context())
+	accounts, err := s.accountsCfg.Store.ListByUser(r.Context(), userID)
+	if err != nil {
+		slog.ErrorContext(r.Context(), "balance update: list accounts error",
+			slog.String("user_id", userID),
+			bwglogger.Error(err),
+		)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+	var owned bool
+	for _, a := range accounts {
+		if a.ID.String() == accountID {
+			owned = true
+			break
+		}
+	}
+	if !owned {
+		http.Error(w, "account not found", http.StatusNotFound)
+		return
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+	var req updateBalanceRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
+			http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
+			return
+		}
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	result, err := s.v.ValidateStruct(r.Context(), &req)
+	if err != nil {
+		slog.ErrorContext(r.Context(), "balance update: validator error", bwglogger.Error(err))
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+	if !result.Valid {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(result.Failed)
+		return
+	}
+
+	asOf := parseTxnDate(req.AsOf)
+	if err := s.accountsCfg.Store.UpdateBalance(r.Context(), accountID, model.Money(*req.BalancePaise), asOf); err != nil {
+		slog.ErrorContext(r.Context(), "balance update: store error",
+			slog.String("account_id", accountID),
+			bwglogger.Error(err),
+		)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	slog.InfoContext(r.Context(), "account balance updated",
+		slog.String("user_id", userID),
+		slog.String("account_id", accountID),
+		slog.Int64("balance_paise", *req.BalancePaise),
+		slog.String("as_of", req.AsOf),
+	)
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func parseAccountType(s string) (sqlcgen.AccountTypeEnum, error) {

@@ -39,7 +39,7 @@ CREATE TYPE msg_role_enum AS ENUM ('system', 'user', 'assistant', 'tool');
 
 CREATE TYPE import_status_enum AS ENUM ('running', 'success', 'partial', 'failed');
 
-CREATE TYPE import_provider_enum AS ENUM ('csv', 'zerodha', 'manual');
+CREATE TYPE import_provider_enum AS ENUM ('csv', 'zerodha', 'manual', 'external');
 
 CREATE TYPE physical_asset_type_enum AS ENUM (
     'vehicle', 'jewellery', 'real_estate', 'physical_gold', 'other'
