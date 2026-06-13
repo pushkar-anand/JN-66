@@ -22,6 +22,18 @@ agent:
 channel:
   cli:
     default_user: "alice"
+  # matrix:
+  #   homeserver_url: "https://matrix.example.com"
+  #   user_id: "@jn66bot:matrix.example.com"
+  #   access_token: ""           # FINAGENT_CHANNEL__MATRIX__ACCESS_TOKEN
+  #   encryption_enabled: true
+  #   crypto_store_path: "/var/lib/jn66/crypto.db"  # SQLite file for E2E key store; created on first run
+  #   pickle_key: ""             # random secret; encrypts the crypto store at rest
+  #   # recovery_key: ""         # optional: SSSS cross-signing recovery key
+  #   allowed_users:
+  #     - "@alice:matrix.example.com"
+  #   users:
+  #     "@alice:matrix.example.com": "alice"  # Matrix ID → finagent username
 
 api:
   listen: ":8082"

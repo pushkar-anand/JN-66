@@ -22,11 +22,18 @@ func minimalAgent() *Agent {
 	return &Agent{channelType: sqlcgen.ChannelEnumCli}
 }
 
+// stubFactory returns a factory that builds a minimalAgent and echoes userID as the uid.
+func stubFactory() func(context.Context, string) (*Agent, string, error) {
+	return func(_ context.Context, userID string) (*Agent, string, error) {
+		return minimalAgent(), userID + "-uid", nil
+	}
+}
+
 func TestPool_LazyCreation(t *testing.T) {
 	var calls atomic.Int64
-	pool := NewPool(func(_ context.Context, _ string) (*Agent, error) {
+	pool := NewPool(func(_ context.Context, _ string) (*Agent, string, error) {
 		calls.Add(1)
-		return minimalAgent(), nil
+		return minimalAgent(), "uid", nil
 	})
 	assert.Equal(t, int64(0), calls.Load(), "factory must not be called before any message")
 	_ = pool
@@ -36,23 +43,25 @@ func TestPool_SeparateAgentsPerUser(t *testing.T) {
 	var callsMu sync.Mutex
 	created := map[string]int{}
 
-	pool := NewPool(func(_ context.Context, userID string) (*Agent, error) {
+	pool := NewPool(func(_ context.Context, userID string) (*Agent, string, error) {
 		callsMu.Lock()
 		created[userID]++
 		callsMu.Unlock()
-		return minimalAgent(), nil
+		return minimalAgent(), userID + "-uid", nil
 	})
 
 	ctx := t.Context()
-	ag1, err := pool.get(ctx, "user-a")
+	e1, err := pool.get(ctx, "user-a")
 	require.NoError(t, err)
-	ag2, err := pool.get(ctx, "user-b")
+	e2, err := pool.get(ctx, "user-b")
 	require.NoError(t, err)
-	ag3, err := pool.get(ctx, "user-a")
+	e3, err := pool.get(ctx, "user-a")
 	require.NoError(t, err)
 
-	assert.NotSame(t, ag1, ag2, "different users must get separate agents")
-	assert.Same(t, ag1, ag3, "same user must reuse the cached agent")
+	assert.NotSame(t, e1.ag, e2.ag, "different users must get separate agents")
+	assert.Same(t, e1.ag, e3.ag, "same user must reuse the cached agent")
+	assert.Equal(t, "user-a-uid", e1.uid)
+	assert.Equal(t, "user-b-uid", e2.uid)
 
 	callsMu.Lock()
 	defer callsMu.Unlock()
@@ -62,13 +71,25 @@ func TestPool_SeparateAgentsPerUser(t *testing.T) {
 
 func TestPool_FactoryErrorPropagates(t *testing.T) {
 	wantErr := errors.New("db connection lost")
-	pool := NewPool(func(_ context.Context, _ string) (*Agent, error) {
-		return nil, wantErr
+	pool := NewPool(func(_ context.Context, _ string) (*Agent, string, error) {
+		return nil, "", wantErr
 	})
 
 	_, err := pool.HandleMessage(t.Context(), channel.Message{UserID: "any-user", Text: "hello"})
 	require.Error(t, err)
 	assert.ErrorIs(t, err, wantErr)
+}
+
+func TestPool_UIDRewrite(t *testing.T) {
+	// HandleMessage must rewrite msg.UserID to the canonical DB UUID before
+	// forwarding to the agent, so the agent never sees the raw channel identifier.
+	pool := NewPool(func(_ context.Context, _ string) (*Agent, string, error) {
+		return minimalAgent(), "real-uuid-123", nil
+	})
+
+	entry, err := pool.get(t.Context(), "alice")
+	require.NoError(t, err)
+	assert.Equal(t, "real-uuid-123", entry.uid, "pool must store the resolved UUID")
 }
 
 func TestPool_ConcurrentAccess(t *testing.T) {
@@ -78,10 +99,10 @@ func TestPool_ConcurrentAccess(t *testing.T) {
 	const delay = 20 * time.Millisecond
 	var callCount atomic.Int64
 
-	pool := NewPool(func(_ context.Context, _ string) (*Agent, error) {
+	pool := NewPool(func(_ context.Context, userID string) (*Agent, string, error) {
 		callCount.Add(1)
 		time.Sleep(delay) // simulate DB lookup + registry build
-		return minimalAgent(), nil
+		return minimalAgent(), userID + "-uid", nil
 	})
 
 	start := time.Now()
@@ -105,19 +126,19 @@ func TestPool_CancelledCallerContextDoesNotAbortConstruction(t *testing.T) {
 	// If the caller's context is cancelled, the factory must still succeed because
 	// the pool passes context.WithoutCancel(ctx). Without that guard, a cancelled
 	// context would propagate into DB calls inside newAgent and fail all waiters.
-	pool := NewPool(func(ctx context.Context, _ string) (*Agent, error) {
+	pool := NewPool(func(ctx context.Context, _ string) (*Agent, string, error) {
 		if ctx.Err() != nil {
-			return nil, ctx.Err()
+			return nil, "", ctx.Err()
 		}
-		return minimalAgent(), nil
+		return minimalAgent(), "uid", nil
 	})
 
 	cancelCtx, cancel := context.WithCancel(t.Context())
 	cancel() // cancel before calling get
 
-	ag, err := pool.get(cancelCtx, "alice")
+	e, err := pool.get(cancelCtx, "alice")
 	require.NoError(t, err, "cancelled caller context must not abort agent construction")
-	require.NotNil(t, ag)
+	require.NotNil(t, e.ag)
 }
 
 func TestPool_ConcurrentSameUser(t *testing.T) {
@@ -126,9 +147,9 @@ func TestPool_ConcurrentSameUser(t *testing.T) {
 	const n = 20
 	var callCount atomic.Int64
 
-	pool := NewPool(func(_ context.Context, _ string) (*Agent, error) {
+	pool := NewPool(func(_ context.Context, _ string) (*Agent, string, error) {
 		callCount.Add(1)
-		return minimalAgent(), nil
+		return minimalAgent(), "uid", nil
 	})
 
 	var wg sync.WaitGroup

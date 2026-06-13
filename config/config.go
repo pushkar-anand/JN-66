@@ -104,7 +104,7 @@ type MatrixConfig struct {
 	PickleKey         string            `koanf:"pickle_key"`
 	RecoveryKey       string            `koanf:"recovery_key"`
 	AllowedUsers      []string          `koanf:"allowed_users"`
-	Users             map[string]string `koanf:"users"` // "@alice:hs" → finagent UUID
+	Users             map[string]string `koanf:"users"` // "@alice:hs" → finagent username
 }
 
 // APIConfig holds HTTP server configuration.
