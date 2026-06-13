@@ -35,6 +35,12 @@ type importAccountStore interface {
 	UpdateBalance(ctx context.Context, accountID string, balance model.Money, asOf time.Time) error
 }
 
+// importRunGetter is the run-store surface needed by GET /api/import/{id}.
+// Satisfied by *store.ImportRunStore in production.
+type importRunGetter interface {
+	Get(ctx context.Context, userID, runID uuid.UUID) (*sqlcgen.ImportRun, error)
+}
+
 // ImportConfig holds dependencies for the POST /api/import handler.
 // Pass nil to api.New to disable the route.
 //
@@ -46,6 +52,7 @@ type ImportConfig struct {
 	AccountStore importAccountStore
 	TxnStore     *store.TransactionStore
 	RunStore     *store.ImportRunStore
+	RunGetter    importRunGetter // for GET /api/import/{id}; set to RunStore in production
 	CatStore     *store.CategoryStore
 	LLMProvider  llm.Provider
 	TaggingModel string
@@ -270,7 +277,7 @@ func (s *Server) handleGetImportRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := s.importCfg.RunStore.Get(r.Context(), userUUID, runID)
+	run, err := s.importCfg.RunGetter.Get(r.Context(), userUUID, runID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			http.Error(w, "not found", http.StatusNotFound)
