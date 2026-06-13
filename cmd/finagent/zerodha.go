@@ -228,7 +228,7 @@ func runZerodhaSync(configPath, userIdentifier string) error {
 	eq, mf, err := zSvc.ForceSync(ctx, uid)
 	if err != nil {
 		if errors.Is(err, store.ErrZerodhaTokenExpired) {
-			return fmt.Errorf("Zerodha token expired or not set — run: finagent zerodha auth")
+			return fmt.Errorf("zerodha token expired or not set — run: finagent zerodha auth")
 		}
 		return fmt.Errorf("sync: %w", err)
 	}

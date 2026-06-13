@@ -15,13 +15,16 @@ require (
 	github.com/knadh/koanf/providers/file v1.2.1
 	github.com/knadh/koanf/v2 v2.3.4
 	github.com/pgvector/pgvector-go v0.3.0
+	github.com/pushkar-anand/agentrig v0.0.0-20260613144213-fdaec6ff5233
 	github.com/pushkar-anand/build-with-go v0.0.18
 	github.com/sashabaranov/go-openai v1.41.2
 	github.com/stretchr/testify v1.11.1
 	github.com/xuri/excelize/v2 v2.10.1
 	go.uber.org/mock v0.6.0
 	golang.org/x/crypto v0.51.0
+	golang.org/x/sync v0.20.0
 	golang.org/x/term v0.43.0
+	golang.org/x/text v0.37.0
 )
 
 require (
@@ -46,6 +49,7 @@ require (
 	github.com/Azure/go-autorest/autorest/date v0.3.0 // indirect
 	github.com/Azure/go-autorest/logger v0.2.1 // indirect
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
+	github.com/BurntSushi/toml v1.4.1-0.20240526193622-a339e1f7089c // indirect
 	github.com/ClickHouse/clickhouse-go v1.4.3 // indirect
 	github.com/GoogleCloudPlatform/grpc-gcp-go/grpcgcp v1.5.3 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.31.0 // indirect
@@ -164,7 +168,6 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	github.com/pushkar-anand/agentrig v0.0.0-20260613144213-fdaec6ff5233 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/richardlehane/mscfb v1.0.6 // indirect
 	github.com/richardlehane/msoleps v1.0.6 // indirect
@@ -215,13 +218,12 @@ require (
 	go.uber.org/zap v1.27.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/exp v0.0.0-20260508232706-74f9aab9d74a // indirect
+	golang.org/x/exp/typeparams v0.0.0-20231108232855-2478ac86f678 // indirect
 	golang.org/x/mod v0.36.0 // indirect
 	golang.org/x/net v0.54.0 // indirect
 	golang.org/x/oauth2 v0.34.0 // indirect
-	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/sys v0.44.0 // indirect
 	golang.org/x/telemetry v0.0.0-20260508192327-42602be52be6 // indirect
-	golang.org/x/text v0.37.0 // indirect
 	golang.org/x/time v0.12.0 // indirect
 	golang.org/x/tools v0.45.0 // indirect
 	golang.org/x/tools/godoc v0.1.0-deprecated // indirect
@@ -235,6 +237,7 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	honnef.co/go/tools v0.7.0 // indirect
 	lukechampine.com/uint128 v1.2.0 // indirect
 	maunium.net/go/mautrix v0.28.0 // indirect
 	modernc.org/b v1.0.0 // indirect
@@ -263,4 +266,5 @@ tool (
 	github.com/sqlc-dev/sqlc/cmd/sqlc
 	github.com/sqs/goreturns
 	go.uber.org/mock/mockgen
+	honnef.co/go/tools/cmd/staticcheck
 )

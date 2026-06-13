@@ -154,7 +154,7 @@ func TestListFDs_MaturingWithinDays_PassesFilter(t *testing.T) {
 			assert.Equal(t, &active, p.Status)
 			require.NotNil(t, p.MaturingBefore)
 			// should be ~30 days from now
-			diff := p.MaturingBefore.Sub(time.Now())
+			diff := time.Until(*p.MaturingBefore)
 			assert.InDelta(t, 30*24*float64(time.Hour), float64(diff), float64(2*time.Hour))
 			return nil, nil
 		})
