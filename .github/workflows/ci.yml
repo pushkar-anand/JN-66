@@ -16,3 +16,4 @@ jobs:
     with:
       build-tags: "goolm"
       run-lint: true
+      generate-command: "make generate"
