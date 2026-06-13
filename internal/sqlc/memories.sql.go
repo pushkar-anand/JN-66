@@ -10,11 +10,12 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+	pgvector "github.com/pgvector/pgvector-go"
 )
 
 const createMemory = `-- name: CreateMemory :one
-INSERT INTO agent_memories (user_id, content, memory_type, detection_source, tags, expires_at)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO agent_memories (user_id, content, memory_type, detection_source, tags, embedding, expires_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 RETURNING id, user_id, content, memory_type, detection_source, tags, embedding, expires_at, is_active, created_at, updated_at
 `
 
@@ -24,6 +25,7 @@ type CreateMemoryParams struct {
 	MemoryType      MemoryTypeEnum      `json:"memory_type"`
 	DetectionSource DetectionSourceEnum `json:"detection_source"`
 	Tags            []string            `json:"tags"`
+	Embedding       *pgvector.Vector    `json:"embedding"`
 	ExpiresAt       pgtype.Timestamptz  `json:"expires_at"`
 }
 
@@ -34,6 +36,7 @@ func (q *Queries) CreateMemory(ctx context.Context, arg CreateMemoryParams) (Age
 		arg.MemoryType,
 		arg.DetectionSource,
 		arg.Tags,
+		arg.Embedding,
 		arg.ExpiresAt,
 	)
 	var i AgentMemory
@@ -78,6 +81,61 @@ type ListMemoriesParams struct {
 
 func (q *Queries) ListMemories(ctx context.Context, arg ListMemoriesParams) ([]AgentMemory, error) {
 	rows, err := q.db.Query(ctx, listMemories, arg.UserID, arg.PageLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AgentMemory
+	for rows.Next() {
+		var i AgentMemory
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Content,
+			&i.MemoryType,
+			&i.DetectionSource,
+			&i.Tags,
+			&i.Embedding,
+			&i.ExpiresAt,
+			&i.IsActive,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const recallMemoriesByEmbedding = `-- name: RecallMemoriesByEmbedding :many
+SELECT id, user_id, content, memory_type, detection_source, tags, embedding, expires_at, is_active, created_at, updated_at FROM agent_memories
+WHERE is_active = TRUE
+  AND (expires_at IS NULL OR expires_at > NOW())
+  AND (user_id = $1 OR user_id IS NULL)
+  AND embedding IS NOT NULL
+  AND embedding <=> $2 < $3::float8
+ORDER BY embedding <=> $2
+LIMIT $4
+`
+
+type RecallMemoriesByEmbeddingParams struct {
+	UserID      pgtype.UUID      `json:"user_id"`
+	Embedding   *pgvector.Vector `json:"embedding"`
+	MaxDistance float64          `json:"max_distance"`
+	PageLimit   int32            `json:"page_limit"`
+}
+
+func (q *Queries) RecallMemoriesByEmbedding(ctx context.Context, arg RecallMemoriesByEmbeddingParams) ([]AgentMemory, error) {
+	rows, err := q.db.Query(ctx, recallMemoriesByEmbedding,
+		arg.UserID,
+		arg.Embedding,
+		arg.MaxDistance,
+		arg.PageLimit,
+	)
 	if err != nil {
 		return nil, err
 	}

@@ -116,7 +116,6 @@ Migration order:
 - `investment_transactions`, `securities`, `holdings` tables
 - `physical_assets` + valuations
 - Transaction tagging pipeline (rule tagger + LLM tagger)
-- Embedding pipeline + pgvector HNSW indexes
 - RAG knowledge chunks + retrieval
 - Slack / Signal channels
 - Financial data providers (Zerodha API, bank connectors)

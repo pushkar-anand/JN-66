@@ -23,12 +23,12 @@ import (
 //
 // roPool and schema are optional: when roPool is non-nil, get_schema and
 // execute_sql are registered using the pre-built schema string.
-func BuildToolRegistry(pool *pgxpool.Pool, roPool *pgxpool.Pool, schema string, userID string) (*tools.Registry, *store.MemoryStore) {
+func BuildToolRegistry(pool *pgxpool.Pool, roPool *pgxpool.Pool, schema string, userID string, embedder store.Embedder) (*tools.Registry, *store.MemoryStore) {
 	txnStore := store.NewTransactionStore(pool)
 	accountStore := store.NewAccountStore(pool)
 	labelStore := store.NewLabelStore(pool)
 	recurringStore := store.NewRecurringStore(pool)
-	memoryStore := store.NewMemoryStore(pool)
+	memoryStore := store.NewMemoryStore(pool, embedder)
 	fdStore := store.NewFDStore(pool)
 
 	registry := tools.NewRegistry()

@@ -10,7 +10,7 @@ import (
 	"github.com/pushkaranand/finagent/internal/llm"
 )
 
-// RecallFacts searches agent_memories by topic tags.
+// RecallFacts searches agent_memories by natural-language query.
 type RecallFacts struct {
 	userID   string
 	memories memoryQuerier
@@ -23,28 +23,24 @@ func NewRecallFacts(userID string, memories memoryQuerier) *RecallFacts {
 
 // Definition returns the tool descriptor.
 func (t *RecallFacts) Definition() llm.ToolDefinition {
-	tagsProp := map[string]any{
-		"type":        "array",
-		"items":       map[string]any{"type": "string"},
-		"description": "Topic tags to search by",
-	}
-	properties := map[string]any{
-		"tags": tagsProp,
-	}
-
 	return llm.ToolDefinition{
 		Name:        "recall_facts",
 		Description: "Retrieve facts previously learned from user conversations (rent amounts, bill dates, payment habits, preferences). Use when the user asks what you know or remember about a topic.",
 		Parameters: map[string]any{
-			"type":       "object",
-			"properties": properties,
-			"required":   []string{"tags"},
+			"type": "object",
+			"properties": map[string]any{
+				"query": map[string]any{
+					"type":        "string",
+					"description": "Natural-language description of the topic to retrieve memories about",
+				},
+			},
+			"required": []string{"query"},
 		},
 	}
 }
 
 type recallFactsArgs struct {
-	Tags []string `json:"tags"`
+	Query string `json:"query"`
 }
 
 // Execute returns matching memories.
@@ -54,15 +50,15 @@ func (t *RecallFacts) Execute(ctx context.Context, _ string, argsJSON string) (s
 		return "", fmt.Errorf("parse args: %w", err)
 	}
 
-	slog.DebugContext(ctx, "tool:recall_facts", slog.Any("tags", args.Tags))
-	rows, err := t.memories.Recall(ctx, t.userID, args.Tags, 10)
+	slog.DebugContext(ctx, "tool:recall_facts", slog.String("query", args.Query))
+	rows, err := t.memories.Recall(ctx, t.userID, args.Query, 10)
 	if err != nil {
 		return "", fmt.Errorf("recall facts: %w", err)
 	}
 	slog.DebugContext(ctx, "tool:recall_facts done", slog.Int("results", len(rows)))
 
 	if len(rows) == 0 {
-		return "No memories found matching those tags.", nil
+		return "No memories found matching that query.", nil
 	}
 
 	var sb strings.Builder

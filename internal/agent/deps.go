@@ -22,7 +22,7 @@ type convStore interface {
 }
 
 type memStore interface {
-	Recall(ctx context.Context, userID string, queryTags []string, limit int32) ([]sqlcgen.AgentMemory, error)
+	Recall(ctx context.Context, userID string, query string, limit int32) ([]sqlcgen.AgentMemory, error)
 }
 
 type userStore interface {

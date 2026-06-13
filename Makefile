@@ -1,7 +1,7 @@
 -include .env
 export
 
-.PHONY: generate mocks test test-cover fmt migrate-up migrate-down seed build run eval
+.PHONY: generate mocks test test-cover fmt migrate-up migrate-down seed backfill-embeddings build run eval
 
 generate:
 	go tool sqlc generate
@@ -30,6 +30,10 @@ migrate-down:
 
 seed:
 	docker compose exec -T postgres psql -U finagent -d finagent -f - < scripts/seed.sql
+	bash scripts/backfill_embeddings.sh
+
+backfill-embeddings:
+	bash scripts/backfill_embeddings.sh
 
 build:
 	go build -tags goolm -o bin/finagent ./cmd/finagent

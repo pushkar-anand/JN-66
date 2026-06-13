@@ -55,7 +55,7 @@ docker compose up -d
 # 3. Run migrations
 make migrate-up
 
-# 4. Seed sample data (Alice + Bob, 3 accounts, ~40 transactions)
+# 4. Seed sample data (Alice + Bob, 3 accounts, ~40 transactions + memories with embeddings)
 make seed
 
 # 5. Build and run
@@ -83,7 +83,7 @@ Copy `config.yaml.example` to `config.yaml` and fill in the values. All keys can
 | `llm.routing.chat_model` | — | Model for general conversation |
 | `llm.routing.analysis_model` | — | Model for calculations and breakdowns |
 | `llm.routing.tagging_model` | — | Model used by the enrichment pipeline |
-| `llm.routing.embed_model` | — | Embedding model (Phase 2) |
+| `llm.routing.embed_model` | — | Embedding model for semantic memory recall (e.g. `nomic-embed-text`) |
 | `llm.routing.summarize_model` | — | Model for session title generation |
 | `agent.max_tool_rounds` | `20` | Maximum ReAct loop iterations per message |
 | `agent.history_messages` | `20` | Conversation turns kept in LLM context |
@@ -186,7 +186,7 @@ Raw transaction descriptions sent directly to the enrichment pipeline. Asserts t
 **Latest: 24 / 24 passed**
 
 ```
-model:    gemma4:12b-it-qat via OpenWebUI
+model:    gemma4:12b-it-qat via Ollama
 hardware: RTX 3060 12 GB VRAM
 total:    ~6 min (40 cases, real LLM calls)
 ```
@@ -196,7 +196,6 @@ total:    ~6 min (40 cases, real LLM calls)
 ## What's not here yet (Phase 2+)
 
 - Physical assets (car, gold, property)
-- Embedding-based semantic memory retrieval
 - Auto-fetch bank connectors (currently import is CSV/XLS upload only)
 - Slack / Signal channels
 - Tax assistance

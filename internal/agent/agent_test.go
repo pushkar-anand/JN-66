@@ -377,37 +377,6 @@ func TestBuildMessages_EmptyHistory(t *testing.T) {
 	assert.Equal(t, llm.RoleUser, msgs[1].Role)
 }
 
-func TestExtractTags_FiltersShortWords(t *testing.T) {
-	tags := extractTags("Show me spending on food and drinks")
-	assert.Contains(t, tags, "spending")
-	assert.Contains(t, tags, "drinks")
-	// "Show","me","on","and" are ≤4 chars — excluded (case-folded)
-	for _, tag := range tags {
-		assert.Greater(t, len(tag), 4, "tag %q should be >4 chars", tag)
-	}
-}
-
-func TestExtractTags_Deduplicated(t *testing.T) {
-	tags := extractTags("total total total")
-	count := 0
-	for _, t := range tags {
-		if t == "total" {
-			count++
-		}
-	}
-	assert.Equal(t, 1, count)
-}
-
-func TestSplitWords_EarlyStop(t *testing.T) {
-	// Consumer stops after the first word; splitWords must not panic or loop.
-	var got []string
-	for w := range splitWords("hello world foo") {
-		got = append(got, w)
-		break
-	}
-	assert.Equal(t, []string{"hello"}, got)
-}
-
 func TestHandleMessage_UsesMatrixChannelType(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mockLLM := NewMockchatProvider(ctrl)

@@ -1,16 +1,28 @@
 package store
 
 import (
+	"context"
 	"errors"
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/pgvector/pgvector-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
 	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
 )
+
+// mockEmbedder is a simple test double for Embedder.
+type mockEmbedder struct {
+	vec []float32
+	err error
+}
+
+func (m *mockEmbedder) EmbedText(_ context.Context, _ string) ([]float32, error) {
+	return m.vec, m.err
+}
 
 func TestMemoryStore_Save_WithUserID(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -63,6 +75,48 @@ func TestMemoryStore_Save_NilUserID(t *testing.T) {
 	assert.Equal(t, want.ID, got.ID)
 }
 
+func TestMemoryStore_Save_WithEmbedder(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	q := NewMockQuerier(ctrl)
+	emb := &mockEmbedder{vec: make([]float32, 768)}
+	s := &MemoryStore{q: q, embedder: emb}
+
+	uid := testUserID
+	want := sqlcgen.AgentMemory{ID: uuid.New(), Content: "food budget"}
+	q.EXPECT().CreateMemory(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(_ context.Context, p sqlcgen.CreateMemoryParams) (sqlcgen.AgentMemory, error) {
+			assert.NotNil(t, p.Embedding)
+			v := pgvector.NewVector(make([]float32, 768))
+			assert.Equal(t, v, *p.Embedding)
+			return want, nil
+		},
+	)
+
+	got, err := s.Save(t.Context(), &uid, "food budget", sqlcgen.MemoryTypeEnumPreference, nil)
+	require.NoError(t, err)
+	assert.Equal(t, want.ID, got.ID)
+}
+
+func TestMemoryStore_Save_EmbedFailContinues(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	q := NewMockQuerier(ctrl)
+	emb := &mockEmbedder{err: errors.New("embed unavailable")}
+	s := &MemoryStore{q: q, embedder: emb}
+
+	uid := testUserID
+	want := sqlcgen.AgentMemory{ID: uuid.New(), Content: "food budget"}
+	q.EXPECT().CreateMemory(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(_ context.Context, p sqlcgen.CreateMemoryParams) (sqlcgen.AgentMemory, error) {
+			assert.Nil(t, p.Embedding)
+			return want, nil
+		},
+	)
+
+	got, err := s.Save(t.Context(), &uid, "food budget", sqlcgen.MemoryTypeEnumPreference, nil)
+	require.NoError(t, err)
+	assert.Equal(t, want.ID, got.ID)
+}
+
 func TestMemoryStore_Recall_HappyPath(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	q := NewMockQuerier(ctrl)
@@ -71,7 +125,37 @@ func TestMemoryStore_Recall_HappyPath(t *testing.T) {
 	want := []sqlcgen.AgentMemory{{ID: uuid.New(), Content: "eat out less"}}
 	q.EXPECT().RecallMemoriesByTags(gomock.Any(), gomock.Any()).Return(want, nil)
 
-	got, err := s.Recall(t.Context(), testUserID, []string{"food"}, 10)
+	got, err := s.Recall(t.Context(), testUserID, "food spending", 10)
+	require.NoError(t, err)
+	assert.Equal(t, want, got)
+}
+
+func TestMemoryStore_Recall_VectorPath(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	q := NewMockQuerier(ctrl)
+	emb := &mockEmbedder{vec: make([]float32, 768)}
+	s := &MemoryStore{q: q, embedder: emb}
+
+	want := []sqlcgen.AgentMemory{{ID: uuid.New(), Content: "eat out less"}}
+	q.EXPECT().RecallMemoriesByEmbedding(gomock.Any(), gomock.Cond(func(p sqlcgen.RecallMemoriesByEmbeddingParams) bool {
+		return p.MaxDistance > 0 && p.MaxDistance < 1.0
+	})).Return(want, nil)
+
+	got, err := s.Recall(t.Context(), testUserID, "food spending", 10)
+	require.NoError(t, err)
+	assert.Equal(t, want, got)
+}
+
+func TestMemoryStore_Recall_FallsBackWhenEmbedFails(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	q := NewMockQuerier(ctrl)
+	emb := &mockEmbedder{err: errors.New("embed unavailable")}
+	s := &MemoryStore{q: q, embedder: emb}
+
+	want := []sqlcgen.AgentMemory{{ID: uuid.New(), Content: "eat out less"}}
+	q.EXPECT().RecallMemoriesByTags(gomock.Any(), gomock.Any()).Return(want, nil)
+
+	got, err := s.Recall(t.Context(), testUserID, "food spending", 10)
 	require.NoError(t, err)
 	assert.Equal(t, want, got)
 }
@@ -83,7 +167,7 @@ func TestMemoryStore_Recall_StoreError(t *testing.T) {
 
 	q.EXPECT().RecallMemoriesByTags(gomock.Any(), gomock.Any()).Return(nil, errors.New("db error"))
 
-	_, err := s.Recall(t.Context(), testUserID, nil, 5)
+	_, err := s.Recall(t.Context(), testUserID, "food", 5)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "recall memories")
 }
@@ -93,7 +177,7 @@ func TestMemoryStore_Recall_InvalidUUID(t *testing.T) {
 	q := NewMockQuerier(ctrl)
 	s := newMemoryStoreForTest(q)
 
-	_, err := s.Recall(t.Context(), "bad-uuid", nil, 5)
+	_, err := s.Recall(t.Context(), "bad-uuid", "query", 5)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid uuid")
 }
