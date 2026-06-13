@@ -74,7 +74,7 @@ type labelQuerier interface {
 
 type memoryQuerier interface {
 	Save(ctx context.Context, userID *string, content string, memType sqlcgen.MemoryTypeEnum, tags []string) (*sqlcgen.AgentMemory, error)
-	Recall(ctx context.Context, userID string, queryTags []string, limit int32) ([]sqlcgen.AgentMemory, error)
+	Recall(ctx context.Context, userID string, query string, limit int32) ([]sqlcgen.AgentMemory, error)
 }
 
 type zerodhaQuerier interface {

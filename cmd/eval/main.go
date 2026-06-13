@@ -61,6 +61,7 @@ func run() error {
 	}
 
 	realLLM := openai.New(cfg.LLM.BaseURL, cfg.LLM.APIKey)
+	embedder := app.NewLLMEmbedder(realLLM, cfg.LLM.Routing.EmbedModel)
 
 	var totalFailed int
 
@@ -79,7 +80,7 @@ func run() error {
 
 		// Shared base tools + Zerodha investment tools via ZerodhaStore (DB-only, no API key needed).
 		// Use UTC for display timezone in eval — accuracy of sync timestamps is not eval-critical.
-		registry, memoryStore := app.BuildToolRegistry(pool, nil, "", userID)
+		registry, memoryStore := app.BuildToolRegistry(pool, nil, "", userID, embedder)
 		zStore := store.NewZerodhaStore(pool)
 		registry.Register(tools.NewGetInvestmentSummary(userID, zStore, time.UTC))
 		registry.Register(tools.NewGetInvestmentHoldings(userID, zStore, time.UTC))
@@ -216,8 +217,9 @@ type enrichRun struct {
 func collectAgentResults(ctx context.Context, cfg *config.Config, pool *pgxpool.Pool, userID, filter string, routing config.RoutingConfig) (*modelRun, error) {
 	realLLM := openai.New(cfg.LLM.BaseURL, cfg.LLM.APIKey)
 	llmRec := eval.NewRecordingLLM(realLLM)
+	embedder := app.NewLLMEmbedder(realLLM, cfg.LLM.Routing.EmbedModel)
 
-	registry, memoryStore := app.BuildToolRegistry(pool, nil, "", userID)
+	registry, memoryStore := app.BuildToolRegistry(pool, nil, "", userID, embedder)
 	zStore := store.NewZerodhaStore(pool)
 	registry.Register(tools.NewGetInvestmentSummary(userID, zStore, time.UTC))
 	registry.Register(tools.NewGetInvestmentHoldings(userID, zStore, time.UTC))

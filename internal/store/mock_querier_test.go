@@ -917,6 +917,21 @@ func (mr *MockQuerierMockRecorder) ListZerodhaMFHoldings(ctx, userID any) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListZerodhaMFHoldings", reflect.TypeOf((*MockQuerier)(nil).ListZerodhaMFHoldings), ctx, userID)
 }
 
+// RecallMemoriesByEmbedding mocks base method.
+func (m *MockQuerier) RecallMemoriesByEmbedding(ctx context.Context, arg sqlcgen.RecallMemoriesByEmbeddingParams) ([]sqlcgen.AgentMemory, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RecallMemoriesByEmbedding", ctx, arg)
+	ret0, _ := ret[0].([]sqlcgen.AgentMemory)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RecallMemoriesByEmbedding indicates an expected call of RecallMemoriesByEmbedding.
+func (mr *MockQuerierMockRecorder) RecallMemoriesByEmbedding(ctx, arg any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecallMemoriesByEmbedding", reflect.TypeOf((*MockQuerier)(nil).RecallMemoriesByEmbedding), ctx, arg)
+}
+
 // RecallMemoriesByTags mocks base method.
 func (m *MockQuerier) RecallMemoriesByTags(ctx context.Context, arg sqlcgen.RecallMemoriesByTagsParams) ([]sqlcgen.AgentMemory, error) {
 	m.ctrl.T.Helper()

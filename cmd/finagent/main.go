@@ -141,6 +141,7 @@ func run() error {
 
 	// LLM provider
 	llmProvider := openai.New(cfg.LLM.BaseURL, cfg.LLM.APIKey)
+	embedder := app.NewLLMEmbedder(llmProvider, cfg.LLM.Routing.EmbedModel)
 
 	// Tool registry — shared base tools.
 	var schemaStr string
@@ -151,7 +152,7 @@ func run() error {
 			roPool = nil
 		}
 	}
-	registry, memoryStore := app.BuildToolRegistry(pool, roPool, schemaStr, userID)
+	registry, memoryStore := app.BuildToolRegistry(pool, roPool, schemaStr, userID, embedder)
 
 	// Conditionally register Zerodha investment tools if credentials are configured for this user.
 	if u != nil {
@@ -218,7 +219,7 @@ func run() error {
 		if cfg.Channel.Matrix.HomeserverURL != "" {
 			g, gctx := errgroup.WithContext(ctx)
 			g.Go(func() error {
-				return startMatrix(gctx, cfg, pool, roPool, schemaStr, llmProvider, convStore, userStore, zStore, router)
+				return startMatrix(gctx, cfg, pool, roPool, schemaStr, llmProvider, embedder, convStore, userStore, zStore, router)
 			})
 			g.Go(func() error { return srv.Start(gctx) })
 			return g.Wait()
@@ -275,6 +276,7 @@ func startMatrix(
 	pool, roPool *pgxpool.Pool,
 	schemaStr string,
 	llmProvider *openai.Client,
+	embedder store.Embedder,
 	convStore *store.ConversationStore,
 	userStore *store.UserStore,
 	zStore *store.ZerodhaStore,
@@ -292,7 +294,7 @@ func startMatrix(
 		}
 
 		uid := u.ID.String()
-		registry, memoryStore := app.BuildToolRegistry(pool, roPool, schemaStr, uid)
+		registry, memoryStore := app.BuildToolRegistry(pool, roPool, schemaStr, uid, embedder)
 
 		if zerCreds, ok := cfg.Zerodha.Users[u.Username]; ok {
 			zSvc := store.NewZerodhaService(zStore, zerodha.NewClient(zerCreds.APIKey))

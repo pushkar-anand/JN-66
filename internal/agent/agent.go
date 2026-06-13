@@ -82,11 +82,12 @@ func (a *Agent) HandleMessage(ctx context.Context, msg channel.Message) (channel
 		return channel.Response{}, fmt.Errorf("load history: %w", err)
 	}
 
-	recalledMems, _ := a.memories.Recall(ctx, msg.UserID, extractTags(msg.Text), 5)
+	recalledMems, _ := a.memories.Recall(ctx, msg.UserID, msg.Text, 5)
 	memStrings := make([]string, len(recalledMems))
 	for i, m := range recalledMems {
 		memStrings[i] = m.Content
 	}
+	slog.DebugContext(ctx, "memories recalled", slog.Int("count", len(recalledMems)))
 	slog.Debug("agent setup", "elapsed_ms", time.Since(t0).Milliseconds())
 
 	// Build the full message list for the LLM.
@@ -177,43 +178,4 @@ func buildMessages(sysPrompt string, history []sqlcgen.ConversationMessage, user
 	}
 	msgs = append(msgs, llm.UserMessage(userText))
 	return msgs
-}
-
-// extractTags derives simple keyword tags from the user's message for memory recall.
-func extractTags(text string) []string {
-	// Naive word extraction; Phase 2 will replace with embedding-based retrieval.
-	words := make(map[string]struct{})
-	for word := range splitWords(text) {
-		if len(word) > 4 {
-			words[word] = struct{}{}
-		}
-	}
-	tags := make([]string, 0, len(words))
-	for w := range words {
-		tags = append(tags, w)
-	}
-	return tags
-}
-
-func splitWords(s string) func(yield func(string) bool) {
-	return func(yield func(string) bool) {
-		word := make([]byte, 0, 16)
-		for i := range len(s) {
-			c := s[i]
-			if c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' {
-				if c >= 'A' && c <= 'Z' {
-					c += 32
-				}
-				word = append(word, c)
-			} else if len(word) > 0 {
-				if !yield(string(word)) {
-					return
-				}
-				word = word[:0]
-			}
-		}
-		if len(word) > 0 {
-			yield(string(word))
-		}
-	}
 }

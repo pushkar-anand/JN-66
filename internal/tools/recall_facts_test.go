@@ -14,11 +14,11 @@ import (
 func TestRecallFacts_UsesBoundUser(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	q := NewMockmemoryQuerier(ctrl)
-	q.EXPECT().Recall(gomock.Any(), boundUser, []string{"food"}, int32(10)).Return(nil, nil)
+	q.EXPECT().Recall(gomock.Any(), boundUser, "food spending", int32(10)).Return(nil, nil)
 
-	got, err := NewRecallFacts(boundUser, q).Execute(t.Context(), "", `{"tags":["food"]}`)
+	got, err := NewRecallFacts(boundUser, q).Execute(t.Context(), "", `{"query":"food spending"}`)
 	require.NoError(t, err)
-	assert.Equal(t, "No memories found matching those tags.", got)
+	assert.Equal(t, "No memories found matching that query.", got)
 }
 
 func TestRecallFacts_NoMemories(t *testing.T) {
@@ -26,9 +26,9 @@ func TestRecallFacts_NoMemories(t *testing.T) {
 	q := NewMockmemoryQuerier(ctrl)
 	q.EXPECT().Recall(gomock.Any(), boundUser, gomock.Any(), int32(10)).Return(nil, nil)
 
-	got, err := NewRecallFacts(boundUser, q).Execute(t.Context(), "", `{"tags":["xyz"]}`)
+	got, err := NewRecallFacts(boundUser, q).Execute(t.Context(), "", `{"query":"xyz topic"}`)
 	require.NoError(t, err)
-	assert.Equal(t, "No memories found matching those tags.", got)
+	assert.Equal(t, "No memories found matching that query.", got)
 }
 
 func TestRecallFacts_FormatsMemories(t *testing.T) {
@@ -41,7 +41,7 @@ func TestRecallFacts_FormatsMemories(t *testing.T) {
 	}
 	q.EXPECT().Recall(gomock.Any(), boundUser, gomock.Any(), int32(10)).Return(memories, nil)
 
-	got, err := NewRecallFacts(boundUser, q).Execute(t.Context(), "", `{"tags":["food"]}`)
+	got, err := NewRecallFacts(boundUser, q).Execute(t.Context(), "", `{"query":"food and transport"}`)
 	require.NoError(t, err)
 	assert.Contains(t, got, "Zomato is food delivery")
 	assert.Contains(t, got, "Tag Uber as transport")
@@ -54,7 +54,7 @@ func TestRecallFacts_StoreError(t *testing.T) {
 	q := NewMockmemoryQuerier(ctrl)
 	q.EXPECT().Recall(gomock.Any(), boundUser, gomock.Any(), int32(10)).Return(nil, errors.New("db down"))
 
-	_, err := NewRecallFacts(boundUser, q).Execute(t.Context(), "", `{"tags":["food"]}`)
+	_, err := NewRecallFacts(boundUser, q).Execute(t.Context(), "", `{"query":"food"}`)
 	require.Error(t, err)
 }
 

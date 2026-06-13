@@ -71,6 +71,7 @@ type Querier interface {
 	ListUsers(ctx context.Context) ([]User, error)
 	ListZerodhaEquityHoldings(ctx context.Context, userID uuid.UUID) ([]ZerodhaEquityHolding, error)
 	ListZerodhaMFHoldings(ctx context.Context, userID uuid.UUID) ([]ZerodhaMfHolding, error)
+	RecallMemoriesByEmbedding(ctx context.Context, arg RecallMemoriesByEmbeddingParams) ([]AgentMemory, error)
 	RecallMemoriesByTags(ctx context.Context, arg RecallMemoriesByTagsParams) ([]AgentMemory, error)
 	RemoveTransactionLabel(ctx context.Context, arg RemoveTransactionLabelParams) error
 	SaveMessage(ctx context.Context, arg SaveMessageParams) (ConversationMessage, error)

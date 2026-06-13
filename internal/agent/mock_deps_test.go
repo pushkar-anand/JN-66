@@ -151,18 +151,18 @@ func (m *MockmemStore) EXPECT() *MockmemStoreMockRecorder {
 }
 
 // Recall mocks base method.
-func (m *MockmemStore) Recall(ctx context.Context, userID string, queryTags []string, limit int32) ([]sqlcgen.AgentMemory, error) {
+func (m *MockmemStore) Recall(ctx context.Context, userID, query string, limit int32) ([]sqlcgen.AgentMemory, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Recall", ctx, userID, queryTags, limit)
+	ret := m.ctrl.Call(m, "Recall", ctx, userID, query, limit)
 	ret0, _ := ret[0].([]sqlcgen.AgentMemory)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Recall indicates an expected call of Recall.
-func (mr *MockmemStoreMockRecorder) Recall(ctx, userID, queryTags, limit any) *gomock.Call {
+func (mr *MockmemStoreMockRecorder) Recall(ctx, userID, query, limit any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Recall", reflect.TypeOf((*MockmemStore)(nil).Recall), ctx, userID, queryTags, limit)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Recall", reflect.TypeOf((*MockmemStore)(nil).Recall), ctx, userID, query, limit)
 }
 
 // MockuserStore is a mock of userStore interface.

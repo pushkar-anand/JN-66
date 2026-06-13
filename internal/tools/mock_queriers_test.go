@@ -15,6 +15,7 @@ import (
 	time "time"
 
 	uuid "github.com/google/uuid"
+	pgx "github.com/jackc/pgx/v5"
 	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
 	store "github.com/pushkaranand/finagent/internal/store"
 	gomock "go.uber.org/mock/gomock"
@@ -244,18 +245,18 @@ func (m *MockmemoryQuerier) EXPECT() *MockmemoryQuerierMockRecorder {
 }
 
 // Recall mocks base method.
-func (m *MockmemoryQuerier) Recall(ctx context.Context, userID string, queryTags []string, limit int32) ([]sqlcgen.AgentMemory, error) {
+func (m *MockmemoryQuerier) Recall(ctx context.Context, userID, query string, limit int32) ([]sqlcgen.AgentMemory, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Recall", ctx, userID, queryTags, limit)
+	ret := m.ctrl.Call(m, "Recall", ctx, userID, query, limit)
 	ret0, _ := ret[0].([]sqlcgen.AgentMemory)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Recall indicates an expected call of Recall.
-func (mr *MockmemoryQuerierMockRecorder) Recall(ctx, userID, queryTags, limit any) *gomock.Call {
+func (mr *MockmemoryQuerierMockRecorder) Recall(ctx, userID, query, limit any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Recall", reflect.TypeOf((*MockmemoryQuerier)(nil).Recall), ctx, userID, queryTags, limit)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Recall", reflect.TypeOf((*MockmemoryQuerier)(nil).Recall), ctx, userID, query, limit)
 }
 
 // Save mocks base method.
@@ -533,4 +534,48 @@ func (m *MockfdLister) ListByUser(ctx context.Context, p store.ListFDsParams) ([
 func (mr *MockfdListerMockRecorder) ListByUser(ctx, p any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByUser", reflect.TypeOf((*MockfdLister)(nil).ListByUser), ctx, p)
+}
+
+// MockrawQuerier is a mock of rawQuerier interface.
+type MockrawQuerier struct {
+	ctrl     *gomock.Controller
+	recorder *MockrawQuerierMockRecorder
+	isgomock struct{}
+}
+
+// MockrawQuerierMockRecorder is the mock recorder for MockrawQuerier.
+type MockrawQuerierMockRecorder struct {
+	mock *MockrawQuerier
+}
+
+// NewMockrawQuerier creates a new mock instance.
+func NewMockrawQuerier(ctrl *gomock.Controller) *MockrawQuerier {
+	mock := &MockrawQuerier{ctrl: ctrl}
+	mock.recorder = &MockrawQuerierMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockrawQuerier) EXPECT() *MockrawQuerierMockRecorder {
+	return m.recorder
+}
+
+// Query mocks base method.
+func (m *MockrawQuerier) Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, sql}
+	for _, a := range args {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Query", varargs...)
+	ret0, _ := ret[0].(pgx.Rows)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Query indicates an expected call of Query.
+func (mr *MockrawQuerierMockRecorder) Query(ctx, sql any, args ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, sql}, args...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Query", reflect.TypeOf((*MockrawQuerier)(nil).Query), varargs...)
 }

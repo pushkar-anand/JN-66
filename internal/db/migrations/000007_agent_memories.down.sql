@@ -1,3 +1,4 @@
+DROP INDEX IF EXISTS idx_memories_embedding;
 DROP INDEX IF EXISTS idx_memories_active;
 DROP INDEX IF EXISTS idx_memories_tags;
 DROP INDEX IF EXISTS idx_memories_user;
