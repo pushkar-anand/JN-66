@@ -86,6 +86,7 @@ func New(listen string, handler channel.MessageHandler, userStore userLookup, db
 	if s.accountsCfg != nil {
 		protected.HandleFunc("/api/accounts", s.handleListAccounts).Methods(http.MethodGet)
 		protected.HandleFunc("/api/accounts", s.handleCreateAccount).Methods(http.MethodPost)
+		protected.HandleFunc("/api/accounts/{id}/balance", s.handleUpdateAccountBalance).Methods(http.MethodPatch)
 	}
 	if s.importCfg != nil {
 		protected.HandleFunc("/api/import", s.handleImport).Methods(http.MethodPost)

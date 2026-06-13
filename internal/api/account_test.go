@@ -8,19 +8,23 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/pushkaranand/finagent/internal/model"
 	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
 	"github.com/pushkaranand/finagent/internal/store"
 )
 
 type mockAccountStore struct {
-	createFn     func(ctx context.Context, p store.CreateAccountParams, userID string) (*sqlcgen.Account, error)
-	listByUserFn func(ctx context.Context, userID string) ([]sqlcgen.Account, error)
+	createFn        func(ctx context.Context, p store.CreateAccountParams, userID string) (*sqlcgen.Account, error)
+	listByUserFn    func(ctx context.Context, userID string) ([]sqlcgen.Account, error)
+	updateBalanceFn func(ctx context.Context, accountID string, balance model.Money, asOf time.Time) error
 }
 
 func (m *mockAccountStore) Create(ctx context.Context, p store.CreateAccountParams, userID string) (*sqlcgen.Account, error) {
@@ -29,6 +33,10 @@ func (m *mockAccountStore) Create(ctx context.Context, p store.CreateAccountPara
 
 func (m *mockAccountStore) ListByUser(ctx context.Context, userID string) ([]sqlcgen.Account, error) {
 	return m.listByUserFn(ctx, userID)
+}
+
+func (m *mockAccountStore) UpdateBalance(ctx context.Context, accountID string, balance model.Money, asOf time.Time) error {
+	return m.updateBalanceFn(ctx, accountID, balance, asOf)
 }
 
 func newAccountsTestServer(s accountStoreAPI) *Server {
@@ -197,6 +205,130 @@ func TestHandleListAccounts_StoreError(t *testing.T) {
 	r := requestWithUser(httptest.NewRequest(http.MethodGet, "/api/accounts", nil), "uid-1")
 
 	s.handleListAccounts(w, r)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+func balanceRequest(r *http.Request, accountID string) *http.Request {
+	return mux.SetURLVars(r, map[string]string{"id": accountID})
+}
+
+func TestHandleUpdateAccountBalance_HappyPath(t *testing.T) {
+	aid := uuid.New()
+	mock := &mockAccountStore{
+		listByUserFn: func(_ context.Context, _ string) ([]sqlcgen.Account, error) {
+			return []sqlcgen.Account{{ID: aid}}, nil
+		},
+		updateBalanceFn: func(_ context.Context, _ string, _ model.Money, _ time.Time) error {
+			return nil
+		},
+	}
+
+	s := newAccountsTestServer(mock)
+	body := `{"balance_paise":150000,"as_of":"2026-06-01"}`
+	w := httptest.NewRecorder()
+	r := requestWithUser(httptest.NewRequest(http.MethodPatch, "/api/accounts/"+aid.String()+"/balance", strings.NewReader(body)), "uid-1")
+	r = balanceRequest(r, aid.String())
+
+	s.handleUpdateAccountBalance(w, r)
+
+	assert.Equal(t, http.StatusNoContent, w.Code)
+}
+
+func TestHandleUpdateAccountBalance_AccountNotOwned(t *testing.T) {
+	ownedID := uuid.New()
+	otherID := uuid.New()
+	mock := &mockAccountStore{
+		listByUserFn: func(_ context.Context, _ string) ([]sqlcgen.Account, error) {
+			return []sqlcgen.Account{{ID: ownedID}}, nil
+		},
+	}
+
+	s := newAccountsTestServer(mock)
+	body := `{"balance_paise":150000,"as_of":"2026-06-01"}`
+	w := httptest.NewRecorder()
+	r := requestWithUser(httptest.NewRequest(http.MethodPatch, "/api/accounts/"+otherID.String()+"/balance", strings.NewReader(body)), "uid-1")
+	r = balanceRequest(r, otherID.String())
+
+	s.handleUpdateAccountBalance(w, r)
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestHandleUpdateAccountBalance_ListStoreError(t *testing.T) {
+	aid := uuid.New()
+	mock := &mockAccountStore{
+		listByUserFn: func(_ context.Context, _ string) ([]sqlcgen.Account, error) {
+			return nil, errors.New("db error")
+		},
+	}
+
+	s := newAccountsTestServer(mock)
+	body := `{"balance_paise":150000,"as_of":"2026-06-01"}`
+	w := httptest.NewRecorder()
+	r := requestWithUser(httptest.NewRequest(http.MethodPatch, "/api/accounts/"+aid.String()+"/balance", strings.NewReader(body)), "uid-1")
+	r = balanceRequest(r, aid.String())
+
+	s.handleUpdateAccountBalance(w, r)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+func TestHandleUpdateAccountBalance_InvalidJSON(t *testing.T) {
+	aid := uuid.New()
+	mock := &mockAccountStore{
+		listByUserFn: func(_ context.Context, _ string) ([]sqlcgen.Account, error) {
+			return []sqlcgen.Account{{ID: aid}}, nil
+		},
+	}
+
+	s := newAccountsTestServer(mock)
+	w := httptest.NewRecorder()
+	r := requestWithUser(httptest.NewRequest(http.MethodPatch, "/api/accounts/"+aid.String()+"/balance", strings.NewReader("not-json")), "uid-1")
+	r = balanceRequest(r, aid.String())
+
+	s.handleUpdateAccountBalance(w, r)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestHandleUpdateAccountBalance_MissingAsOf(t *testing.T) {
+	aid := uuid.New()
+	mock := &mockAccountStore{
+		listByUserFn: func(_ context.Context, _ string) ([]sqlcgen.Account, error) {
+			return []sqlcgen.Account{{ID: aid}}, nil
+		},
+	}
+
+	s := newAccountsTestServer(mock)
+	body := `{"balance_paise":150000}`
+	w := httptest.NewRecorder()
+	r := requestWithUser(httptest.NewRequest(http.MethodPatch, "/api/accounts/"+aid.String()+"/balance", strings.NewReader(body)), "uid-1")
+	r = balanceRequest(r, aid.String())
+
+	s.handleUpdateAccountBalance(w, r)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestHandleUpdateAccountBalance_UpdateStoreError(t *testing.T) {
+	aid := uuid.New()
+	mock := &mockAccountStore{
+		listByUserFn: func(_ context.Context, _ string) ([]sqlcgen.Account, error) {
+			return []sqlcgen.Account{{ID: aid}}, nil
+		},
+		updateBalanceFn: func(_ context.Context, _ string, _ model.Money, _ time.Time) error {
+			return errors.New("db error")
+		},
+	}
+
+	s := newAccountsTestServer(mock)
+	body := `{"balance_paise":150000,"as_of":"2026-06-01"}`
+	w := httptest.NewRecorder()
+	r := requestWithUser(httptest.NewRequest(http.MethodPatch, "/api/accounts/"+aid.String()+"/balance", strings.NewReader(body)), "uid-1")
+	r = balanceRequest(r, aid.String())
+
+	s.handleUpdateAccountBalance(w, r)
 
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 }
