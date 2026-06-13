@@ -14,4 +14,4 @@ jobs:
     uses: pushkar-anand/.github/.github/workflows/go-ci.yml@main
     with:
       build-tags: "goolm"
-      run-lint: false
+      run-lint: true
