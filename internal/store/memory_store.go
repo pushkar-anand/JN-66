@@ -14,6 +14,11 @@ import (
 	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
 )
 
+// memoryRecallMaxDistance is the cosine distance ceiling for vector recall.
+// Cosine distance: 0 = identical, 1 = orthogonal, 2 = opposite.
+// Memories beyond this threshold are considered semantically unrelated and excluded.
+const memoryRecallMaxDistance = 0.5
+
 // MemoryStore handles agent_memories data access.
 type MemoryStore struct {
 	DB
@@ -90,7 +95,7 @@ func (s *MemoryStore) Recall(ctx context.Context, userID string, query string, l
 			rows, dbErr := s.q.RecallMemoriesByEmbedding(ctx, sqlcgen.RecallMemoriesByEmbeddingParams{
 				UserID:      pgUID,
 				Embedding:   &v,
-				MaxDistance: 0.5,
+				MaxDistance: memoryRecallMaxDistance,
 				PageLimit:   limit,
 			})
 			if dbErr == nil {

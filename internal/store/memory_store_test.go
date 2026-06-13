@@ -137,7 +137,9 @@ func TestMemoryStore_Recall_VectorPath(t *testing.T) {
 	s := &MemoryStore{q: q, embedder: emb}
 
 	want := []sqlcgen.AgentMemory{{ID: uuid.New(), Content: "eat out less"}}
-	q.EXPECT().RecallMemoriesByEmbedding(gomock.Any(), gomock.Any()).Return(want, nil)
+	q.EXPECT().RecallMemoriesByEmbedding(gomock.Any(), gomock.Cond(func(p sqlcgen.RecallMemoriesByEmbeddingParams) bool {
+		return p.MaxDistance > 0 && p.MaxDistance < 1.0
+	})).Return(want, nil)
 
 	got, err := s.Recall(t.Context(), testUserID, "food spending", 10)
 	require.NoError(t, err)
