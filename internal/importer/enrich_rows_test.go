@@ -280,3 +280,32 @@ func TestEnrichRows_SomeFailed_StatusPartial(t *testing.T) {
 		t.Errorf("status = %q, want partial", gotStatus)
 	}
 }
+
+func TestEnrichRows_DBWriteFailure_CountsAsFailed(t *testing.T) {
+	txn := &mockTxnStore{
+		getIDFn: func(_ context.Context, _ string) (uuid.UUID, error) { return uuid.New(), nil },
+		updateEnrichFn: func(_ context.Context, _ store.EnrichmentParams) error {
+			return errors.New("connection reset")
+		},
+	}
+	var gotStatus sqlcgen.ImportStatusEnum
+	run := &mockImportRunStore{
+		finishFn: func(_ context.Context, _ uuid.UUID, status sqlcgen.ImportStatusEnum, _ string) error {
+			gotStatus = status
+			return nil
+		},
+	}
+
+	e := NewEnricher(&mockLLM{
+		chatFn: func(_ context.Context, _ llm.ChatRequest) (llm.ChatResponse, error) {
+			return chatResp(`{"description_normalized":"Ok","category_slug":"","counterparty_name":"","counterparty_identifier":""}`), nil
+		},
+	}, "model", nil)
+
+	imp := newEnrichImporter(txn, run, &mockCatStore{}, e)
+	imp.EnrichRows(t.Context(), uuid.New(), uuid.New(), []parser.RawTransaction{enrichRow()})
+
+	if gotStatus != sqlcgen.ImportStatusEnumFailed {
+		t.Errorf("status = %q, want failed when DB write fails for all rows", gotStatus)
+	}
+}

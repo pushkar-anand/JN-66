@@ -255,6 +255,7 @@ func (imp *Importer) EnrichRows(ctx context.Context, runID, accountID uuid.UUID,
 		}
 		if err := imp.txnStore.UpdateEnrichment(ctx, ep); err != nil {
 			slog.WarnContext(ctx, "update enrichment failed", "err", err, "txn", txnID)
+			enrichFailed++
 		}
 	}
 	slog.InfoContext(ctx, "background enrichment complete", "total", total, "failed", enrichFailed)
