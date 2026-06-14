@@ -91,7 +91,7 @@ type importRunResponse struct {
 	Inserted    int32   `json:"inserted"`
 	Duplicate   int32   `json:"duplicate"`
 	Failed      int32   `json:"failed"`
-	StartedAt   string  `json:"started_at"`
+	StartedAt   string  `json:"started_at,omitempty"`
 	FinishedAt  string  `json:"finished_at,omitempty"`
 	ErrorDetail *string `json:"error_detail,omitempty"`
 }
@@ -229,13 +229,15 @@ func (s *Server) handleImport(w http.ResponseWriter, r *http.Request) {
 			enricher := importer.NewEnricher(s.importCfg.LLMProvider, s.importCfg.TaggingModel, catInfos)
 			impEnrich := importer.NewImporter(s.importCfg.TxnStore, s.importCfg.RunStore, s.importCfg.CatStore, enricher)
 			accountID := account.ID
+			runID := res.RunID
+			_ = s.importCfg.RunStore.UpdateStatus(ctx, runID, sqlcgen.ImportStatusEnumEnriching)
 			go func() {
 				bgCtx := context.Background()
 				slog.InfoContext(bgCtx, "background enrichment started",
-					slog.String("run_id", res.RunID.String()),
+					slog.String("run_id", runID.String()),
 					slog.Int("rows", len(rows)),
 				)
-				impEnrich.EnrichRows(bgCtx, accountID, rows)
+				impEnrich.EnrichRows(bgCtx, runID, accountID, rows)
 			}()
 			enriching = true
 		}

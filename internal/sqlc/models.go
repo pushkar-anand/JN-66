@@ -617,10 +617,11 @@ func AllImportProviderEnumValues() []ImportProviderEnum {
 type ImportStatusEnum string
 
 const (
-	ImportStatusEnumRunning ImportStatusEnum = "running"
-	ImportStatusEnumSuccess ImportStatusEnum = "success"
-	ImportStatusEnumPartial ImportStatusEnum = "partial"
-	ImportStatusEnumFailed  ImportStatusEnum = "failed"
+	ImportStatusEnumRunning   ImportStatusEnum = "running"
+	ImportStatusEnumSuccess   ImportStatusEnum = "success"
+	ImportStatusEnumPartial   ImportStatusEnum = "partial"
+	ImportStatusEnumFailed    ImportStatusEnum = "failed"
+	ImportStatusEnumEnriching ImportStatusEnum = "enriching"
 )
 
 func (e *ImportStatusEnum) Scan(src interface{}) error {
@@ -663,7 +664,8 @@ func (e ImportStatusEnum) Valid() bool {
 	case ImportStatusEnumRunning,
 		ImportStatusEnumSuccess,
 		ImportStatusEnumPartial,
-		ImportStatusEnumFailed:
+		ImportStatusEnumFailed,
+		ImportStatusEnumEnriching:
 		return true
 	}
 	return false
@@ -675,6 +677,7 @@ func AllImportStatusEnumValues() []ImportStatusEnum {
 		ImportStatusEnumSuccess,
 		ImportStatusEnumPartial,
 		ImportStatusEnumFailed,
+		ImportStatusEnumEnriching,
 	}
 }
 

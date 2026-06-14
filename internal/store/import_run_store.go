@@ -64,6 +64,17 @@ func (s *ImportRunStore) UpdateCounts(ctx context.Context, id uuid.UUID, parsed,
 	return nil
 }
 
+// UpdateStatus sets the status of a run without touching finished_at.
+func (s *ImportRunStore) UpdateStatus(ctx context.Context, id uuid.UUID, status sqlcgen.ImportStatusEnum) error {
+	if err := s.q.UpdateImportRunStatus(ctx, sqlcgen.UpdateImportRunStatusParams{
+		ID:     id,
+		Status: status,
+	}); err != nil {
+		return fmt.Errorf("update import run status: %w", err)
+	}
+	return nil
+}
+
 // Get returns a single import run owned by userID. Returns an error wrapping
 // pgx.ErrNoRows if the run does not exist or belongs to a different user.
 func (s *ImportRunStore) Get(ctx context.Context, userID, runID uuid.UUID) (*sqlcgen.ImportRun, error) {

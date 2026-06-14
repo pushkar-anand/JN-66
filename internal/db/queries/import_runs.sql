@@ -18,6 +18,9 @@ SET status       = @status,
     error_detail = @error_detail
 WHERE id = @id;
 
+-- name: UpdateImportRunStatus :exec
+UPDATE import_runs SET status = @status WHERE id = @id;
+
 -- name: GetImportRun :one
 SELECT * FROM import_runs WHERE id = @id AND user_id = @user_id;
 

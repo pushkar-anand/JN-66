@@ -1076,6 +1076,20 @@ func (mr *MockQuerierMockRecorder) UpdateImportRunCounts(ctx, arg any) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateImportRunCounts", reflect.TypeOf((*MockQuerier)(nil).UpdateImportRunCounts), ctx, arg)
 }
 
+// UpdateImportRunStatus mocks base method.
+func (m *MockQuerier) UpdateImportRunStatus(ctx context.Context, arg sqlcgen.UpdateImportRunStatusParams) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateImportRunStatus", ctx, arg)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateImportRunStatus indicates an expected call of UpdateImportRunStatus.
+func (mr *MockQuerierMockRecorder) UpdateImportRunStatus(ctx, arg any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateImportRunStatus", reflect.TypeOf((*MockQuerier)(nil).UpdateImportRunStatus), ctx, arg)
+}
+
 // UpdateRecurringLastCharged mocks base method.
 func (m *MockQuerier) UpdateRecurringLastCharged(ctx context.Context, arg sqlcgen.UpdateRecurringLastChargedParams) error {
 	m.ctrl.T.Helper()

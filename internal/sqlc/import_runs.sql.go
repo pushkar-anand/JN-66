@@ -170,3 +170,17 @@ func (q *Queries) UpdateImportRunCounts(ctx context.Context, arg UpdateImportRun
 	)
 	return err
 }
+
+const updateImportRunStatus = `-- name: UpdateImportRunStatus :exec
+UPDATE import_runs SET status = $1 WHERE id = $2
+`
+
+type UpdateImportRunStatusParams struct {
+	Status ImportStatusEnum `json:"status"`
+	ID     uuid.UUID        `json:"id"`
+}
+
+func (q *Queries) UpdateImportRunStatus(ctx context.Context, arg UpdateImportRunStatusParams) error {
+	_, err := q.db.Exec(ctx, updateImportRunStatus, arg.Status, arg.ID)
+	return err
+}
