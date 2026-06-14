@@ -233,7 +233,7 @@ func saveTaggingHint(ctx context.Context, memStore memStoreAPI, userID, counterp
 	)
 	uid := userID
 	if _, err := memStore.Save(ctx, &uid, hint, sqlcgen.MemoryTypeEnumTaggingHint, []string{counterparty, newSlug}); err != nil {
-		slog.WarnContext(ctx, "save tagging hint", slog.String("counterparty", counterparty), slog.String("new_slug", newSlug))
+		slog.WarnContext(ctx, "save tagging hint", slog.String("counterparty", counterparty), slog.String("new_slug", newSlug), bwglogger.Error(err))
 	}
 }
 

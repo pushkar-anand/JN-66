@@ -152,7 +152,7 @@ func (s *MemoryStore) RecallTaggingHints(ctx context.Context, userID, query stri
 		}
 	}
 
-	if rows == nil {
+	if len(rows) == 0 {
 		rows, err = s.q.RecallTaggingHintsByTags(ctx, sqlcgen.RecallTaggingHintsByTagsParams{
 			UserID:    pgUID,
 			Tags:      memoryKeywords(query),
