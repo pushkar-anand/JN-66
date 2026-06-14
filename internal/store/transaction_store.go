@@ -222,6 +222,7 @@ type EnrichmentParams struct {
 	CategoryID            *string
 	CounterpartyName      *string
 	CounterpartyID        *string
+	Notes                 *string
 	TaggingStatus         *sqlcgen.TaggingStatusEnum
 }
 
@@ -245,9 +246,82 @@ func (s *TransactionStore) UpdateEnrichment(ctx context.Context, p EnrichmentPar
 		TransactionID:         txnID,
 		DescriptionNormalized: p.DescriptionNormalized,
 		CategoryID:            catID,
+		Notes:                 p.Notes,
 		TaggingStatus:         p.TaggingStatus,
 	}); err != nil {
 		return fmt.Errorf("update enrichment: %w", err)
 	}
 	return nil
+}
+
+// GetByID returns a single transaction by ID, scoped to the given user.
+func (s *TransactionStore) GetByID(ctx context.Context, id, userID string) (*sqlcgen.VTransaction, error) {
+	txnID, err := parseUUID(id)
+	if err != nil {
+		return nil, err
+	}
+	uid, err := parseUUID(userID)
+	if err != nil {
+		return nil, err
+	}
+	row, err := s.q.GetTransactionByID(ctx, txnID)
+	if err != nil {
+		return nil, fmt.Errorf("get transaction: %w", err)
+	}
+	if row.UserID != uid {
+		return nil, fmt.Errorf("get transaction: not found")
+	}
+	return &row, nil
+}
+
+// GetLabels returns all labels attached to a transaction.
+func (s *TransactionStore) GetLabels(ctx context.Context, txnID uuid.UUID) ([]sqlcgen.Label, error) {
+	rows, err := s.q.ListTransactionLabels(ctx, txnID)
+	if err != nil {
+		return nil, fmt.Errorf("get transaction labels: %w", err)
+	}
+	return rows, nil
+}
+
+// Count returns the total number of transactions matching the given filters.
+func (s *TransactionStore) Count(ctx context.Context, p ListTransactionsParams) (int64, error) {
+	uid, err := parseUUID(p.UserID)
+	if err != nil {
+		return 0, err
+	}
+
+	var accountID pgtype.UUID
+	if p.AccountID != nil {
+		id, err := parseUUID(*p.AccountID)
+		if err != nil {
+			return 0, err
+		}
+		accountID = toPgtypeUUID(id)
+	}
+
+	var categoryID pgtype.UUID
+	if p.CategoryID != nil {
+		id, err := parseUUID(*p.CategoryID)
+		if err != nil {
+			return 0, err
+		}
+		categoryID = toPgtypeUUID(id)
+	}
+
+	n, err := s.q.CountTransactions(ctx, sqlcgen.CountTransactionsParams{
+		UserID:                 uid,
+		FromDate:               pgDatePtr(p.From),
+		ToDate:                 pgDatePtr(p.To),
+		AccountID:              accountID,
+		CategoryID:             categoryID,
+		MinAmount:              p.MinAmount,
+		MaxAmount:              p.MaxAmount,
+		PaymentMode:            p.PaymentMode,
+		CounterpartyIdentifier: p.CounterpartyIdentifier,
+		Direction:              p.Direction,
+	})
+	if err != nil {
+		return 0, fmt.Errorf("count transactions: %w", err)
+	}
+	return n, nil
 }

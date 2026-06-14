@@ -36,6 +36,8 @@ type Server struct {
 	accountsCfg *AccountsConfig
 	importCfg   *ImportConfig
 	fdCfg       *FDConfig
+	txnCfg      *TransactionConfig
+	uiCfg       *UIConfig
 	v           *bwgvalidator.Validator
 	srv         *http.Server
 }
@@ -43,8 +45,8 @@ type Server struct {
 // New creates a Server that dispatches chat requests to handler.
 // userStore is used for Bearer token authentication; pass nil to disable auth (tests).
 // db is used for the readiness probe; pass nil to skip the DB check.
-// zerodha, accountsCfg, importCfg, and fdCfg are optional; non-nil values enable their routes.
-func New(listen string, handler channel.MessageHandler, userStore userLookup, db dbPinger, zerodha *ZerodhaCallbackConfig, accountsCfg *AccountsConfig, importCfg *ImportConfig, fdCfg *FDConfig) *Server {
+// zerodha, accountsCfg, importCfg, fdCfg, txnCfg, and uiCfg are optional; non-nil values enable their routes.
+func New(listen string, handler channel.MessageHandler, userStore userLookup, db dbPinger, zerodha *ZerodhaCallbackConfig, accountsCfg *AccountsConfig, importCfg *ImportConfig, fdCfg *FDConfig, txnCfg *TransactionConfig, uiCfg *UIConfig) *Server {
 	// bwgvalidator.New uses sync.Once internally — this must be the only call site in the binary.
 	v, err := bwgvalidator.New(
 		bwgvalidator.WithCustomTags(map[string]bwgvalidator.ValidationFunc{
@@ -63,6 +65,8 @@ func New(listen string, handler channel.MessageHandler, userStore userLookup, db
 		accountsCfg: accountsCfg,
 		importCfg:   importCfg,
 		fdCfg:       fdCfg,
+		txnCfg:      txnCfg,
+		uiCfg:       uiCfg,
 		v:           v,
 	}
 
@@ -94,6 +98,32 @@ func New(listen string, handler channel.MessageHandler, userStore userLookup, db
 	}
 	if s.fdCfg != nil {
 		protected.HandleFunc("/api/fds", s.handleCreateFD).Methods(http.MethodPost)
+	}
+	if s.txnCfg != nil {
+		protected.HandleFunc("/api/transactions", s.handleListTransactions).Methods(http.MethodGet)
+		protected.HandleFunc("/api/transactions/{id}", s.handleGetTransaction).Methods(http.MethodGet)
+		protected.HandleFunc("/api/transactions/{id}/enrichment", s.handlePatchEnrichment).Methods(http.MethodPatch)
+		protected.HandleFunc("/api/transactions/{id}/labels", s.handleAddLabel).Methods(http.MethodPost)
+		protected.HandleFunc("/api/transactions/{id}/labels/{labelId}", s.handleRemoveLabel).Methods(http.MethodDelete)
+		protected.HandleFunc("/api/categories", s.handleListCategories).Methods(http.MethodGet)
+		protected.HandleFunc("/api/labels", s.handleListLabels).Methods(http.MethodGet)
+	}
+	if s.uiCfg != nil {
+		r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			http.Redirect(w, r, "/ui/transactions", http.StatusSeeOther)
+		}).Methods(http.MethodGet)
+		r.HandleFunc("/ui/login", s.handleUILogin).Methods(http.MethodGet)
+		r.HandleFunc("/ui/login", s.handleUILoginPost).Methods(http.MethodPost)
+
+		ui := r.NewRoute().Subrouter()
+		ui.Use(s.uiSessionMiddleware)
+		ui.HandleFunc("/ui/logout", s.handleUILogout).Methods(http.MethodGet)
+		ui.HandleFunc("/ui/transactions", s.handleUITransactions).Methods(http.MethodGet)
+		ui.HandleFunc("/ui/transactions/{id}/enrich", s.handleUIEnrich).Methods(http.MethodPost)
+		ui.HandleFunc("/ui/transactions/{id}/label", s.handleUIAddLabel).Methods(http.MethodPost)
+		ui.HandleFunc("/ui/transactions/{id}/label/{labelId}", s.handleUIRemoveLabel).Methods(http.MethodDelete)
+		ui.HandleFunc("/ui/accounts", s.handleUIAccounts).Methods(http.MethodGet)
+		ui.HandleFunc("/ui/investments", s.handleUIInvestments).Methods(http.MethodGet)
 	}
 
 	s.srv = &http.Server{

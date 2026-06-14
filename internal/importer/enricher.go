@@ -25,11 +25,18 @@ type EnrichmentResult struct {
 	CounterpartyID        string `json:"counterparty_identifier"`
 }
 
+// MemoryRecaller retrieves stored tagging hints to inject into the enrichment prompt.
+type MemoryRecaller interface {
+	RecallTaggingHints(ctx context.Context, userID, query string, limit int) ([]string, error)
+}
+
 // Enricher calls the LLM to classify and normalise a raw transaction.
 type Enricher struct {
-	llm     llm.Provider
-	model   string
-	catList string // pre-rendered "slug: description\n..." list injected into the prompt
+	llm      llm.Provider
+	model    string
+	catList  string // pre-rendered "slug: description\n..." list injected into the prompt
+	recaller MemoryRecaller
+	userID   string
 }
 
 // NewEnricher creates an Enricher with the given LLM provider, model, and category list.
@@ -43,6 +50,13 @@ func NewEnricher(provider llm.Provider, model string, categories []CategoryInfo)
 		model:   model,
 		catList: b.String(),
 	}
+}
+
+// WithRecaller attaches a MemoryRecaller so the enricher can incorporate past user corrections.
+func (e *Enricher) WithRecaller(r MemoryRecaller, userID string) *Enricher {
+	e.recaller = r
+	e.userID = userID
+	return e
 }
 
 const enrichSystemPrompt = `You are classifying Indian bank transactions for a personal finance app.
@@ -80,6 +94,20 @@ func (e *Enricher) Enrich(ctx context.Context, tx parser.RawTransaction) (*Enric
 		float64(tx.Amount)/100,
 		tx.Description,
 	)
+
+	if e.recaller != nil && e.userID != "" {
+		hints, err := e.recaller.RecallTaggingHints(ctx, e.userID, tx.Description, 3)
+		if err != nil {
+			slog.WarnContext(ctx, "memory recall failed, continuing without hints", "err", err)
+		} else if len(hints) > 0 {
+			var hb strings.Builder
+			hb.WriteString("\nPreviously recorded user corrections (apply these first):\n")
+			for _, h := range hints {
+				fmt.Fprintf(&hb, "- %s\n", h)
+			}
+			userMsg += hb.String()
+		}
+	}
 
 	slog.Debug("enrich request", "model", e.model, "msg", userMsg)
 

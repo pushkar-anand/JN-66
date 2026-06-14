@@ -36,7 +36,7 @@ func (m *mockImportRunGetter) Get(ctx context.Context, userID, runID uuid.UUID) 
 func newGetRunTestServer(getter importRunGetter) *Server {
 	return New(":0", okHandler, nil, nil, nil, nil, &ImportConfig{
 		RunGetter: getter,
-	}, nil)
+	}, nil, nil, nil)
 }
 
 func requestWithRunID(userID, runID string) *http.Request {

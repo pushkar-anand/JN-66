@@ -120,6 +120,22 @@ func (s *MemoryStore) Recall(ctx context.Context, userID string, query string, l
 	return rows, nil
 }
 
+// RecallTaggingHints returns up to limit tagging-hint memory content strings matching query.
+// Satisfies the importer.MemoryRecaller interface.
+func (s *MemoryStore) RecallTaggingHints(ctx context.Context, userID, query string, limit int) ([]string, error) {
+	memories, err := s.Recall(ctx, userID, query, int32(limit))
+	if err != nil {
+		return nil, err
+	}
+	out := make([]string, 0, len(memories))
+	for _, m := range memories {
+		if m.MemoryType == sqlcgen.MemoryTypeEnumTaggingHint {
+			out = append(out, m.Content)
+		}
+	}
+	return out, nil
+}
+
 // List returns recent active memories for a user.
 func (s *MemoryStore) List(ctx context.Context, userID string, limit int32) ([]sqlcgen.AgentMemory, error) {
 	uid, err := parseUUID(userID)

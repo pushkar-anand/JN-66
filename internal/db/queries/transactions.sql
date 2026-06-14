@@ -77,6 +77,19 @@ WHERE tl.label_id = @label_id
 ORDER BY vt.txn_date DESC
 LIMIT sqlc.arg(page_limit) OFFSET sqlc.arg(page_offset);
 
+-- name: CountTransactions :one
+SELECT COUNT(*) FROM v_transactions
+WHERE user_id = @user_id
+  AND (sqlc.narg(from_date)::date IS NULL OR txn_date >= sqlc.narg(from_date)::date)
+  AND (sqlc.narg(to_date)::date IS NULL OR txn_date <= sqlc.narg(to_date)::date)
+  AND (sqlc.narg(account_id)::uuid IS NULL OR account_id = sqlc.narg(account_id)::uuid)
+  AND (sqlc.narg(category_id)::uuid IS NULL OR category_id = sqlc.narg(category_id)::uuid)
+  AND (sqlc.narg(min_amount)::bigint IS NULL OR amount >= sqlc.narg(min_amount)::bigint)
+  AND (sqlc.narg(max_amount)::bigint IS NULL OR amount <= sqlc.narg(max_amount)::bigint)
+  AND (sqlc.narg(payment_mode)::payment_mode_enum IS NULL OR payment_mode = sqlc.narg(payment_mode)::payment_mode_enum)
+  AND (sqlc.narg(counterparty_identifier)::text IS NULL OR counterparty_identifier = sqlc.narg(counterparty_identifier)::text)
+  AND (sqlc.narg(direction)::txn_direction_enum IS NULL OR direction = sqlc.narg(direction)::txn_direction_enum);
+
 -- name: GetIdempotencyKeyExists :one
 SELECT EXISTS(SELECT 1 FROM transactions WHERE idempotency_key = @idempotency_key);
 

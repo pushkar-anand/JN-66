@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>JN-66 Login</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 flex items-center justify-center min-h-screen">
+  <div class="bg-white rounded-lg shadow p-8 w-full max-w-sm">
+    <h1 class="text-xl font-semibold mb-6">JN-66</h1>
+    {{if .Error}}
+    <p class="text-red-600 text-sm mb-4">{{.Error}}</p>
+    {{end}}
+    <form method="POST" action="/ui/login">
+      <label class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
+      <input type="password" name="api_key" autocomplete="current-password"
+             class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+             placeholder="jn66_…" required autofocus>
+      <button type="submit"
+              class="mt-4 w-full bg-blue-600 text-white rounded px-4 py-2 text-sm font-medium hover:bg-blue-700">
+        Sign in
+      </button>
+    </form>
+  </div>
+</body>
+</html>

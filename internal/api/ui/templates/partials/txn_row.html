@@ -1,0 +1,90 @@
+{{define "txn_row.html"}}
+<tr id="txn-{{.Row.ID}}" class="hover:bg-gray-50 align-top">
+  {{/* Hidden form anchors category_slug + notes for HTMX includes */}}
+  <form id="enrich-{{.Row.ID}}" style="display:none"
+        hx-post="/ui/transactions/{{.Row.ID}}/enrich"
+        hx-target="#txn-{{.Row.ID}}"
+        hx-swap="outerHTML">
+    <input type="hidden" name="category_slug" value="{{.Row.CategorySlug}}">
+    <input type="hidden" name="notes" value="{{.Row.Notes}}">
+  </form>
+
+  {{/* Date */}}
+  <td class="px-3 py-2 text-gray-500 whitespace-nowrap">{{.Row.TxnDate}}</td>
+
+  {{/* Description */}}
+  <td class="px-3 py-2 max-w-xs">
+    {{if .Row.DescriptionNormalized}}
+    <span class="font-medium">{{.Row.DescriptionNormalized}}</span>
+    <br><span class="text-gray-400 text-xs truncate block" title="{{.Row.Description}}">{{.Row.Description}}</span>
+    {{else}}
+    <span class="text-gray-700">{{.Row.Description}}</span>
+    {{end}}
+  </td>
+
+  {{/* Merchant */}}
+  <td class="px-3 py-2 text-gray-500">
+    {{if .Row.CounterpartyName}}
+    <span title="{{.Row.CounterpartyID}}">{{.Row.CounterpartyName}}</span>
+    {{else}}
+    <span class="text-gray-300">—</span>
+    {{end}}
+  </td>
+
+  {{/* Amount */}}
+  <td class="px-3 py-2 text-right font-mono whitespace-nowrap
+      {{if eq .Row.Direction "debit"}}text-red-600{{else}}text-green-700{{end}}">
+    {{if eq .Row.Direction "debit"}}-{{end}}{{.Row.Amount}}
+  </td>
+
+  {{/* Category — inline select, submits via HTMX on change */}}
+  <td class="px-3 py-2">
+    <select name="category_slug"
+            form="enrich-{{.Row.ID}}"
+            hx-post="/ui/transactions/{{.Row.ID}}/enrich"
+            hx-target="#txn-{{.Row.ID}}"
+            hx-swap="outerHTML"
+            hx-include="#enrich-{{.Row.ID}}"
+            hx-trigger="change"
+            class="border border-gray-200 rounded px-1 py-0.5 text-xs bg-white w-full">
+      <option value="">— uncategorised —</option>
+      {{range .Categories}}
+      {{if eq .Depth 0}}
+      <option value="{{.Slug}}" {{if eq $.Row.CategorySlug .Slug}}selected{{end}}>{{.Name}}</option>
+      {{else}}
+      <option value="{{.Slug}}" {{if eq $.Row.CategorySlug .Slug}}selected{{end}}>&nbsp;&nbsp;{{.Name}}</option>
+      {{end}}
+      {{end}}
+    </select>
+  </td>
+
+  {{/* Labels */}}
+  <td class="px-3 py-2">
+    {{template "label_chips.html" (dict "TxnID" .Row.ID "Labels" .Row.Labels)}}
+  </td>
+
+  {{/* Notes — blurs to submit */}}
+  <td class="px-3 py-2">
+    <input type="text" name="notes"
+           form="enrich-{{.Row.ID}}"
+           value="{{.Row.Notes}}"
+           placeholder="Add note…"
+           hx-post="/ui/transactions/{{.Row.ID}}/enrich"
+           hx-target="#txn-{{.Row.ID}}"
+           hx-swap="outerHTML"
+           hx-include="#enrich-{{.Row.ID}}"
+           hx-trigger="blur"
+           class="border-0 bg-transparent text-xs w-full min-w-[8rem]
+                  focus:outline-none focus:ring-1 focus:ring-blue-300 rounded px-1">
+  </td>
+
+  {{/* Tagging status badge */}}
+  <td class="px-3 py-2 text-center">
+    {{if .Row.TaggingStatus}}
+    <span class="inline-block rounded-full px-2 py-0.5 text-xs font-medium status-{{.Row.TaggingStatus}}">
+      {{.Row.TaggingStatus}}
+    </span>
+    {{end}}
+  </td>
+</tr>
+{{end}}

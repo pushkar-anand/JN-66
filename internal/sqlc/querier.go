@@ -14,6 +14,7 @@ import (
 type Querier interface {
 	AddAccountMember(ctx context.Context, arg AddAccountMemberParams) error
 	AddTransactionLabel(ctx context.Context, arg AddTransactionLabelParams) error
+	CountTransactions(ctx context.Context, arg CountTransactionsParams) (int64, error)
 	CreateAccount(ctx context.Context, arg CreateAccountParams) (Account, error)
 	CreateFixedDeposit(ctx context.Context, arg CreateFixedDepositParams) (FixedDeposit, error)
 	CreateImportRun(ctx context.Context, arg CreateImportRunParams) (ImportRun, error)

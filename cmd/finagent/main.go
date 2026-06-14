@@ -211,8 +211,23 @@ func run() error {
 			LLMProvider:  llmProvider,
 			TaggingModel: cfg.LLM.Routing.TaggingModel,
 		}
-		fdCfg := &api.FDConfig{Store: store.NewFDStore(pool)}
-		srv := api.New(cfg.API.Listen, ag.HandleMessage, userStore, pool, zerCbCfg, accountsCfg, importCfg, fdCfg)
+		fdStore := store.NewFDStore(pool)
+		fdCfg := &api.FDConfig{Store: fdStore}
+		labelStore := store.NewLabelStore(pool)
+		txnCfg := &api.TransactionConfig{
+			TxnStore:   txnStore,
+			CatStore:   catStore,
+			LabelStore: labelStore,
+			MemStore:   memoryStore,
+		}
+		uiCfg := &api.UIConfig{
+			UserStore:    userStore,
+			AccountStore: accountStore,
+			FDStore:      fdStore,
+			ZerodhaStore: zStore,
+		}
+		importCfg.MemStore = memoryStore
+		srv := api.New(cfg.API.Listen, ag.HandleMessage, userStore, pool, zerCbCfg, accountsCfg, importCfg, fdCfg, txnCfg, uiCfg)
 
 		// Start Matrix channel alongside the HTTP API when configured.
 		// errgroup cancels the shared context when either child fails,

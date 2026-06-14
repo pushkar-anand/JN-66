@@ -71,6 +71,21 @@ func (mr *MockQuerierMockRecorder) AddTransactionLabel(ctx, arg any) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddTransactionLabel", reflect.TypeOf((*MockQuerier)(nil).AddTransactionLabel), ctx, arg)
 }
 
+// CountTransactions mocks base method.
+func (m *MockQuerier) CountTransactions(ctx context.Context, arg sqlcgen.CountTransactionsParams) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountTransactions", ctx, arg)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountTransactions indicates an expected call of CountTransactions.
+func (mr *MockQuerierMockRecorder) CountTransactions(ctx, arg any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountTransactions", reflect.TypeOf((*MockQuerier)(nil).CountTransactions), ctx, arg)
+}
+
 // CreateAccount mocks base method.
 func (m *MockQuerier) CreateAccount(ctx context.Context, arg sqlcgen.CreateAccountParams) (sqlcgen.Account, error) {
 	m.ctrl.T.Helper()

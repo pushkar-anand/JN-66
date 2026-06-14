@@ -40,7 +40,7 @@ func (m *mockAccountStore) UpdateBalance(ctx context.Context, accountID string, 
 }
 
 func newAccountsTestServer(s accountStoreAPI) *Server {
-	return New(":0", okHandler, nil, nil, nil, &AccountsConfig{Store: s}, nil, nil)
+	return New(":0", okHandler, nil, nil, nil, &AccountsConfig{Store: s}, nil, nil, nil, nil)
 }
 
 func TestHandleCreateAccount_HappyPath(t *testing.T) {

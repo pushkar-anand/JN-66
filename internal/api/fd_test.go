@@ -26,7 +26,7 @@ func (m *mockFDStore) CreateWithAccount(ctx context.Context, p store.CreateFDPar
 }
 
 func newFDTestServer(s fdStoreAPI) *Server {
-	return New(":0", okHandler, nil, nil, nil, nil, nil, &FDConfig{Store: s})
+	return New(":0", okHandler, nil, nil, nil, nil, nil, &FDConfig{Store: s}, nil, nil)
 }
 
 func validCreateFDBody() string {

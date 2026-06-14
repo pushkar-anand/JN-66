@@ -41,6 +41,11 @@ type importRunGetter interface {
 	Get(ctx context.Context, userID, runID uuid.UUID) (*sqlcgen.ImportRun, error)
 }
 
+// importMemoryRecaller is the surface of MemoryStore needed for enrichment hints.
+type importMemoryRecaller interface {
+	RecallTaggingHints(ctx context.Context, userID, query string, limit int) ([]string, error)
+}
+
 // ImportConfig holds dependencies for the POST /api/import handler.
 // Pass nil to api.New to disable the route.
 //
@@ -56,6 +61,7 @@ type ImportConfig struct {
 	CatStore     *store.CategoryStore
 	LLMProvider  llm.Provider
 	TaggingModel string
+	MemStore     importMemoryRecaller // optional; enables tagging-hint recall during enrichment
 }
 
 type importTxnRequest struct {
@@ -227,6 +233,9 @@ func (s *Server) handleImport(w http.ResponseWriter, r *http.Request) {
 				catInfos[i] = importer.CategoryInfo{Slug: c.Slug, Description: c.Description}
 			}
 			enricher := importer.NewEnricher(s.importCfg.LLMProvider, s.importCfg.TaggingModel, catInfos)
+			if s.importCfg.MemStore != nil {
+				enricher = enricher.WithRecaller(s.importCfg.MemStore, userID)
+			}
 			impEnrich := importer.NewImporter(s.importCfg.TxnStore, s.importCfg.RunStore, s.importCfg.CatStore, enricher)
 			accountID := account.ID
 			runID := res.RunID

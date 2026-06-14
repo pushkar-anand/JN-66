@@ -1,0 +1,29 @@
+{{template "base" .}}
+
+{{define "title"}}· Accounts{{end}}
+
+{{define "content"}}
+<h2 class="text-base font-semibold mb-4">Accounts</h2>
+
+{{if not .Accounts}}
+<p class="text-gray-500">No accounts found.</p>
+{{else}}
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+  {{range .Accounts}}
+  <div class="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+    <div class="flex items-start justify-between">
+      <div>
+        <p class="font-medium text-sm">{{.Name}}</p>
+        <p class="text-gray-500 text-xs mt-0.5">{{.Institution}}</p>
+      </div>
+      <span class="text-xs bg-gray-100 text-gray-600 rounded px-2 py-0.5">{{.AccountType}}</span>
+    </div>
+    <p class="text-gray-400 text-xs mt-2">{{.ExternalAccountID}}</p>
+    {{if not .IsActive}}
+    <span class="text-xs text-red-500 mt-1 block">Inactive</span>
+    {{end}}
+  </div>
+  {{end}}
+</div>
+{{end}}
+{{end}}
