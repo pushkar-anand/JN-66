@@ -54,8 +54,14 @@ type UIConfig struct {
 	ZerodhaStore uiZerodhaStore // nil → Zerodha sections hidden
 }
 
-// tmpl is parsed once at server startup from the embedded filesystem.
-var tmpl *template.Template
+// Page-specific template sets — each page clones base+partials so that
+// their {{define "content"}} blocks do not clobber each other.
+var (
+	tmplLogin *template.Template // standalone login page
+	tmplTxn   *template.Template // transactions page + partials (reused for HTMX responses)
+	tmplAcct  *template.Template // accounts page
+	tmplInv   *template.Template // investments page
+)
 
 func init() {
 	funcMap := template.FuncMap{
@@ -97,14 +103,27 @@ func init() {
 			return d.Time.Format("2006-01-02")
 		},
 	}
-	var err error
-	tmpl, err = template.New("").Funcs(funcMap).ParseFS(uiTemplates,
-		"ui/templates/*.html",
-		"ui/templates/partials/*.html",
+
+	// Login is standalone — no base template.
+	tmplLogin = template.Must(
+		template.New("login.html").Funcs(funcMap).ParseFS(uiTemplates, "ui/templates/login.html"),
 	)
-	if err != nil {
-		panic("ui: failed to parse templates: " + err.Error())
+
+	// Base + partials — foundation cloned for each page so their "content"
+	// definitions stay isolated from each other.
+	base := template.Must(
+		template.New("").Funcs(funcMap).ParseFS(uiTemplates,
+			"ui/templates/base.html",
+			"ui/templates/partials/*.html",
+		),
+	)
+	clonePage := func(filename string) *template.Template {
+		c := template.Must(base.Clone())
+		return template.Must(c.ParseFS(uiTemplates, "ui/templates/"+filename))
 	}
+	tmplTxn  = clonePage("transactions.html")
+	tmplAcct = clonePage("accounts.html")
+	tmplInv  = clonePage("investments.html")
 }
 
 // formatRupees is used by buildUITxnRow to pre-format amounts for the row struct.
@@ -132,7 +151,7 @@ func (s *Server) uiSessionMiddleware(next http.Handler) http.Handler {
 
 // handleUILogin handles GET /ui/login — renders login form.
 func (s *Server) handleUILogin(w http.ResponseWriter, r *http.Request) {
-	_ = tmpl.ExecuteTemplate(w, "login.html", nil)
+	_ = tmplLogin.ExecuteTemplate(w, "login.html", nil)
 }
 
 // handleUILoginPost handles POST /ui/login — validates API key, sets session cookie.
@@ -143,13 +162,13 @@ func (s *Server) handleUILoginPost(w http.ResponseWriter, r *http.Request) {
 	}
 	token := r.FormValue("api_key")
 	if token == "" {
-		_ = tmpl.ExecuteTemplate(w, "login.html", map[string]string{"Error": "API key required"})
+		_ = tmplLogin.ExecuteTemplate(w, "login.html", map[string]string{"Error": "API key required"})
 		return
 	}
 	prefix := apikey.Prefix(token)
 	user, err := s.uiCfg.UserStore.GetByAPIKeyPrefix(r.Context(), prefix)
 	if err != nil || !apikey.Verify(token, user.ApiKeyHash) {
-		_ = tmpl.ExecuteTemplate(w, "login.html", map[string]string{"Error": "Invalid API key"})
+		_ = tmplLogin.ExecuteTemplate(w, "login.html", map[string]string{"Error": "Invalid API key"})
 		return
 	}
 	http.SetCookie(w, &http.Cookie{
@@ -313,7 +332,7 @@ func (s *Server) handleUITransactions(w http.ResponseWriter, r *http.Request) {
 		FilterTo:      q.Get("to"),
 	}
 
-	_ = tmpl.ExecuteTemplate(w, "transactions.html", data)
+	_ = tmplTxn.ExecuteTemplate(w, "transactions.html", data)
 }
 
 // handleUIEnrich handles POST /ui/transactions/{id}/enrich — HTMX form for inline edit.
@@ -395,7 +414,7 @@ func (s *Server) handleUIEnrich(w http.ResponseWriter, r *http.Request) {
 	row := buildUITxnRow(*updated, catMap, labels)
 
 	w.Header().Set("Content-Type", "text/html")
-	_ = tmpl.ExecuteTemplate(w, "txn_row.html", struct {
+	_ = tmplTxn.ExecuteTemplate(w, "txn_row.html", struct {
 		Row        uiTxnRow
 		Categories []sqlcgen.Category
 	}{Row: row, Categories: cats})
@@ -455,7 +474,7 @@ func (s *Server) renderLabelChips(w http.ResponseWriter, r *http.Request, txnID 
 		labels, _ = s.txnCfg.LabelStore.ListForTransaction(r.Context(), txn.ID)
 	}
 	w.Header().Set("Content-Type", "text/html")
-	_ = tmpl.ExecuteTemplate(w, "label_chips.html", struct {
+	_ = tmplTxn.ExecuteTemplate(w, "label_chips.html", struct {
 		TxnID  string
 		Labels []sqlcgen.Label
 	}{TxnID: txnID, Labels: labels})
@@ -470,7 +489,7 @@ func (s *Server) handleUIAccounts(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
-	_ = tmpl.ExecuteTemplate(w, "accounts.html", map[string]any{"Accounts": accounts})
+	_ = tmplAcct.ExecuteTemplate(w, "accounts.html", map[string]any{"Accounts": accounts})
 }
 
 // handleUIInvestments handles GET /ui/investments.
@@ -489,7 +508,7 @@ func (s *Server) handleUIInvestments(w http.ResponseWriter, r *http.Request) {
 		data["Equity"] = equity
 		data["MF"] = mf
 	}
-	_ = tmpl.ExecuteTemplate(w, "investments.html", data)
+	_ = tmplInv.ExecuteTemplate(w, "investments.html", data)
 }
 
 // parseInt parses a base-10 int from a string; returns 0 and error on failure.
