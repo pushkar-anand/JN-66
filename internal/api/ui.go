@@ -121,9 +121,9 @@ func init() {
 		c := template.Must(base.Clone())
 		return template.Must(c.ParseFS(uiTemplates, "ui/templates/"+filename))
 	}
-	tmplTxn  = clonePage("transactions.html")
+	tmplTxn = clonePage("transactions.html")
 	tmplAcct = clonePage("accounts.html")
-	tmplInv  = clonePage("investments.html")
+	tmplInv = clonePage("investments.html")
 }
 
 // formatRupees is used by buildUITxnRow to pre-format amounts for the row struct.
