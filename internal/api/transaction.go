@@ -117,19 +117,19 @@ func (s *Server) handleListTransactions(w http.ResponseWriter, r *http.Request) 
 	}
 
 	q := r.URL.Query()
-	page := 1
-	if p, err := strconv.Atoi(q.Get("page")); err == nil {
-		page = min(max(p, 1), 100_000) // cap offset to avoid int32 overflow
+	var page int32 = 1
+	if p, err := strconv.Atoi(q.Get("page")); err == nil && p >= 1 && p <= 100_000 {
+		page = int32(p)
 	}
-	limit := 50
-	if l, err := strconv.Atoi(q.Get("limit")); err == nil {
-		limit = min(max(l, 1), 200) // [1, 200] always fits in int32
+	var limit int32 = 50
+	if l, err := strconv.Atoi(q.Get("limit")); err == nil && l >= 1 && l <= 200 {
+		limit = int32(l)
 	}
 
 	params := store.ListTransactionsParams{
 		UserID: userID,
-		Limit:  int32(limit),
-		Offset: int32((page - 1) * limit),
+		Limit:  limit,
+		Offset: (page - 1) * limit,
 	}
 	if v := q.Get("account_id"); v != "" {
 		params.AccountID = &v
