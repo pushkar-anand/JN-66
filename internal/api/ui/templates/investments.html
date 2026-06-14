@@ -1,45 +1,54 @@
 {{template "base" .}}
 
-{{define "title"}}· Investments{{end}}
+{{define "title"}} · Investments{{end}}
 
 {{define "content"}}
-<h2 class="text-base font-semibold mb-6">Investments</h2>
+<div style="margin-bottom:22px;">
+  <h1 class="heading">Investments</h1>
+</div>
 
-{{/* Fixed Deposits */}}
-<section class="mb-8">
-  <h3 class="text-sm font-semibold text-gray-700 mb-3">Fixed Deposits</h3>
+{{/* ── Fixed Deposits ── */}}
+<div class="inv-section">
+  <div class="inv-section-head">
+    Fixed Deposits
+    <span class="mono" style="font-size:9px; color:var(--t3);">{{len .FDs}} records</span>
+  </div>
   {{if not .FDs}}
-  <p class="text-gray-400 text-xs">No fixed deposits.</p>
+  <div style="color:var(--t2); font-size:12px; padding:10px 0;">No fixed deposits.</div>
   {{else}}
-  <div class="overflow-x-auto rounded border border-gray-200">
-    <table class="w-full text-xs">
-      <thead class="bg-gray-100 text-gray-600 uppercase tracking-wide">
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead>
         <tr>
-          <th class="px-3 py-2 text-left">FD No.</th>
-          <th class="px-3 py-2 text-right">Principal</th>
-          <th class="px-3 py-2 text-right">Rate %</th>
-          <th class="px-3 py-2 text-right">Tenure</th>
-          <th class="px-3 py-2 text-left">Start</th>
-          <th class="px-3 py-2 text-left">Maturity</th>
-          <th class="px-3 py-2 text-right">Expected</th>
-          <th class="px-3 py-2 text-left">Status</th>
+          <th>FD No.</th>
+          <th class="r">Principal</th>
+          <th class="r">Rate</th>
+          <th class="r">Tenure</th>
+          <th>Start</th>
+          <th>Maturity</th>
+          <th class="r">Expected</th>
+          <th>Status</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-gray-100">
+      <tbody>
         {{range .FDs}}
-        <tr class="hover:bg-gray-50">
-          <td class="px-3 py-2 font-mono">{{if .BankFdNumber}}{{deref .BankFdNumber}}{{else}}—{{end}}</td>
-          <td class="px-3 py-2 text-right font-mono">{{.PrincipalAmount}}</td>
-          <td class="px-3 py-2 text-right">{{printf "%.2f" (bps .InterestRateBps)}}%</td>
-          <td class="px-3 py-2 text-right">{{.TenureMonths}}m</td>
-          <td class="px-3 py-2">{{pgDate .StartDate}}</td>
-          <td class="px-3 py-2">{{pgDate .MaturityDate}}</td>
-          <td class="px-3 py-2 text-right font-mono">{{.ExpectedMaturityAmount}}</td>
-          <td class="px-3 py-2">
-            <span class="inline-block rounded-full px-2 py-0.5 text-xs font-medium
-              {{if eq (printf "%s" .Status) "active"}}bg-green-100 text-green-700
-              {{else if eq (printf "%s" .Status) "matured"}}bg-blue-100 text-blue-700
-              {{else}}bg-gray-100 text-gray-600{{end}}">
+        <tr>
+          <td class="mono" style="font-size:11px; color:var(--t2);">
+            {{if .BankFdNumber}}{{deref .BankFdNumber}}{{else}}—{{end}}
+          </td>
+          <td class="mono" style="text-align:right;">{{.PrincipalAmount}}</td>
+          <td class="mono" style="text-align:right; color:var(--accent);">
+            {{printf "%.2f" (bps .InterestRateBps)}}%
+          </td>
+          <td class="mono" style="text-align:right; color:var(--t2);">{{.TenureMonths}}m</td>
+          <td style="font-size:12px; color:var(--t2);">{{pgDate .StartDate}}</td>
+          <td style="font-size:12px; color:var(--t2);">{{pgDate .MaturityDate}}</td>
+          <td class="mono" style="text-align:right;">{{.ExpectedMaturityAmount}}</td>
+          <td>
+            <span class="inv-badge
+              {{if eq (printf "%s" .Status) "active"}}inv-active
+              {{else if eq (printf "%s" .Status) "matured"}}inv-matured
+              {{else}}inv-other{{end}}">
               {{.Status}}
             </span>
           </td>
@@ -49,75 +58,78 @@
     </table>
   </div>
   {{end}}
-</section>
+</div>
 
-{{/* Equities & SGB */}}
+{{/* ── Equities & SGB ── */}}
 {{if .Equity}}
-<section class="mb-8">
-  <h3 class="text-sm font-semibold text-gray-700 mb-3">Equities &amp; SGB</h3>
-  <div class="overflow-x-auto rounded border border-gray-200">
-    <table class="w-full text-xs">
-      <thead class="bg-gray-100 text-gray-600 uppercase tracking-wide">
+<div class="inv-section">
+  <div class="inv-section-head">Equities &amp; SGB</div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead>
         <tr>
-          <th class="px-3 py-2 text-left">Symbol</th>
-          <th class="px-3 py-2 text-left">Exchange</th>
-          <th class="px-3 py-2 text-right">Qty</th>
-          <th class="px-3 py-2 text-right">Avg Price</th>
-          <th class="px-3 py-2 text-right">Last Price</th>
-          <th class="px-3 py-2 text-right">P&amp;L</th>
+          <th>Symbol</th>
+          <th>Exchange</th>
+          <th class="r">Qty</th>
+          <th class="r">Avg Price</th>
+          <th class="r">Last Price</th>
+          <th class="r">P&amp;L</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-gray-100">
+      <tbody>
         {{range .Equity}}
-        <tr class="hover:bg-gray-50">
-          <td class="px-3 py-2 font-medium">{{.Tradingsymbol}}</td>
-          <td class="px-3 py-2 text-gray-500">{{.Exchange}}</td>
-          <td class="px-3 py-2 text-right">{{.Quantity}}</td>
-          <td class="px-3 py-2 text-right font-mono">{{paiseRupees .AvgPricePaise}}</td>
-          <td class="px-3 py-2 text-right font-mono">{{paiseRupees .LastPricePaise}}</td>
-          <td class="px-3 py-2 text-right font-mono
-              {{if ge .PnlPaise 0}}text-green-700{{else}}text-red-600{{end}}">
-            {{paiseRupees .PnlPaise}}
+        <tr>
+          <td style="font-weight:600;">{{.Tradingsymbol}}</td>
+          <td style="font-size:11px; color:var(--t2);">{{.Exchange}}</td>
+          <td class="mono" style="text-align:right; color:var(--t2);">{{.Quantity}}</td>
+          <td class="mono" style="text-align:right;">{{paiseRupees .AvgPricePaise}}</td>
+          <td class="mono" style="text-align:right;">{{paiseRupees .LastPricePaise}}</td>
+          <td class="mono" style="text-align:right;"
+              class="{{if ge .PnlPaise 0}}pnl-pos{{else}}pnl-neg{{end}}">
+            <span style="color:{{if ge .PnlPaise 0}}var(--green){{else}}var(--red){{end}};">
+              {{paiseRupees .PnlPaise}}
+            </span>
           </td>
         </tr>
         {{end}}
       </tbody>
     </table>
   </div>
-</section>
+</div>
 {{end}}
 
-{{/* Mutual Funds */}}
+{{/* ── Mutual Funds ── */}}
 {{if .MF}}
-<section class="mb-8">
-  <h3 class="text-sm font-semibold text-gray-700 mb-3">Mutual Funds</h3>
-  <div class="overflow-x-auto rounded border border-gray-200">
-    <table class="w-full text-xs">
-      <thead class="bg-gray-100 text-gray-600 uppercase tracking-wide">
+<div class="inv-section">
+  <div class="inv-section-head">Mutual Funds</div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead>
         <tr>
-          <th class="px-3 py-2 text-left">Fund</th>
-          <th class="px-3 py-2 text-left">Folio</th>
-          <th class="px-3 py-2 text-right">Avg NAV</th>
-          <th class="px-3 py-2 text-right">Current NAV</th>
-          <th class="px-3 py-2 text-right">P&amp;L</th>
+          <th>Fund</th>
+          <th>Folio</th>
+          <th class="r">Avg NAV</th>
+          <th class="r">Current NAV</th>
+          <th class="r">P&amp;L</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-gray-100">
+      <tbody>
         {{range .MF}}
-        <tr class="hover:bg-gray-50">
-          <td class="px-3 py-2 font-medium">{{.Fund}}</td>
-          <td class="px-3 py-2 text-gray-500">{{.Folio}}</td>
-          <td class="px-3 py-2 text-right font-mono">{{paiseRupees .AvgNavPaise}}</td>
-          <td class="px-3 py-2 text-right font-mono">{{paiseRupees .NavPaise}}</td>
-          <td class="px-3 py-2 text-right font-mono
-              {{if ge .PnlPaise 0}}text-green-700{{else}}text-red-600{{end}}">
-            {{paiseRupees .PnlPaise}}
+        <tr>
+          <td style="font-weight:600; max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{.Fund}}</td>
+          <td class="mono" style="font-size:11px; color:var(--t2);">{{.Folio}}</td>
+          <td class="mono" style="text-align:right;">{{paiseRupees .AvgNavPaise}}</td>
+          <td class="mono" style="text-align:right;">{{paiseRupees .NavPaise}}</td>
+          <td class="mono" style="text-align:right;">
+            <span style="color:{{if ge .PnlPaise 0}}var(--green){{else}}var(--red){{end}};">
+              {{paiseRupees .PnlPaise}}
+            </span>
           </td>
         </tr>
         {{end}}
       </tbody>
     </table>
   </div>
-</section>
+</div>
 {{end}}
 {{end}}

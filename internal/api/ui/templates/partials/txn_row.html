@@ -1,6 +1,6 @@
 {{define "txn_row.html"}}
-<tr id="txn-{{.Row.ID}}" class="hover:bg-gray-50 align-top">
-  {{/* Hidden form anchors category_slug + notes for HTMX includes */}}
+<tr id="txn-{{.Row.ID}}">
+  {{/* Hidden form anchor — category_slug + notes shared via hx-include */}}
   <form id="enrich-{{.Row.ID}}" style="display:none"
         hx-post="/ui/transactions/{{.Row.ID}}/enrich"
         hx-target="#txn-{{.Row.ID}}"
@@ -10,35 +10,34 @@
   </form>
 
   {{/* Date */}}
-  <td class="px-3 py-2 text-gray-500 whitespace-nowrap">{{.Row.TxnDate}}</td>
+  <td class="mono" style="font-size:11px; color:var(--t2); white-space:nowrap;">{{.Row.TxnDate}}</td>
 
   {{/* Description */}}
-  <td class="px-3 py-2 max-w-xs">
+  <td style="max-width:240px;">
     {{if .Row.DescriptionNormalized}}
-    <span class="font-medium">{{.Row.DescriptionNormalized}}</span>
-    <br><span class="text-gray-400 text-xs truncate block" title="{{.Row.Description}}">{{.Row.Description}}</span>
+    <div style="font-weight:600; font-size:13px; color:var(--t1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{.Row.DescriptionNormalized}}</div>
+    <div class="mono" style="font-size:10px; color:var(--t3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="{{.Row.Description}}">{{.Row.Description}}</div>
     {{else}}
-    <span class="text-gray-700">{{.Row.Description}}</span>
+    <div style="color:var(--t1);">{{.Row.Description}}</div>
     {{end}}
   </td>
 
   {{/* Merchant */}}
-  <td class="px-3 py-2 text-gray-500">
+  <td style="font-size:12px; color:var(--t2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px;">
     {{if .Row.CounterpartyName}}
     <span title="{{.Row.CounterpartyID}}">{{.Row.CounterpartyName}}</span>
     {{else}}
-    <span class="text-gray-300">—</span>
+    <span style="color:var(--t3);">—</span>
     {{end}}
   </td>
 
   {{/* Amount */}}
-  <td class="px-3 py-2 text-right font-mono whitespace-nowrap
-      {{if eq .Row.Direction "debit"}}text-red-600{{else}}text-green-700{{end}}">
-    {{if eq .Row.Direction "debit"}}-{{end}}{{.Row.Amount}}
+  <td class="mono" style="text-align:right; white-space:nowrap; font-size:12px; color:{{if eq .Row.Direction "debit"}}var(--red){{else}}var(--green){{end}};">
+    {{if eq .Row.Direction "debit"}}−{{end}}{{.Row.Amount}}
   </td>
 
   {{/* Category — inline select, submits via HTMX on change */}}
-  <td class="px-3 py-2">
+  <td style="min-width:140px;">
     <select name="category_slug"
             form="enrich-{{.Row.ID}}"
             hx-post="/ui/transactions/{{.Row.ID}}/enrich"
@@ -46,7 +45,7 @@
             hx-swap="outerHTML"
             hx-include="#enrich-{{.Row.ID}}"
             hx-trigger="change"
-            class="border border-gray-200 rounded px-1 py-0.5 text-xs bg-white w-full">
+            class="inline-select">
       <option value="">— uncategorised —</option>
       {{range .Categories}}
       {{if eq .Depth 0}}
@@ -59,12 +58,12 @@
   </td>
 
   {{/* Labels */}}
-  <td class="px-3 py-2">
+  <td>
     {{template "label_chips.html" (dict "TxnID" .Row.ID "Labels" .Row.Labels)}}
   </td>
 
-  {{/* Notes — blurs to submit */}}
-  <td class="px-3 py-2">
+  {{/* Notes — blur triggers save */}}
+  <td>
     <input type="text" name="notes"
            form="enrich-{{.Row.ID}}"
            value="{{.Row.Notes}}"
@@ -74,16 +73,13 @@
            hx-swap="outerHTML"
            hx-include="#enrich-{{.Row.ID}}"
            hx-trigger="blur"
-           class="border-0 bg-transparent text-xs w-full min-w-[8rem]
-                  focus:outline-none focus:ring-1 focus:ring-blue-300 rounded px-1">
+           class="inline-input">
   </td>
 
-  {{/* Tagging status badge */}}
-  <td class="px-3 py-2 text-center">
+  {{/* Tagging status */}}
+  <td style="text-align:center;">
     {{if .Row.TaggingStatus}}
-    <span class="inline-block rounded-full px-2 py-0.5 text-xs font-medium status-{{.Row.TaggingStatus}}">
-      {{.Row.TaggingStatus}}
-    </span>
+    <span class="badge badge-{{.Row.TaggingStatus}}">{{.Row.TaggingStatus}}</span>
     {{end}}
   </td>
 </tr>

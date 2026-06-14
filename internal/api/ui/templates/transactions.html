@@ -1,91 +1,76 @@
 {{template "base" .}}
 
-{{define "title"}}· Transactions{{end}}
+{{define "title"}} · Transactions{{end}}
 
 {{define "content"}}
-<div class="mb-4 flex items-center justify-between">
-  <h2 class="text-base font-semibold">Transactions</h2>
-  <span class="text-gray-500 text-xs">{{.Total}} total</span>
+<div style="display:flex; align-items:baseline; gap:12px; margin-bottom:16px;">
+  <h1 class="heading">Transactions</h1>
+  <span class="mono" style="font-size:11px; color:var(--t3);">{{.Total}} records</span>
 </div>
 
-{{/* Filter bar — regular GET form, full page reload on submit */}}
-<form method="GET" action="/ui/transactions"
-      class="flex flex-wrap gap-3 mb-4 items-end bg-white border border-gray-200 rounded p-3">
-
-  <div>
-    <label class="block text-xs text-gray-500 mb-1">Account</label>
-    <select name="account_id" class="border border-gray-300 rounded px-2 py-1 text-sm">
+<form method="GET" action="/ui/transactions" class="filter-bar">
+  <div class="filter-group">
+    <label class="label-xs">Account</label>
+    <select name="account_id">
       <option value="">All accounts</option>
       {{range .Accounts}}
-      <option value="{{.ID}}" {{if eq (printf "%s" .ID) $.FilterAccount}}selected{{end}}>
-        {{.Name}}
-      </option>
+      <option value="{{.ID}}" {{if eq (printf "%s" .ID) $.FilterAccount}}selected{{end}}>{{.Name}}</option>
       {{end}}
     </select>
   </div>
 
-  <div>
-    <label class="block text-xs text-gray-500 mb-1">Category</label>
-    <select name="category_id" class="border border-gray-300 rounded px-2 py-1 text-sm">
+  <div class="filter-group">
+    <label class="label-xs">Category</label>
+    <select name="category_id">
       <option value="">All categories</option>
       {{range .Categories}}
       {{if eq .Depth 0}}
-      <option value="{{.ID}}" {{if eq (printf "%s" .ID) $.FilterCat}}selected{{end}}>
-        {{.Name}}
-      </option>
+      <option value="{{.ID}}" {{if eq (printf "%s" .ID) $.FilterCat}}selected{{end}}>{{.Name}}</option>
       {{else}}
-      <option value="{{.ID}}" {{if eq (printf "%s" .ID) $.FilterCat}}selected{{end}}>
-        &nbsp;&nbsp;{{.Name}}
-      </option>
+      <option value="{{.ID}}" {{if eq (printf "%s" .ID) $.FilterCat}}selected{{end}}>&nbsp;&nbsp;{{.Name}}</option>
       {{end}}
       {{end}}
     </select>
   </div>
 
-  <div>
-    <label class="block text-xs text-gray-500 mb-1">Direction</label>
-    <select name="direction" class="border border-gray-300 rounded px-2 py-1 text-sm">
+  <div class="filter-group">
+    <label class="label-xs">Direction</label>
+    <select name="direction">
       <option value="">Both</option>
       <option value="debit"  {{if eq $.FilterDir "debit"}}selected{{end}}>Debit</option>
       <option value="credit" {{if eq $.FilterDir "credit"}}selected{{end}}>Credit</option>
     </select>
   </div>
 
-  <div>
-    <label class="block text-xs text-gray-500 mb-1">From</label>
-    <input type="date" name="from" value="{{.FilterFrom}}"
-           class="border border-gray-300 rounded px-2 py-1 text-sm">
+  <div class="filter-group">
+    <label class="label-xs">From</label>
+    <input type="date" name="from" value="{{.FilterFrom}}">
   </div>
 
-  <div>
-    <label class="block text-xs text-gray-500 mb-1">To</label>
-    <input type="date" name="to" value="{{.FilterTo}}"
-           class="border border-gray-300 rounded px-2 py-1 text-sm">
+  <div class="filter-group">
+    <label class="label-xs">To</label>
+    <input type="date" name="to" value="{{.FilterTo}}">
   </div>
 
-  <button type="submit"
-          class="bg-blue-600 text-white text-sm rounded px-3 py-1 hover:bg-blue-700">
-    Filter
-  </button>
-  <a href="/ui/transactions" class="text-xs text-gray-500 hover:text-gray-700 self-center">Reset</a>
+  <button type="submit" class="btn btn-accent">Filter</button>
+  <a href="/ui/transactions" class="btn btn-ghost">Reset</a>
 </form>
 
-{{/* Transaction table */}}
-<div class="overflow-x-auto rounded border border-gray-200">
-  <table class="w-full text-xs">
-    <thead class="bg-gray-100 text-gray-600 uppercase tracking-wide">
+<div class="tbl-wrap">
+  <table class="tbl">
+    <thead>
       <tr>
-        <th class="px-3 py-2 text-left w-24">Date</th>
-        <th class="px-3 py-2 text-left">Description</th>
-        <th class="px-3 py-2 text-left">Merchant</th>
-        <th class="px-3 py-2 text-right w-28">Amount</th>
-        <th class="px-3 py-2 text-left w-40">Category</th>
-        <th class="px-3 py-2 text-left w-48">Labels</th>
-        <th class="px-3 py-2 text-left">Notes</th>
-        <th class="px-3 py-2 w-16 text-center">Status</th>
+        <th style="width:88px;">Date</th>
+        <th>Description</th>
+        <th style="width:140px;">Merchant</th>
+        <th class="r" style="width:110px;">Amount</th>
+        <th style="width:160px;">Category</th>
+        <th style="width:210px;">Labels</th>
+        <th>Notes</th>
+        <th style="width:58px; text-align:center;">Status</th>
       </tr>
     </thead>
-    <tbody class="divide-y divide-gray-100">
+    <tbody>
       {{range .Transactions}}
       {{template "txn_row.html" (dict "Row" . "Categories" $.Categories)}}
       {{end}}
@@ -93,16 +78,13 @@
   </table>
 </div>
 
-{{/* Pagination */}}
-<div class="flex items-center gap-4 mt-4 text-xs text-gray-600">
+<div class="pagination">
   {{if gt .Page 1}}
-  <a href="?page={{sub .Page 1}}&account_id={{.FilterAccount}}&category_id={{.FilterCat}}&direction={{.FilterDir}}&from={{.FilterFrom}}&to={{.FilterTo}}"
-     class="text-blue-600 hover:underline">← Prev</a>
+  <a class="page-link" href="?page={{sub .Page 1}}&account_id={{.FilterAccount}}&category_id={{.FilterCat}}&direction={{.FilterDir}}&from={{.FilterFrom}}&to={{.FilterTo}}">← Prev</a>
   {{end}}
-  <span>Page {{.Page}} of {{divCeil .Total (int64 .Limit)}}</span>
+  <span class="page-info">{{.Page}} / {{divCeil .Total (int64 .Limit)}}</span>
   {{if lt (int64 .Page) (divCeil .Total (int64 .Limit))}}
-  <a href="?page={{add .Page 1}}&account_id={{.FilterAccount}}&category_id={{.FilterCat}}&direction={{.FilterDir}}&from={{.FilterFrom}}&to={{.FilterTo}}"
-     class="text-blue-600 hover:underline">Next →</a>
+  <a class="page-link" href="?page={{add .Page 1}}&account_id={{.FilterAccount}}&category_id={{.FilterCat}}&direction={{.FilterDir}}&from={{.FilterFrom}}&to={{.FilterTo}}">Next →</a>
   {{end}}
 </div>
 {{end}}
