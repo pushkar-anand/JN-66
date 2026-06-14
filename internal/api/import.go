@@ -230,7 +230,9 @@ func (s *Server) handleImport(w http.ResponseWriter, r *http.Request) {
 			impEnrich := importer.NewImporter(s.importCfg.TxnStore, s.importCfg.RunStore, s.importCfg.CatStore, enricher)
 			accountID := account.ID
 			runID := res.RunID
-			_ = s.importCfg.RunStore.UpdateStatus(ctx, runID, sqlcgen.ImportStatusEnumEnriching)
+			if err := s.importCfg.RunStore.UpdateStatus(ctx, runID, sqlcgen.ImportStatusEnumEnriching); err != nil {
+				slog.WarnContext(ctx, "import: failed to set enriching status", bwglogger.Error(err))
+			}
 			go func() {
 				bgCtx := context.Background()
 				slog.InfoContext(bgCtx, "background enrichment started",

@@ -218,3 +218,65 @@ func TestEnrichRows_EnricherError_Skips(t *testing.T) {
 	imp := newEnrichImporter(txn, &mockImportRunStore{}, &mockCatStore{}, e)
 	imp.EnrichRows(t.Context(), uuid.New(), uuid.New(), []parser.RawTransaction{enrichRow()})
 }
+
+func TestEnrichRows_AllFailed_StatusFailed(t *testing.T) {
+	txn := &mockTxnStore{
+		getIDFn: func(_ context.Context, _ string) (uuid.UUID, error) { return uuid.New(), nil },
+	}
+	var gotStatus sqlcgen.ImportStatusEnum
+	run := &mockImportRunStore{
+		finishFn: func(_ context.Context, _ uuid.UUID, status sqlcgen.ImportStatusEnum, _ string) error {
+			gotStatus = status
+			return nil
+		},
+	}
+
+	// Invalid JSON → all rows fail enrichment.
+	e := NewEnricher(&mockLLM{
+		chatFn: func(_ context.Context, _ llm.ChatRequest) (llm.ChatResponse, error) {
+			return chatResp("not valid json"), nil
+		},
+	}, "model", nil)
+
+	imp := newEnrichImporter(txn, run, &mockCatStore{}, e)
+	imp.EnrichRows(t.Context(), uuid.New(), uuid.New(), []parser.RawTransaction{enrichRow()})
+
+	if gotStatus != sqlcgen.ImportStatusEnumFailed {
+		t.Errorf("status = %q, want failed", gotStatus)
+	}
+}
+
+func TestEnrichRows_SomeFailed_StatusPartial(t *testing.T) {
+	calls := 0
+	txn := &mockTxnStore{
+		getIDFn: func(_ context.Context, _ string) (uuid.UUID, error) { return uuid.New(), nil },
+	}
+	var gotStatus sqlcgen.ImportStatusEnum
+	run := &mockImportRunStore{
+		finishFn: func(_ context.Context, _ uuid.UUID, status sqlcgen.ImportStatusEnum, _ string) error {
+			gotStatus = status
+			return nil
+		},
+	}
+
+	// First call succeeds, second fails.
+	e := NewEnricher(&mockLLM{
+		chatFn: func(_ context.Context, _ llm.ChatRequest) (llm.ChatResponse, error) {
+			calls++
+			if calls == 1 {
+				return chatResp(`{"description_normalized":"Ok","category_slug":"","counterparty_name":"","counterparty_identifier":""}`), nil
+			}
+			return chatResp("invalid json"), nil
+		},
+	}, "model", nil)
+
+	rows := []parser.RawTransaction{enrichRow(), {
+		Date: enrichRow().Date, Description: "OTHER", Amount: 1000, Direction: sqlcgen.TxnDirectionEnumDebit,
+	}}
+	imp := newEnrichImporter(txn, run, &mockCatStore{}, e)
+	imp.EnrichRows(t.Context(), uuid.New(), uuid.New(), rows)
+
+	if gotStatus != sqlcgen.ImportStatusEnumPartial {
+		t.Errorf("status = %q, want partial", gotStatus)
+	}
+}

@@ -218,12 +218,13 @@ func (imp *Importer) Run(ctx context.Context, p RunParams) (*Result, error) {
 // enricher, and writes the result. Designed to be called from a background goroutine
 // after Run() has returned — the context must outlive the HTTP request.
 // Silently skips rows whose transaction cannot be found (e.g. rows that were
-// rejected by Insert). Marks the run as success when all rows are processed.
+// rejected by Insert). Marks the run partial/failed when LLM errors prevent enrichment.
 func (imp *Importer) EnrichRows(ctx context.Context, runID, accountID uuid.UUID, rows []parser.RawTransaction) {
 	if imp.enricher == nil {
 		return
 	}
 	total := len(rows)
+	enrichFailed := 0
 	for i, row := range rows {
 		key := idempotencyKey(accountID, row.Date, row.Amount, row.Description)
 		txnID, err := imp.txnStore.GetIDByIdempotencyKey(ctx, key)
@@ -235,6 +236,7 @@ func (imp *Importer) EnrichRows(ctx context.Context, runID, accountID uuid.UUID,
 		enriched, err := imp.enricher.Enrich(ctx, row)
 		if err != nil {
 			slog.WarnContext(ctx, "enrichment failed — leaving pending", "err", err, "txn", txnID)
+			enrichFailed++
 			continue
 		}
 		ep := store.EnrichmentParams{
@@ -255,8 +257,14 @@ func (imp *Importer) EnrichRows(ctx context.Context, runID, accountID uuid.UUID,
 			slog.WarnContext(ctx, "update enrichment failed", "err", err, "txn", txnID)
 		}
 	}
-	slog.InfoContext(ctx, "background enrichment complete", "total", total)
-	_ = imp.runStore.Finish(ctx, runID, sqlcgen.ImportStatusEnumSuccess, "")
+	slog.InfoContext(ctx, "background enrichment complete", "total", total, "failed", enrichFailed)
+	status := sqlcgen.ImportStatusEnumSuccess
+	if enrichFailed > 0 && enrichFailed == total {
+		status = sqlcgen.ImportStatusEnumFailed
+	} else if enrichFailed > 0 {
+		status = sqlcgen.ImportStatusEnumPartial
+	}
+	_ = imp.runStore.Finish(ctx, runID, status, "")
 }
 
 func truncateStr(s string, n int) string {
