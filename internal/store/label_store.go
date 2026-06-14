@@ -124,3 +124,28 @@ func (s *LabelStore) ListForTransaction(ctx context.Context, txnID uuid.UUID) ([
 	}
 	return rows, nil
 }
+
+// ListForTransactions returns labels for a batch of transactions in a single query,
+// grouped by transaction ID. Callers should treat a missing key as an empty slice.
+func (s *LabelStore) ListForTransactions(ctx context.Context, txnIDs []uuid.UUID) (map[uuid.UUID][]sqlcgen.Label, error) {
+	result := make(map[uuid.UUID][]sqlcgen.Label, len(txnIDs))
+	if len(txnIDs) == 0 {
+		return result, nil
+	}
+	rows, err := s.q.ListLabelsForTransactions(ctx, txnIDs)
+	if err != nil {
+		return nil, fmt.Errorf("list labels for transactions: %w", err)
+	}
+	for _, row := range rows {
+		label := sqlcgen.Label{
+			ID:        row.ID,
+			UserID:    row.UserID,
+			Name:      row.Name,
+			Slug:      row.Slug,
+			Color:     row.Color,
+			CreatedAt: row.CreatedAt,
+		}
+		result[row.TransactionID] = append(result[row.TransactionID], label)
+	}
+	return result, nil
+}

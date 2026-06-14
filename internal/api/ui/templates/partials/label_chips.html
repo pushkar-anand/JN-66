@@ -1,0 +1,44 @@
+{{define "label_chips.html"}}
+<div id="labels-{{.TxnID}}" class="chips" x-data="{open:false}">
+  {{range .Labels}}
+  <span class="chip">
+    {{.Name}}
+    <button type="button"
+            hx-delete="/ui/transactions/{{$.TxnID}}/label/{{.ID}}"
+            hx-target="#labels-{{$.TxnID}}"
+            hx-swap="outerHTML"
+            class="chip-del">×</button>
+  </span>
+  {{end}}
+
+  <div style="position:relative;" x-data="{v:''}">
+    <button type="button" @click="open=!open" class="chip-add">+ label</button>
+    <div x-show="open" x-cloak @click.outside="open=false"
+         style="position:absolute; z-index:30; top:calc(100% + 4px); left:0;
+                background:var(--s2); border:1px solid var(--b2); border-radius:3px;
+                padding:8px; width:148px; box-shadow:0 4px 16px rgba(0,0,0,0.4);">
+      <form hx-post="/ui/transactions/{{.TxnID}}/label"
+            hx-target="#labels-{{.TxnID}}"
+            hx-swap="outerHTML"
+            @submit="open=false; v=''"
+            style="display:flex; gap:4px; align-items:center;">
+        <input type="text" name="label" x-model="v"
+               placeholder="tag name"
+               style="flex:1; min-width:0; background:var(--s3); border:1px solid var(--b2);
+                      border-radius:2px; color:var(--t1); font-family:'Syne',sans-serif;
+                      font-size:11px; padding:5px 7px; outline:none; transition:border-color 0.15s;"
+               onfocus="this.style.borderColor='var(--accent)'"
+               onblur="this.style.borderColor='var(--b2)'"
+               required>
+        <button type="submit"
+                style="background:var(--accent); border:none; border-radius:2px; color:var(--bg);
+                       font-family:'Syne',sans-serif; font-size:9px; font-weight:700;
+                       letter-spacing:0.07em; text-transform:uppercase; padding:5px 8px;
+                       cursor:pointer; white-space:nowrap; flex-shrink:0;">
+          Add
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{{end}}

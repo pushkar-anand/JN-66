@@ -14,6 +14,7 @@ import (
 type Querier interface {
 	AddAccountMember(ctx context.Context, arg AddAccountMemberParams) error
 	AddTransactionLabel(ctx context.Context, arg AddTransactionLabelParams) error
+	CountTransactions(ctx context.Context, arg CountTransactionsParams) (int64, error)
 	CreateAccount(ctx context.Context, arg CreateAccountParams) (Account, error)
 	CreateFixedDeposit(ctx context.Context, arg CreateFixedDepositParams) (FixedDeposit, error)
 	CreateImportRun(ctx context.Context, arg CreateImportRunParams) (ImportRun, error)
@@ -60,6 +61,7 @@ type Querier interface {
 	ListFixedDeposits(ctx context.Context, arg ListFixedDepositsParams) ([]FixedDeposit, error)
 	ListImportRuns(ctx context.Context, userID uuid.UUID) ([]ImportRun, error)
 	ListLabels(ctx context.Context, userID pgtype.UUID) ([]Label, error)
+	ListLabelsForTransactions(ctx context.Context, transactionIds []uuid.UUID) ([]ListLabelsForTransactionsRow, error)
 	ListMemories(ctx context.Context, arg ListMemoriesParams) ([]AgentMemory, error)
 	ListRecentMessages(ctx context.Context, arg ListRecentMessagesParams) ([]ConversationMessage, error)
 	ListRecurringPayments(ctx context.Context, userID uuid.UUID) ([]RecurringPayment, error)
@@ -74,6 +76,8 @@ type Querier interface {
 	ListZerodhaMFHoldings(ctx context.Context, userID uuid.UUID) ([]ZerodhaMfHolding, error)
 	RecallMemoriesByEmbedding(ctx context.Context, arg RecallMemoriesByEmbeddingParams) ([]AgentMemory, error)
 	RecallMemoriesByTags(ctx context.Context, arg RecallMemoriesByTagsParams) ([]AgentMemory, error)
+	RecallTaggingHintsByEmbedding(ctx context.Context, arg RecallTaggingHintsByEmbeddingParams) ([]AgentMemory, error)
+	RecallTaggingHintsByTags(ctx context.Context, arg RecallTaggingHintsByTagsParams) ([]AgentMemory, error)
 	RemoveTransactionLabel(ctx context.Context, arg RemoveTransactionLabelParams) error
 	SaveMessage(ctx context.Context, arg SaveMessageParams) (ConversationMessage, error)
 	SetExternalAccountID(ctx context.Context, arg SetExternalAccountIDParams) error

@@ -13,6 +13,51 @@ import (
 	model "github.com/pushkaranand/finagent/internal/model"
 )
 
+const countTransactions = `-- name: CountTransactions :one
+SELECT COUNT(*) FROM v_transactions
+WHERE user_id = $1
+  AND ($2::date IS NULL OR txn_date >= $2::date)
+  AND ($3::date IS NULL OR txn_date <= $3::date)
+  AND ($4::uuid IS NULL OR account_id = $4::uuid)
+  AND ($5::uuid IS NULL OR category_id = $5::uuid)
+  AND ($6::bigint IS NULL OR amount >= $6::bigint)
+  AND ($7::bigint IS NULL OR amount <= $7::bigint)
+  AND ($8::payment_mode_enum IS NULL OR payment_mode = $8::payment_mode_enum)
+  AND ($9::text IS NULL OR counterparty_identifier = $9::text)
+  AND ($10::txn_direction_enum IS NULL OR direction = $10::txn_direction_enum)
+`
+
+type CountTransactionsParams struct {
+	UserID                 uuid.UUID         `json:"user_id"`
+	FromDate               pgtype.Date       `json:"from_date"`
+	ToDate                 pgtype.Date       `json:"to_date"`
+	AccountID              pgtype.UUID       `json:"account_id"`
+	CategoryID             pgtype.UUID       `json:"category_id"`
+	MinAmount              *int64            `json:"min_amount"`
+	MaxAmount              *int64            `json:"max_amount"`
+	PaymentMode            *PaymentModeEnum  `json:"payment_mode"`
+	CounterpartyIdentifier *string           `json:"counterparty_identifier"`
+	Direction              *TxnDirectionEnum `json:"direction"`
+}
+
+func (q *Queries) CountTransactions(ctx context.Context, arg CountTransactionsParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countTransactions,
+		arg.UserID,
+		arg.FromDate,
+		arg.ToDate,
+		arg.AccountID,
+		arg.CategoryID,
+		arg.MinAmount,
+		arg.MaxAmount,
+		arg.PaymentMode,
+		arg.CounterpartyIdentifier,
+		arg.Direction,
+	)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const getIdempotencyKeyExists = `-- name: GetIdempotencyKeyExists :one
 SELECT EXISTS(SELECT 1 FROM transactions WHERE idempotency_key = $1)
 `

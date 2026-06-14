@@ -54,7 +54,7 @@ func newImportTestServer(userGetter importUserGetter, accountStore importAccount
 		UserGetter:   userGetter,
 		AccountStore: accountStore,
 		// TxnStore, RunStore, CatStore intentionally nil — tests must not reach imp.Run
-	}, nil)
+	}, nil, nil, nil)
 }
 
 // importAccountInList returns an account store mock that reports the test account as owned by the user.

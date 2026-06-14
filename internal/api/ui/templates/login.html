@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JN-66</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Syne:wght@400;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:     #0d0f0e;
+      --s1:     #141716;
+      --s2:     #1a1d1b;
+      --b1:     #222520;
+      --b2:     #2c302b;
+      --b3:     #3a3e39;
+      --t1:     #c4c9c4;
+      --t2:     #647064;
+      --t3:     #3c403c;
+      --accent: #c9a43c;
+      --red:    #d45c52;
+    }
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--t1);
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+    }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    /* subtle grid texture */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(201,164,60,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(201,164,60,0.025) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .login-wrap {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 320px;
+      padding: 20px;
+    }
+    .login-logo {
+      font-family: 'Fraunces', serif;
+      font-size: 40px;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: -0.04em;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .login-sub {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--t3);
+      margin-bottom: 32px;
+    }
+    .login-card {
+      background: var(--s1);
+      border: 1px solid var(--b1);
+      border-radius: 3px;
+      padding: 22px;
+    }
+    .field-label {
+      display: block;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--t3);
+      margin-bottom: 6px;
+    }
+    .field-input {
+      width: 100%;
+      background: var(--s2);
+      border: 1px solid var(--b2);
+      border-radius: 2px;
+      color: var(--t1);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      padding: 9px 11px;
+      outline: none;
+      transition: border-color 0.15s;
+      letter-spacing: 0.04em;
+    }
+    .field-input::placeholder {
+      color: var(--t3);
+      letter-spacing: 0;
+      font-family: 'Syne', sans-serif;
+      font-size: 11px;
+    }
+    .field-input:focus { border-color: var(--accent); }
+    .login-btn {
+      display: block;
+      width: 100%;
+      margin-top: 12px;
+      background: var(--accent);
+      color: var(--bg);
+      font-family: 'Syne', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      border: none;
+      border-radius: 2px;
+      padding: 10px;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .login-btn:hover { opacity: 0.85; }
+    .login-error {
+      font-size: 11px;
+      color: var(--red);
+      margin-bottom: 14px;
+      padding: 8px 10px;
+      background: rgba(212,92,82,0.08);
+      border: 1px solid rgba(212,92,82,0.20);
+      border-radius: 2px;
+    }
+    .login-footer {
+      margin-top: 18px;
+      font-size: 9px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--t3);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-wrap">
+    <div class="login-logo">JN—66</div>
+    <div class="login-sub">Financial Intelligence</div>
+    <div class="login-card">
+      {{if .Error}}
+      <div class="login-error">{{.Error}}</div>
+      {{end}}
+      <form method="POST" action="/ui/login">
+        <label for="api_key" class="field-label">API Key</label>
+        <input type="password" id="api_key" name="api_key"
+               class="field-input"
+               placeholder="jn66_…"
+               autocomplete="current-password"
+               required autofocus>
+        <button type="submit" class="login-btn">Authenticate</button>
+      </form>
+    </div>
+    <div class="login-footer">Personal · Self-hosted</div>
+  </div>
+</body>
+</html>

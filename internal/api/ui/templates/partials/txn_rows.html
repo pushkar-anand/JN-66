@@ -1,0 +1,5 @@
+{{define "txn_rows.html"}}
+{{range .Transactions}}
+{{template "txn_row.html" (dict "Row" . "Categories" $.Categories)}}
+{{end}}
+{{end}}

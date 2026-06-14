@@ -110,6 +110,51 @@ func (q *Queries) ListLabels(ctx context.Context, userID pgtype.UUID) ([]Label, 
 	return items, nil
 }
 
+const listLabelsForTransactions = `-- name: ListLabelsForTransactions :many
+SELECT l.id, l.user_id, l.name, l.slug, l.color, l.created_at, tl.transaction_id
+FROM labels l
+JOIN transaction_labels tl ON tl.label_id = l.id
+WHERE tl.transaction_id = ANY($1::uuid[])
+`
+
+type ListLabelsForTransactionsRow struct {
+	ID            uuid.UUID          `json:"id"`
+	UserID        pgtype.UUID        `json:"user_id"`
+	Name          string             `json:"name"`
+	Slug          string             `json:"slug"`
+	Color         *string            `json:"color"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	TransactionID uuid.UUID          `json:"transaction_id"`
+}
+
+func (q *Queries) ListLabelsForTransactions(ctx context.Context, transactionIds []uuid.UUID) ([]ListLabelsForTransactionsRow, error) {
+	rows, err := q.db.Query(ctx, listLabelsForTransactions, transactionIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListLabelsForTransactionsRow
+	for rows.Next() {
+		var i ListLabelsForTransactionsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Name,
+			&i.Slug,
+			&i.Color,
+			&i.CreatedAt,
+			&i.TransactionID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listTransactionLabels = `-- name: ListTransactionLabels :many
 SELECT l.id, l.user_id, l.name, l.slug, l.color, l.created_at FROM labels l
 JOIN transaction_labels tl ON tl.label_id = l.id

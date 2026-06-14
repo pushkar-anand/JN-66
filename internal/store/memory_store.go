@@ -120,6 +120,56 @@ func (s *MemoryStore) Recall(ctx context.Context, userID string, query string, l
 	return rows, nil
 }
 
+// RecallTaggingHints returns up to limit tagging-hint memory content strings matching query.
+// Uses type-filtered SQL queries so the LIMIT applies only to tagging hints, not across all types.
+// Satisfies the importer.MemoryRecaller interface.
+func (s *MemoryStore) RecallTaggingHints(ctx context.Context, userID, query string, limit int) ([]string, error) {
+	uid, err := parseUUID(userID)
+	if err != nil {
+		return nil, err
+	}
+	pgUID := toPgtypeUUID(uid)
+	n := int32(limit)
+
+	var rows []sqlcgen.AgentMemory
+	if s.embedder != nil {
+		vec, embedErr := s.embedder.EmbedText(ctx, query)
+		if embedErr == nil {
+			v := pgvector.NewVector(vec)
+			dbRows, dbErr := s.q.RecallTaggingHintsByEmbedding(ctx, sqlcgen.RecallTaggingHintsByEmbeddingParams{
+				UserID:      pgUID,
+				Embedding:   &v,
+				MaxDistance: memoryRecallMaxDistance,
+				PageLimit:   n,
+			})
+			if dbErr == nil {
+				rows = dbRows
+			} else {
+				slog.WarnContext(ctx, "vector tagging hint recall failed, falling back to tags", "err", dbErr)
+			}
+		} else {
+			slog.WarnContext(ctx, "embed query failed, falling back to tags", "err", embedErr)
+		}
+	}
+
+	if len(rows) == 0 {
+		rows, err = s.q.RecallTaggingHintsByTags(ctx, sqlcgen.RecallTaggingHintsByTagsParams{
+			UserID:    pgUID,
+			Tags:      memoryKeywords(query),
+			PageLimit: n,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("recall tagging hints: %w", err)
+		}
+	}
+
+	out := make([]string, len(rows))
+	for i, m := range rows {
+		out[i] = m.Content
+	}
+	return out, nil
+}
+
 // List returns recent active memories for a user.
 func (s *MemoryStore) List(ctx context.Context, userID string, limit int32) ([]sqlcgen.AgentMemory, error) {
 	uid, err := parseUUID(userID)

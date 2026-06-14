@@ -1,0 +1,35 @@
+{{template "base" .}}
+
+{{define "title"}} · Accounts{{end}}
+
+{{define "content"}}
+<div style="margin-bottom:20px;">
+  <h1 class="heading">Accounts</h1>
+</div>
+
+{{if not .Accounts}}
+<div style="color:var(--t2); font-size:13px; padding:20px 0;">No accounts configured.</div>
+{{else}}
+<div class="account-grid">
+  {{range .Accounts}}
+  <div class="account-card">
+    <div class="account-card-rail"></div>
+    <div class="account-card-body">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
+        <div style="min-width:0;">
+          <div class="acct-name">{{.Name}}</div>
+          <div class="acct-inst">{{.Institution}}</div>
+        </div>
+        <span class="acct-type">{{.AccountType}}</span>
+      </div>
+      <div class="acct-id">{{.ExternalAccountID}}</div>
+      {{if not .IsActive}}
+      <div style="margin-top:8px; font-size:9px; font-weight:700; letter-spacing:0.09em;
+                  text-transform:uppercase; color:var(--red);">Inactive</div>
+      {{end}}
+    </div>
+  </div>
+  {{end}}
+</div>
+{{end}}
+{{end}}

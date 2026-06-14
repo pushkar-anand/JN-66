@@ -1,0 +1,135 @@
+{{template "base" .}}
+
+{{define "title"}} · Investments{{end}}
+
+{{define "content"}}
+<div style="margin-bottom:22px;">
+  <h1 class="heading">Investments</h1>
+</div>
+
+{{/* ── Fixed Deposits ── */}}
+<div class="inv-section">
+  <div class="inv-section-head">
+    Fixed Deposits
+    <span class="mono" style="font-size:9px; color:var(--t3);">{{len .FDs}} records</span>
+  </div>
+  {{if not .FDs}}
+  <div style="color:var(--t2); font-size:12px; padding:10px 0;">No fixed deposits.</div>
+  {{else}}
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>FD No.</th>
+          <th class="r">Principal</th>
+          <th class="r">Rate</th>
+          <th class="r">Tenure</th>
+          <th>Start</th>
+          <th>Maturity</th>
+          <th class="r">Expected</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .FDs}}
+        <tr>
+          <td class="mono" style="font-size:11px; color:var(--t2);">
+            {{if .BankFdNumber}}{{deref .BankFdNumber}}{{else}}—{{end}}
+          </td>
+          <td class="mono" style="text-align:right;">{{.PrincipalAmount}}</td>
+          <td class="mono" style="text-align:right; color:var(--accent);">
+            {{printf "%.2f" (bps .InterestRateBps)}}%
+          </td>
+          <td class="mono" style="text-align:right; color:var(--t2);">{{.TenureMonths}}m</td>
+          <td style="font-size:12px; color:var(--t2);">{{pgDate .StartDate}}</td>
+          <td style="font-size:12px; color:var(--t2);">{{pgDate .MaturityDate}}</td>
+          <td class="mono" style="text-align:right;">{{.ExpectedMaturityAmount}}</td>
+          <td>
+            <span class="inv-badge
+              {{if eq (printf "%s" .Status) "active"}}inv-active
+              {{else if eq (printf "%s" .Status) "matured"}}inv-matured
+              {{else}}inv-other{{end}}">
+              {{.Status}}
+            </span>
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+  {{end}}
+</div>
+
+{{/* ── Equities & SGB ── */}}
+{{if .Equity}}
+<div class="inv-section">
+  <div class="inv-section-head">Equities &amp; SGB</div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>Symbol</th>
+          <th>Exchange</th>
+          <th class="r">Qty</th>
+          <th class="r">Avg Price</th>
+          <th class="r">Last Price</th>
+          <th class="r">P&amp;L</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Equity}}
+        <tr>
+          <td style="font-weight:600;">{{.Tradingsymbol}}</td>
+          <td style="font-size:11px; color:var(--t2);">{{.Exchange}}</td>
+          <td class="mono" style="text-align:right; color:var(--t2);">{{.Quantity}}</td>
+          <td class="mono" style="text-align:right;">{{paiseRupees .AvgPricePaise}}</td>
+          <td class="mono" style="text-align:right;">{{paiseRupees .LastPricePaise}}</td>
+          <td class="mono" style="text-align:right;"
+              class="{{if ge .PnlPaise 0}}pnl-pos{{else}}pnl-neg{{end}}">
+            <span style="color:{{if ge .PnlPaise 0}}var(--green){{else}}var(--red){{end}};">
+              {{paiseRupees .PnlPaise}}
+            </span>
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+</div>
+{{end}}
+
+{{/* ── Mutual Funds ── */}}
+{{if .MF}}
+<div class="inv-section">
+  <div class="inv-section-head">Mutual Funds</div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>Fund</th>
+          <th>Folio</th>
+          <th class="r">Avg NAV</th>
+          <th class="r">Current NAV</th>
+          <th class="r">P&amp;L</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .MF}}
+        <tr>
+          <td style="font-weight:600; max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{.Fund}}</td>
+          <td class="mono" style="font-size:11px; color:var(--t2);">{{.Folio}}</td>
+          <td class="mono" style="text-align:right;">{{paiseRupees .AvgNavPaise}}</td>
+          <td class="mono" style="text-align:right;">{{paiseRupees .NavPaise}}</td>
+          <td class="mono" style="text-align:right;">
+            <span style="color:{{if ge .PnlPaise 0}}var(--green){{else}}var(--red){{end}};">
+              {{paiseRupees .PnlPaise}}
+            </span>
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+</div>
+{{end}}
+{{end}}

@@ -1,0 +1,380 @@
+{{define "base"}}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JN-66{{block "title" .}}{{end}}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Syne:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js"></script>
+  <script src="https://unpkg.com/alpinejs@3.14.8/dist/cdn.min.js" defer></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:      #0d0f0e;
+      --s1:      #141716;
+      --s2:      #1a1d1b;
+      --s3:      #202320;
+      --b1:      #222520;
+      --b2:      #2c302b;
+      --b3:      #3a3e39;
+      --t1:      #c4c9c4;
+      --t2:      #647064;
+      --t3:      #3c403c;
+      --accent:  #c9a43c;
+      --a-dim:   rgba(201,164,60,0.10);
+      --red:     #d45c52;
+      --green:   #4da472;
+      --blue:    #5a8cbf;
+    }
+    html { font-family: 'Syne', sans-serif; font-size: 13px; }
+    body { background: var(--bg); color: var(--t1); line-height: 1.55; min-height: 100vh; }
+    [x-cloak] { display: none !important; }
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; }
+    input, select { font-family: inherit; }
+
+    /* ── Navigation ── */
+    .nav {
+      background: var(--s1);
+      border-bottom: 1px solid var(--b1);
+      height: 50px;
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-logo {
+      font-family: 'Fraunces', serif;
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: -0.03em;
+      margin-right: 24px;
+      flex-shrink: 0;
+    }
+    .nav-item {
+      height: 50px;
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--t3);
+      border-bottom: 2px solid transparent;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .nav-item:hover { color: var(--t2); }
+    .nav-item.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .nav-end {
+      margin-left: auto;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--t3);
+      transition: color 0.15s;
+    }
+    .nav-end:hover { color: var(--t2); }
+
+    /* ── Layout ── */
+    .page-main { padding: 24px 24px; max-width: 1800px; margin: 0 auto; }
+
+    /* ── Typography ── */
+    .heading {
+      font-family: 'Fraunces', serif;
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--t1);
+      letter-spacing: -0.025em;
+    }
+    .label-xs {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--t3);
+    }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* ── Table shell ── */
+    .tbl-wrap {
+      background: var(--s1);
+      border: 1px solid var(--b1);
+      border-radius: 3px;
+      overflow: hidden;
+      overflow-x: auto;
+    }
+    .tbl { width: 100%; border-collapse: collapse; }
+    .tbl thead th {
+      font-family: 'Syne', sans-serif;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--t3);
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--b1);
+      background: var(--s1);
+      text-align: left;
+      white-space: nowrap;
+    }
+    .tbl thead th.r { text-align: right; }
+    .tbl tbody td {
+      padding: 7px 12px;
+      border-bottom: 1px solid var(--b1);
+      vertical-align: middle;
+    }
+    .tbl tbody tr:last-child td { border-bottom: none; }
+    .tbl tbody tr { border-left: 2px solid transparent; transition: background 0.1s; }
+    .tbl tbody tr:hover { background: var(--s2); border-left-color: var(--accent); }
+
+    /* ── Status badges ── */
+    .badge {
+      display: inline-block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 2px 5px;
+      border-radius: 2px;
+      border: 1px solid transparent;
+    }
+    .badge-manual  { background: rgba(201,164,60,0.12);  color: var(--accent); border-color: rgba(201,164,60,0.30); }
+    .badge-auto    { background: rgba(77,164,114,0.12);  color: var(--green);  border-color: rgba(77,164,114,0.30); }
+    .badge-pending { background: rgba(100,112,100,0.12); color: var(--t2);     border-color: var(--b2); }
+
+    /* ── Filter bar ── */
+    .filter-bar {
+      background: var(--s1);
+      border: 1px solid var(--b1);
+      border-radius: 3px;
+      padding: 10px 14px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: flex-end;
+      margin-bottom: 12px;
+    }
+    .filter-group { display: flex; flex-direction: column; gap: 4px; }
+    .filter-group select,
+    .filter-group input[type="date"] {
+      background: var(--s2);
+      border: 1px solid var(--b2);
+      border-radius: 2px;
+      color: var(--t1);
+      font-family: 'Syne', sans-serif;
+      font-size: 12px;
+      padding: 5px 8px;
+      outline: none;
+      transition: border-color 0.15s;
+      cursor: pointer;
+    }
+    .filter-group select:focus,
+    .filter-group input[type="date"]:focus { border-color: var(--accent); }
+    .filter-group select option { background: var(--s2); color: var(--t1); }
+
+    /* ── Inline editing ── */
+    .inline-select {
+      background: transparent;
+      border: none;
+      color: var(--t1);
+      font-family: 'Syne', sans-serif;
+      font-size: 12px;
+      cursor: pointer;
+      outline: none;
+      padding: 0;
+      width: 100%;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    .inline-select option { background: var(--s2); color: var(--t1); }
+    .inline-select:focus { color: var(--accent); }
+
+    .inline-input {
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid transparent;
+      color: var(--t2);
+      font-family: 'Syne', sans-serif;
+      font-size: 12px;
+      padding: 1px 0;
+      width: 100%;
+      min-width: 100px;
+      outline: none;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .inline-input::placeholder { color: var(--t3); }
+    .inline-input:focus { border-bottom-color: var(--accent); color: var(--t1); }
+
+    /* ── Label chips ── */
+    .chips { display: flex; flex-wrap: wrap; gap: 3px; align-items: center; }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      background: rgba(100,112,100,0.14);
+      border: 1px solid var(--b2);
+      color: var(--t2);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      border-radius: 2px;
+      padding: 2px 5px;
+    }
+    .chip-del {
+      background: none;
+      border: none;
+      color: var(--t3);
+      cursor: pointer;
+      font-size: 12px;
+      line-height: 1;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      transition: color 0.1s;
+    }
+    .chip-del:hover { color: var(--red); }
+    .chip-add {
+      background: none;
+      border: 1px dashed var(--b3);
+      color: var(--t3);
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      border-radius: 2px;
+      padding: 2px 5px;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .chip-add:hover { color: var(--t2); border-color: var(--b3); }
+
+    /* ── Buttons ── */
+    .btn {
+      font-family: 'Syne', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      border-radius: 2px;
+      border: none;
+      padding: 6px 13px;
+      cursor: pointer;
+      transition: opacity 0.15s;
+      display: inline-block;
+    }
+    .btn-accent { background: var(--accent); color: var(--bg); }
+    .btn-accent:hover { opacity: 0.85; }
+    .btn-ghost { background: none; color: var(--t2); border: 1px solid var(--b2); }
+    .btn-ghost:hover { color: var(--t1); border-color: var(--b3); }
+
+    /* ── Pagination ── */
+    .pagination { display: flex; align-items: center; gap: 16px; margin-top: 12px; }
+    .page-link { font-size: 10px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--accent); transition: opacity 0.15s; }
+    .page-link:hover { opacity: 0.7; }
+    .page-info { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--t3); }
+
+    /* ── Account cards ── */
+    .account-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+    .account-card {
+      background: var(--s1);
+      border: 1px solid var(--b1);
+      border-radius: 3px;
+      padding: 0;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.15s;
+    }
+    .account-card:hover { border-color: var(--b3); }
+    .account-card-rail {
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      background: var(--accent);
+      opacity: 0.45;
+    }
+    .account-card-body { padding: 14px 14px 14px 17px; }
+    .acct-name { font-size: 14px; font-weight: 600; color: var(--t1); line-height: 1.3; }
+    .acct-inst { font-size: 11px; color: var(--t2); margin-top: 2px; }
+    .acct-type {
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      background: var(--s2);
+      border: 1px solid var(--b2);
+      color: var(--t2);
+      border-radius: 2px;
+      padding: 2px 6px;
+      white-space: nowrap;
+    }
+    .acct-id {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--t3);
+      margin-top: 10px;
+    }
+
+    /* ── Investments ── */
+    .inv-section { margin-bottom: 28px; }
+    .inv-section-head {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      color: var(--t3);
+      padding-bottom: 9px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid var(--b1);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .inv-badge {
+      display: inline-block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 2px 5px;
+      border-radius: 2px;
+      border: 1px solid transparent;
+    }
+    .inv-active  { background: rgba(77,164,114,0.12);  color: var(--green);  border-color: rgba(77,164,114,0.28); }
+    .inv-matured { background: rgba(90,140,191,0.12);  color: var(--blue);   border-color: rgba(90,140,191,0.28); }
+    .inv-other   { background: rgba(100,112,100,0.12); color: var(--t2);     border-color: var(--b2); }
+
+    /* ── PnL colours ── */
+    .pnl-pos { color: var(--green); }
+    .pnl-neg { color: var(--red); }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <a href="/ui/transactions" class="nav-logo">JN—66</a>
+    <a href="/ui/transactions" class="nav-item" id="nav-transactions">Transactions</a>
+    <a href="/ui/accounts"     class="nav-item" id="nav-accounts">Accounts</a>
+    <a href="/ui/investments"  class="nav-item" id="nav-investments">Investments</a>
+    <a href="/ui/logout" class="nav-end">Logout</a>
+  </nav>
+  <div class="page-main">
+    {{block "content" .}}{{end}}
+  </div>
+  <script>
+    (function(){
+      var p = window.location.pathname;
+      [['transactions','/ui/transactions'],['accounts','/ui/accounts'],['investments','/ui/investments']].forEach(function(x){
+        if (p.startsWith(x[1])) { var el = document.getElementById('nav-'+x[0]); if (el) el.classList.add('active'); }
+      });
+    })();
+  </script>
+</body>
+</html>{{end}}
