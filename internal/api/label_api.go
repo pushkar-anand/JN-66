@@ -11,7 +11,7 @@ import (
 )
 
 type addLabelRequest struct {
-	Name string `json:"name" validate:"required"`
+	Name string `json:"name"`
 }
 
 // handleAddLabel handles POST /api/transactions/{id}/labels.
@@ -41,7 +41,7 @@ func (s *Server) handleAddLabel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if req.Name == "" {
-		http.Error(w, `{"error":"name required"}`, http.StatusBadRequest)
+		http.Error(w, "name required", http.StatusBadRequest)
 		return
 	}
 

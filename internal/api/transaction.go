@@ -38,6 +38,7 @@ type labelStoreAPI interface {
 	AddToTransaction(ctx context.Context, txnID, labelID string) error
 	RemoveFromTransaction(ctx context.Context, txnID, labelID string) error
 	ListForTransaction(ctx context.Context, txnID uuid.UUID) ([]sqlcgen.Label, error)
+	ListForTransactions(ctx context.Context, txnIDs []uuid.UUID) (map[uuid.UUID][]sqlcgen.Label, error)
 }
 
 // memStoreAPI is the memory-store surface needed by the transaction handlers.
@@ -116,13 +117,13 @@ func (s *Server) handleListTransactions(w http.ResponseWriter, r *http.Request) 
 	}
 
 	q := r.URL.Query()
-	page, _ := strconv.Atoi(q.Get("page"))
-	if page < 1 {
-		page = 1
+	page := 1
+	if p, err := strconv.Atoi(q.Get("page")); err == nil {
+		page = min(max(p, 1), 100_000) // cap offset to avoid int32 overflow
 	}
-	limit, _ := strconv.Atoi(q.Get("limit"))
-	if limit < 1 || limit > 200 {
-		limit = 50
+	limit := 50
+	if l, err := strconv.Atoi(q.Get("limit")); err == nil {
+		limit = min(max(l, 1), 200) // [1, 200] always fits in int32
 	}
 
 	params := store.ListTransactionsParams{
@@ -169,7 +170,7 @@ func (s *Server) handleListTransactions(w http.ResponseWriter, r *http.Request) 
 				slug = &sl
 			}
 		}
-		txns[i] = toTxnResponse(row, slug, nil)
+		txns[i] = toTxnResponse(row, slug, []string{})
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -221,6 +222,19 @@ func (s *Server) handleGetTransaction(w http.ResponseWriter, r *http.Request) {
 type patchEnrichmentRequest struct {
 	CategorySlug *string `json:"category_slug"`
 	Notes        *string `json:"notes"`
+}
+
+// saveTaggingHint persists a tagging_hint memory when a user manually changes a category.
+// oldSlug may be empty (transaction previously uncategorised).
+func saveTaggingHint(ctx context.Context, memStore memStoreAPI, userID, counterparty, description, oldSlug, newSlug string) {
+	hint := fmt.Sprintf(
+		"Counterparty '%s' (bank description: '%s') → category '%s'. User manually corrected from '%s'.",
+		counterparty, description, newSlug, oldSlug,
+	)
+	uid := userID
+	if _, err := memStore.Save(ctx, &uid, hint, sqlcgen.MemoryTypeEnumTaggingHint, []string{counterparty, newSlug}); err != nil {
+		slog.WarnContext(ctx, "save tagging hint", slog.String("counterparty", counterparty), slog.String("new_slug", newSlug))
+	}
 }
 
 // handlePatchEnrichment handles PATCH /api/transactions/{id}/enrichment.
@@ -282,22 +296,14 @@ func (s *Server) handlePatchEnrichment(w http.ResponseWriter, r *http.Request) {
 		if txn.CategoryID.Valid {
 			cats, _ := s.txnCfg.CatStore.List(r.Context())
 			for _, c := range cats {
-				if c.ID.String() == uuid.UUID(txn.CategoryID.Bytes).String() {
+				if c.ID == uuid.UUID(txn.CategoryID.Bytes) {
 					oldSlug = c.Slug
 					break
 				}
 			}
 		}
 		if oldSlug != newSlug {
-			hint := fmt.Sprintf(
-				"Counterparty '%s' (bank description: '%s') → category '%s'. User manually corrected from '%s'.",
-				*txn.CounterpartyIdentifier, txn.Description, newSlug, oldSlug,
-			)
-			tags := []string{*txn.CounterpartyIdentifier, newSlug}
-			uid := userID
-			if _, err := s.txnCfg.MemStore.Save(r.Context(), &uid, hint, sqlcgen.MemoryTypeEnumTaggingHint, tags); err != nil {
-				slog.WarnContext(r.Context(), "failed to save tagging hint memory", bwglogger.Error(err))
-			}
+			saveTaggingHint(r.Context(), s.txnCfg.MemStore, userID, *txn.CounterpartyIdentifier, txn.Description, oldSlug, newSlug)
 		}
 	}
 

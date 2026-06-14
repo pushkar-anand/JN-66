@@ -857,6 +857,21 @@ func (mr *MockQuerierMockRecorder) ListTransactionLabels(ctx, transactionID any)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListTransactionLabels", reflect.TypeOf((*MockQuerier)(nil).ListTransactionLabels), ctx, transactionID)
 }
 
+// ListLabelsForTransactions mocks base method.
+func (m *MockQuerier) ListLabelsForTransactions(ctx context.Context, transactionIds []uuid.UUID) ([]sqlcgen.ListLabelsForTransactionsRow, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListLabelsForTransactions", ctx, transactionIds)
+	ret0, _ := ret[0].([]sqlcgen.ListLabelsForTransactionsRow)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListLabelsForTransactions indicates an expected call of ListLabelsForTransactions.
+func (mr *MockQuerierMockRecorder) ListLabelsForTransactions(ctx, transactionIds any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListLabelsForTransactions", reflect.TypeOf((*MockQuerier)(nil).ListLabelsForTransactions), ctx, transactionIds)
+}
+
 // ListTransactions mocks base method.
 func (m *MockQuerier) ListTransactions(ctx context.Context, arg sqlcgen.ListTransactionsParams) ([]sqlcgen.VTransaction, error) {
 	m.ctrl.T.Helper()
@@ -975,6 +990,36 @@ func (m *MockQuerier) RecallMemoriesByTags(ctx context.Context, arg sqlcgen.Reca
 func (mr *MockQuerierMockRecorder) RecallMemoriesByTags(ctx, arg any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecallMemoriesByTags", reflect.TypeOf((*MockQuerier)(nil).RecallMemoriesByTags), ctx, arg)
+}
+
+// RecallTaggingHintsByEmbedding mocks base method.
+func (m *MockQuerier) RecallTaggingHintsByEmbedding(ctx context.Context, arg sqlcgen.RecallTaggingHintsByEmbeddingParams) ([]sqlcgen.AgentMemory, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RecallTaggingHintsByEmbedding", ctx, arg)
+	ret0, _ := ret[0].([]sqlcgen.AgentMemory)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RecallTaggingHintsByEmbedding indicates an expected call of RecallTaggingHintsByEmbedding.
+func (mr *MockQuerierMockRecorder) RecallTaggingHintsByEmbedding(ctx, arg any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecallTaggingHintsByEmbedding", reflect.TypeOf((*MockQuerier)(nil).RecallTaggingHintsByEmbedding), ctx, arg)
+}
+
+// RecallTaggingHintsByTags mocks base method.
+func (m *MockQuerier) RecallTaggingHintsByTags(ctx context.Context, arg sqlcgen.RecallTaggingHintsByTagsParams) ([]sqlcgen.AgentMemory, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RecallTaggingHintsByTags", ctx, arg)
+	ret0, _ := ret[0].([]sqlcgen.AgentMemory)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RecallTaggingHintsByTags indicates an expected call of RecallTaggingHintsByTags.
+func (mr *MockQuerierMockRecorder) RecallTaggingHintsByTags(ctx, arg any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecallTaggingHintsByTags", reflect.TypeOf((*MockQuerier)(nil).RecallTaggingHintsByTags), ctx, arg)
 }
 
 // RemoveTransactionLabel mocks base method.

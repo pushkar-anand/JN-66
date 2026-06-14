@@ -213,3 +213,108 @@ func (q *Queries) RecallMemoriesByTags(ctx context.Context, arg RecallMemoriesBy
 	}
 	return items, nil
 }
+
+const recallTaggingHintsByEmbedding = `-- name: RecallTaggingHintsByEmbedding :many
+SELECT id, user_id, content, memory_type, detection_source, tags, embedding, expires_at, is_active, created_at, updated_at FROM agent_memories
+WHERE is_active = TRUE
+  AND (expires_at IS NULL OR expires_at > NOW())
+  AND (user_id = $1 OR user_id IS NULL)
+  AND memory_type = 'tagging_hint'
+  AND embedding IS NOT NULL
+  AND embedding <=> $2 < $3::float8
+ORDER BY embedding <=> $2
+LIMIT $4
+`
+
+type RecallTaggingHintsByEmbeddingParams struct {
+	UserID      pgtype.UUID      `json:"user_id"`
+	Embedding   *pgvector.Vector `json:"embedding"`
+	MaxDistance float64          `json:"max_distance"`
+	PageLimit   int32            `json:"page_limit"`
+}
+
+func (q *Queries) RecallTaggingHintsByEmbedding(ctx context.Context, arg RecallTaggingHintsByEmbeddingParams) ([]AgentMemory, error) {
+	rows, err := q.db.Query(ctx, recallTaggingHintsByEmbedding,
+		arg.UserID,
+		arg.Embedding,
+		arg.MaxDistance,
+		arg.PageLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AgentMemory
+	for rows.Next() {
+		var i AgentMemory
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Content,
+			&i.MemoryType,
+			&i.DetectionSource,
+			&i.Tags,
+			&i.Embedding,
+			&i.ExpiresAt,
+			&i.IsActive,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const recallTaggingHintsByTags = `-- name: RecallTaggingHintsByTags :many
+SELECT id, user_id, content, memory_type, detection_source, tags, embedding, expires_at, is_active, created_at, updated_at FROM agent_memories
+WHERE is_active = TRUE
+  AND (expires_at IS NULL OR expires_at > NOW())
+  AND (user_id = $1 OR user_id IS NULL)
+  AND memory_type = 'tagging_hint'
+  AND (tags = '{}' OR tags && $2)
+ORDER BY created_at DESC
+LIMIT $3
+`
+
+type RecallTaggingHintsByTagsParams struct {
+	UserID    pgtype.UUID `json:"user_id"`
+	Tags      []string    `json:"tags"`
+	PageLimit int32       `json:"page_limit"`
+}
+
+func (q *Queries) RecallTaggingHintsByTags(ctx context.Context, arg RecallTaggingHintsByTagsParams) ([]AgentMemory, error) {
+	rows, err := q.db.Query(ctx, recallTaggingHintsByTags, arg.UserID, arg.Tags, arg.PageLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AgentMemory
+	for rows.Next() {
+		var i AgentMemory
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Content,
+			&i.MemoryType,
+			&i.DetectionSource,
+			&i.Tags,
+			&i.Embedding,
+			&i.ExpiresAt,
+			&i.IsActive,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

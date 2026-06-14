@@ -141,7 +141,7 @@ func (s *Server) uiSessionMiddleware(next http.Handler) http.Handler {
 		prefix := apikey.Prefix(token)
 		user, err := s.uiCfg.UserStore.GetByAPIKeyPrefix(r.Context(), prefix)
 		if err != nil || !apikey.Verify(token, user.ApiKeyHash) {
-			http.SetCookie(w, &http.Cookie{Name: uiSessionCookie, MaxAge: -1, Path: "/"})
+			http.SetCookie(w, &http.Cookie{Name: uiSessionCookie, MaxAge: -1, HttpOnly: true, Secure: true, Path: "/"})
 			http.Redirect(w, r, "/ui/login", http.StatusSeeOther)
 			return
 		}
@@ -175,6 +175,7 @@ func (s *Server) handleUILoginPost(w http.ResponseWriter, r *http.Request) {
 		Name:     uiSessionCookie,
 		Value:    token,
 		HttpOnly: true,
+		Secure:   true,
 		Path:     "/",
 		SameSite: http.SameSiteStrictMode,
 		MaxAge:   86400 * 30, // 30 days
@@ -184,7 +185,7 @@ func (s *Server) handleUILoginPost(w http.ResponseWriter, r *http.Request) {
 
 // handleUILogout handles GET /ui/logout — clears session cookie.
 func (s *Server) handleUILogout(w http.ResponseWriter, r *http.Request) {
-	http.SetCookie(w, &http.Cookie{Name: uiSessionCookie, MaxAge: -1, Path: "/"})
+	http.SetCookie(w, &http.Cookie{Name: uiSessionCookie, MaxAge: -1, HttpOnly: true, Secure: true, Path: "/"})
 	http.Redirect(w, r, "/ui/login", http.StatusSeeOther)
 }
 
@@ -312,10 +313,16 @@ func (s *Server) handleUITransactions(w http.ResponseWriter, r *http.Request) {
 		catMap[c.ID.String()] = c
 	}
 
+	// Batch-fetch labels for all transactions in one query instead of N+1.
+	txnIDs := make([]uuid.UUID, len(rows))
+	for i, row := range rows {
+		txnIDs[i] = row.ID
+	}
+	labelMap, _ := s.txnCfg.LabelStore.ListForTransactions(r.Context(), txnIDs)
+
 	txnRows := make([]uiTxnRow, len(rows))
 	for i, row := range rows {
-		labels, _ := s.txnCfg.LabelStore.ListForTransaction(r.Context(), row.ID)
-		txnRows[i] = buildUITxnRow(row, catMap, labels)
+		txnRows[i] = buildUITxnRow(row, catMap, labelMap[row.ID])
 	}
 
 	data := uiTransactionsData{
@@ -360,11 +367,14 @@ func (s *Server) handleUIEnrich(w http.ResponseWriter, r *http.Request) {
 	var newSlug string
 	if catSlug != "" {
 		cat, err := s.txnCfg.CatStore.GetBySlug(r.Context(), catSlug)
-		if err == nil {
-			id := cat.ID.String()
-			ep.CategoryID = &id
-			newSlug = cat.Slug
+		if err != nil {
+			slog.WarnContext(r.Context(), "ui: unknown category slug", slog.String("slug", catSlug))
+			http.Error(w, "unknown category", http.StatusBadRequest)
+			return
 		}
+		id := cat.ID.String()
+		ep.CategoryID = &id
+		newSlug = cat.Slug
 	}
 
 	if err := s.txnCfg.TxnStore.UpdateEnrichment(r.Context(), ep); err != nil {
@@ -373,29 +383,20 @@ func (s *Server) handleUIEnrich(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Auto-save tagging hint memory when category changed.
+	// Auto-save tagging hint when category changed and counterparty is known.
 	if newSlug != "" && txn.CounterpartyIdentifier != nil && s.txnCfg.MemStore != nil {
 		oldSlug := ""
 		if txn.CategoryID.Valid {
 			cats, _ := s.txnCfg.CatStore.List(r.Context())
 			for _, c := range cats {
-				if c.ID.String() == uuidStr(txn.CategoryID) {
+				if c.ID == uuid.UUID(txn.CategoryID.Bytes) {
 					oldSlug = c.Slug
 					break
 				}
 			}
 		}
 		if oldSlug != newSlug {
-			hint := "Counterparty '" + *txn.CounterpartyIdentifier +
-				"' (bank description: '" + txn.Description +
-				"') → category '" + newSlug +
-				"'. User manually corrected from '" + oldSlug + "'."
-			uid := userID
-			if _, err := s.txnCfg.MemStore.Save(r.Context(), &uid, hint,
-				sqlcgen.MemoryTypeEnumTaggingHint, []string{*txn.CounterpartyIdentifier, newSlug},
-			); err != nil {
-				slog.WarnContext(r.Context(), "ui: save tagging hint", logger.Error(err))
-			}
+			saveTaggingHint(r.Context(), s.txnCfg.MemStore, userID, *txn.CounterpartyIdentifier, txn.Description, oldSlug, newSlug)
 		}
 	}
 

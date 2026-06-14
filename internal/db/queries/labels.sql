@@ -21,3 +21,9 @@ DELETE FROM transaction_labels WHERE transaction_id = @transaction_id AND label_
 SELECT l.* FROM labels l
 JOIN transaction_labels tl ON tl.label_id = l.id
 WHERE tl.transaction_id = @transaction_id;
+
+-- name: ListLabelsForTransactions :many
+SELECT l.id, l.user_id, l.name, l.slug, l.color, l.created_at, tl.transaction_id
+FROM labels l
+JOIN transaction_labels tl ON tl.label_id = l.id
+WHERE tl.transaction_id = ANY(@transaction_ids::uuid[]);
