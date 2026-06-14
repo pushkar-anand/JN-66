@@ -110,13 +110,15 @@ func New(listen string, handler channel.MessageHandler, userStore userLookup, db
 	}
 	if s.uiCfg != nil {
 		r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			http.Redirect(w, r, "/ui/transactions", http.StatusSeeOther)
+			http.Redirect(w, r, "/ui/chat", http.StatusSeeOther)
 		}).Methods(http.MethodGet)
 		r.HandleFunc("/ui/login", s.handleUILogin).Methods(http.MethodGet)
 		r.HandleFunc("/ui/login", s.handleUILoginPost).Methods(http.MethodPost)
 
 		ui := r.NewRoute().Subrouter()
 		ui.Use(s.uiSessionMiddleware)
+		ui.HandleFunc("/ui/chat", s.handleUIChat).Methods(http.MethodGet)
+		ui.HandleFunc("/ui/chat/send", s.handleUIChatSend).Methods(http.MethodPost)
 		ui.HandleFunc("/ui/logout", s.handleUILogout).Methods(http.MethodGet)
 		ui.HandleFunc("/ui/transactions", s.handleUITransactions).Methods(http.MethodGet)
 		ui.HandleFunc("/ui/transactions/{id}/enrich", s.handleUIEnrich).Methods(http.MethodPost)

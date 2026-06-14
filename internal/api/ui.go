@@ -13,6 +13,8 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/pushkar-anand/build-with-go/logger"
 
+	"github.com/pushkar-anand/agentrig/channel"
+
 	"github.com/pushkaranand/finagent/internal/apikey"
 	"github.com/pushkaranand/finagent/internal/model"
 	sqlcgen "github.com/pushkaranand/finagent/internal/sqlc"
@@ -58,6 +60,7 @@ type UIConfig struct {
 // their {{define "content"}} blocks do not clobber each other.
 var (
 	tmplLogin *template.Template // standalone login page
+	tmplChat  *template.Template // chat page + chat_bubble partial
 	tmplTxn   *template.Template // transactions page + partials (reused for HTMX responses)
 	tmplAcct  *template.Template // accounts page
 	tmplInv   *template.Template // investments page
@@ -121,6 +124,7 @@ func init() {
 		c := template.Must(base.Clone())
 		return template.Must(c.ParseFS(uiTemplates, "ui/templates/"+filename))
 	}
+	tmplChat = clonePage("chat.html")
 	tmplTxn = clonePage("transactions.html")
 	tmplAcct = clonePage("accounts.html")
 	tmplInv = clonePage("investments.html")
@@ -180,13 +184,62 @@ func (s *Server) handleUILoginPost(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteStrictMode,
 		MaxAge:   86400 * 30, // 30 days
 	})
-	http.Redirect(w, r, "/ui/transactions", http.StatusSeeOther)
+	http.Redirect(w, r, "/ui/chat", http.StatusSeeOther)
 }
 
 // handleUILogout handles GET /ui/logout — clears session cookie.
 func (s *Server) handleUILogout(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{Name: uiSessionCookie, MaxAge: -1, HttpOnly: true, Secure: true, Path: "/"})
 	http.Redirect(w, r, "/ui/login", http.StatusSeeOther)
+}
+
+// handleUIChat handles GET /ui/chat — the chat homepage.
+func (s *Server) handleUIChat(w http.ResponseWriter, r *http.Request) {
+	_ = tmplChat.ExecuteTemplate(w, "chat.html", nil)
+}
+
+// handleUIChatSend handles POST /ui/chat/send — HTMX endpoint that proxies to the agent
+// and returns a chat bubble HTML fragment (user message + agent reply).
+func (s *Server) handleUIChatSend(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "bad form", http.StatusBadRequest)
+		return
+	}
+	text := r.FormValue("text")
+	if text == "" {
+		http.Error(w, "text required", http.StatusBadRequest)
+		return
+	}
+	sessionID := r.FormValue("session_id")
+	if sessionID == "" {
+		sessionID = uuid.New().String()
+	}
+	userID := UserIDFromContext(r.Context())
+
+	ctx, cancel := context.WithTimeout(r.Context(), 4*time.Minute)
+	defer cancel()
+
+	msg := channel.Message{
+		ID:        uuid.New().String(),
+		SessionID: sessionID,
+		UserID:    userID,
+		Text:      text,
+		Timestamp: time.Now(),
+	}
+	resp, err := s.handler(ctx, msg)
+	if err != nil {
+		slog.ErrorContext(r.Context(), "ui: chat handler", logger.Error(err))
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_ = tmplChat.ExecuteTemplate(w, "chat_bubble.html", struct {
+		UserText  string
+		AgentText string
+		Markdown  bool
+	}{UserText: text, AgentText: resp.Text, Markdown: resp.Markdown})
 }
 
 // uiTransactionsData is the template data for the transactions page.

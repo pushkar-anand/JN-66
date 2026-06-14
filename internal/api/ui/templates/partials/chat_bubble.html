@@ -1,0 +1,9 @@
+{{define "chat_bubble.html"}}
+<div class="msg msg-user">
+  <div class="msg-body">{{.UserText}}</div>
+</div>
+<div class="msg msg-agent">
+  <span class="msg-sender">JN—66</span>
+  <div class="msg-body{{if .Markdown}} msg-markdown{{end}}">{{.AgentText}}</div>
+</div>
+{{end}}

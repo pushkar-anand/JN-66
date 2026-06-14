@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Syne:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js"></script>
   <script src="https://unpkg.com/alpinejs@3.14.8/dist/cdn.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -359,7 +360,8 @@
 </head>
 <body>
   <nav class="nav">
-    <a href="/ui/transactions" class="nav-logo">JN—66</a>
+    <a href="/ui/chat" class="nav-logo">JN—66</a>
+    <a href="/ui/chat"         class="nav-item" id="nav-chat">Chat</a>
     <a href="/ui/transactions" class="nav-item" id="nav-transactions">Transactions</a>
     <a href="/ui/accounts"     class="nav-item" id="nav-accounts">Accounts</a>
     <a href="/ui/investments"  class="nav-item" id="nav-investments">Investments</a>
@@ -371,7 +373,7 @@
   <script>
     (function(){
       var p = window.location.pathname;
-      [['transactions','/ui/transactions'],['accounts','/ui/accounts'],['investments','/ui/investments']].forEach(function(x){
+      [['chat','/ui/chat'],['transactions','/ui/transactions'],['accounts','/ui/accounts'],['investments','/ui/investments']].forEach(function(x){
         if (p.startsWith(x[1])) { var el = document.getElementById('nav-'+x[0]); if (el) el.classList.add('active'); }
       });
     })();

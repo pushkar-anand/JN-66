@@ -1,0 +1,286 @@
+{{template "base" .}}
+
+{{define "title"}} · Chat{{end}}
+{{define "content"}}
+<style>
+  /* Chat page overrides the page-main box model */
+  body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+  .page-main {
+    flex: 1;
+    padding: 0;
+    max-width: none;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .chat-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    max-width: 860px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 0 16px;
+  }
+
+  /* ── Messages ── */
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 28px 0 20px;
+    scroll-behavior: smooth;
+  }
+  .chat-messages::-webkit-scrollbar { width: 4px; }
+  .chat-messages::-webkit-scrollbar-track { background: transparent; }
+  .chat-messages::-webkit-scrollbar-thumb { background: var(--b3); border-radius: 2px; }
+
+  .msg { display: flex; flex-direction: column; gap: 5px; max-width: 80%; }
+  .msg-agent { align-self: flex-start; }
+  .msg-user  { align-self: flex-end; }
+
+  .msg-sender {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    padding-left: 2px;
+  }
+
+  .msg-body {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    line-height: 1.6;
+    padding: 10px 14px;
+    border-radius: 3px;
+  }
+  .msg-agent .msg-body {
+    background: var(--s1);
+    border: 1px solid var(--b1);
+    color: var(--t1);
+    border-top-left-radius: 0;
+  }
+  .msg-user .msg-body {
+    background: var(--a-dim);
+    border: 1px solid rgba(201,164,60,0.22);
+    color: var(--t1);
+    border-top-right-radius: 0;
+  }
+
+  /* Markdown content inside agent messages */
+  .msg-markdown p  { margin-bottom: 0.6em; }
+  .msg-markdown p:last-child { margin-bottom: 0; }
+  .msg-markdown ul,
+  .msg-markdown ol { padding-left: 1.3em; margin-bottom: 0.6em; }
+  .msg-markdown li { margin-bottom: 0.2em; }
+  .msg-markdown code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    background: var(--s3);
+    border: 1px solid var(--b2);
+    border-radius: 2px;
+    padding: 1px 4px;
+  }
+  .msg-markdown pre {
+    background: var(--s3);
+    border: 1px solid var(--b2);
+    border-radius: 3px;
+    padding: 10px 12px;
+    overflow-x: auto;
+    margin-bottom: 0.6em;
+  }
+  .msg-markdown pre code { background: none; border: none; padding: 0; }
+  .msg-markdown strong { color: var(--t1); font-weight: 600; }
+  .msg-markdown table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    margin-bottom: 0.6em;
+  }
+  .msg-markdown th {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--t3);
+    border-bottom: 1px solid var(--b2);
+    padding: 5px 8px;
+    text-align: left;
+  }
+  .msg-markdown td {
+    padding: 5px 8px;
+    border-bottom: 1px solid var(--b1);
+    color: var(--t1);
+  }
+
+  /* ── Thinking dots ── */
+  .thinking-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    padding: 10px 14px;
+    align-self: flex-start;
+  }
+  .t-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+    opacity: 0.3;
+    animation: tdot 1.2s ease-in-out infinite;
+  }
+  .t-dot:nth-child(2) { animation-delay: 0.2s; }
+  .t-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes tdot {
+    0%, 80%, 100% { opacity: 0.2; transform: scale(0.9); }
+    40%            { opacity: 0.9; transform: scale(1.15); }
+  }
+
+  /* ── Input bar ── */
+  .chat-input-bar {
+    padding: 14px 0 18px;
+    border-top: 1px solid var(--b1);
+    flex-shrink: 0;
+  }
+  .chat-input-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    background: var(--s1);
+    border: 1px solid var(--b2);
+    border-radius: 3px;
+    padding: 8px 10px 8px 14px;
+    transition: border-color 0.15s;
+  }
+  .chat-input-row:focus-within { border-color: var(--accent); }
+  .chat-textarea {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--t1);
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    resize: none;
+    outline: none;
+    min-height: 22px;
+    max-height: 120px;
+    overflow-y: auto;
+  }
+  .chat-textarea::placeholder { color: var(--t3); }
+  .chat-send-btn {
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: 2px;
+    font-family: 'Syne', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.15s;
+    flex-shrink: 0;
+  }
+  .chat-send-btn:hover   { opacity: 0.85; }
+  .chat-send-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .chat-hint {
+    font-size: 10px;
+    color: var(--t3);
+    margin-top: 6px;
+    padding-left: 2px;
+  }
+</style>
+
+<div class="chat-wrap">
+  <div class="chat-messages" id="chat-messages">
+    <div class="msg msg-agent">
+      <span class="msg-sender">JN—66</span>
+      <div class="msg-body">Hello. Ask me anything about your finances — spending, accounts, investments, or patterns over time.</div>
+    </div>
+  </div>
+
+  <div id="thinking-row" class="thinking-row htmx-indicator">
+    <div class="t-dot"></div>
+    <div class="t-dot"></div>
+    <div class="t-dot"></div>
+  </div>
+
+  <div class="chat-input-bar">
+    <form
+      id="chat-form"
+      hx-post="/ui/chat/send"
+      hx-target="#chat-messages"
+      hx-swap="beforeend"
+      hx-indicator="#thinking-row"
+      hx-disabled-elt="#chat-send-btn"
+    >
+      <input type="hidden" name="session_id" id="chat-session-id">
+      <div class="chat-input-row">
+        <textarea
+          id="chat-input"
+          class="chat-textarea"
+          name="text"
+          placeholder="Ask about your finances…"
+          rows="1"
+        ></textarea>
+        <button id="chat-send-btn" class="chat-send-btn" type="submit">Send</button>
+      </div>
+    </form>
+    <div class="chat-hint">Enter to send · Shift+Enter for new line</div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var form   = document.getElementById('chat-form');
+  var input  = document.getElementById('chat-input');
+  var sidEl  = document.getElementById('chat-session-id');
+  var msgs   = document.getElementById('chat-messages');
+
+  // Generate a stable session ID for this page load.
+  sidEl.value = (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2));
+
+  // Auto-resize textarea.
+  input.addEventListener('input', function () {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+  });
+
+  // Enter = submit, Shift+Enter = newline.
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (input.value.trim()) form.requestSubmit();
+    }
+  });
+
+  // Clear textarea after HTMX sends successfully.
+  form.addEventListener('htmx:afterRequest', function (e) {
+    if (e.detail.successful) {
+      input.value = '';
+      input.style.height = 'auto';
+    }
+  });
+
+  // Render markdown + scroll after new content settles.
+  document.addEventListener('htmx:afterSettle', function () {
+    document.querySelectorAll('.msg-markdown:not([data-rendered])').forEach(function (el) {
+      if (typeof marked !== 'undefined') {
+        el.innerHTML = marked.parse(el.textContent || el.innerText);
+      }
+      el.setAttribute('data-rendered', '1');
+    });
+    if (msgs) msgs.scrollTop = msgs.scrollHeight;
+  });
+})();
+</script>
+{{end}}
