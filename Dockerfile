@@ -8,7 +8,7 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -o /finagent ./cmd/finagent
+RUN CGO_ENABLED=0 GOOS=linux go build -tags goolm -trimpath -o /finagent ./cmd/finagent
 
 FROM alpine:latest
 
