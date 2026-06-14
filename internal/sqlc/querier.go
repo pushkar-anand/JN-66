@@ -34,6 +34,7 @@ type Querier interface {
 	GetCategoryBySlug(ctx context.Context, slug string) (Category, error)
 	GetFixedDeposit(ctx context.Context, arg GetFixedDepositParams) (FixedDeposit, error)
 	GetIdempotencyKeyExists(ctx context.Context, idempotencyKey string) (bool, error)
+	GetImportRun(ctx context.Context, arg GetImportRunParams) (ImportRun, error)
 	GetLabelBySlug(ctx context.Context, slug string) (Label, error)
 	GetRecurringPaymentByID(ctx context.Context, id uuid.UUID) (RecurringPayment, error)
 	GetSession(ctx context.Context, id uuid.UUID) (ConversationSession, error)
@@ -81,6 +82,7 @@ type Querier interface {
 	UpdateEnrichment(ctx context.Context, arg UpdateEnrichmentParams) error
 	UpdateFixedDepositStatus(ctx context.Context, arg UpdateFixedDepositStatusParams) (FixedDeposit, error)
 	UpdateImportRunCounts(ctx context.Context, arg UpdateImportRunCountsParams) error
+	UpdateImportRunStatus(ctx context.Context, arg UpdateImportRunStatusParams) error
 	UpdateRecurringLastCharged(ctx context.Context, arg UpdateRecurringLastChargedParams) error
 	UpdateSessionTitle(ctx context.Context, arg UpdateSessionTitleParams) error
 	UpdateUserDOB(ctx context.Context, arg UpdateUserDOBParams) (User, error)

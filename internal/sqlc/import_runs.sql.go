@@ -73,6 +73,37 @@ func (q *Queries) FinishImportRun(ctx context.Context, arg FinishImportRunParams
 	return err
 }
 
+const getImportRun = `-- name: GetImportRun :one
+SELECT id, user_id, account_id, provider, status, source_ref, rows_parsed, rows_inserted, rows_duplicate, rows_failed, error_detail, started_at, finished_at, metadata FROM import_runs WHERE id = $1 AND user_id = $2
+`
+
+type GetImportRunParams struct {
+	ID     uuid.UUID `json:"id"`
+	UserID uuid.UUID `json:"user_id"`
+}
+
+func (q *Queries) GetImportRun(ctx context.Context, arg GetImportRunParams) (ImportRun, error) {
+	row := q.db.QueryRow(ctx, getImportRun, arg.ID, arg.UserID)
+	var i ImportRun
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.AccountID,
+		&i.Provider,
+		&i.Status,
+		&i.SourceRef,
+		&i.RowsParsed,
+		&i.RowsInserted,
+		&i.RowsDuplicate,
+		&i.RowsFailed,
+		&i.ErrorDetail,
+		&i.StartedAt,
+		&i.FinishedAt,
+		&i.Metadata,
+	)
+	return i, err
+}
+
 const listImportRuns = `-- name: ListImportRuns :many
 SELECT id, user_id, account_id, provider, status, source_ref, rows_parsed, rows_inserted, rows_duplicate, rows_failed, error_detail, started_at, finished_at, metadata FROM import_runs WHERE user_id = $1 ORDER BY started_at DESC LIMIT 20
 `
@@ -137,5 +168,19 @@ func (q *Queries) UpdateImportRunCounts(ctx context.Context, arg UpdateImportRun
 		arg.RowsFailed,
 		arg.ID,
 	)
+	return err
+}
+
+const updateImportRunStatus = `-- name: UpdateImportRunStatus :exec
+UPDATE import_runs SET status = $1 WHERE id = $2
+`
+
+type UpdateImportRunStatusParams struct {
+	Status ImportStatusEnum `json:"status"`
+	ID     uuid.UUID        `json:"id"`
+}
+
+func (q *Queries) UpdateImportRunStatus(ctx context.Context, arg UpdateImportRunStatusParams) error {
+	_, err := q.db.Exec(ctx, updateImportRunStatus, arg.Status, arg.ID)
 	return err
 }

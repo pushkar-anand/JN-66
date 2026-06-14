@@ -37,7 +37,7 @@ CREATE TYPE channel_enum AS ENUM ('cli', 'slack', 'signal', 'api', 'matrix');
 
 CREATE TYPE msg_role_enum AS ENUM ('system', 'user', 'assistant', 'tool');
 
-CREATE TYPE import_status_enum AS ENUM ('running', 'success', 'partial', 'failed');
+CREATE TYPE import_status_enum AS ENUM ('running', 'success', 'partial', 'failed', 'enriching');
 
 CREATE TYPE import_provider_enum AS ENUM ('csv', 'zerodha', 'manual', 'external');
 

@@ -9,6 +9,9 @@ import (
 	"time"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
+	"github.com/gorilla/mux"
+	"github.com/jackc/pgx/v5"
 	bwglogger "github.com/pushkar-anand/build-with-go/logger"
 
 	"github.com/pushkaranand/finagent/internal/importer"
@@ -32,6 +35,12 @@ type importAccountStore interface {
 	UpdateBalance(ctx context.Context, accountID string, balance model.Money, asOf time.Time) error
 }
 
+// importRunGetter is the run-store surface needed by GET /api/import/{id}.
+// Satisfied by *store.ImportRunStore in production.
+type importRunGetter interface {
+	Get(ctx context.Context, userID, runID uuid.UUID) (*sqlcgen.ImportRun, error)
+}
+
 // ImportConfig holds dependencies for the POST /api/import handler.
 // Pass nil to api.New to disable the route.
 //
@@ -43,6 +52,7 @@ type ImportConfig struct {
 	AccountStore importAccountStore
 	TxnStore     *store.TransactionStore
 	RunStore     *store.ImportRunStore
+	RunGetter    importRunGetter // for GET /api/import/{id}; set to RunStore in production
 	CatStore     *store.CategoryStore
 	LLMProvider  llm.Provider
 	TaggingModel string
@@ -70,6 +80,20 @@ type importResponse struct {
 	Inserted  int    `json:"inserted"`
 	Duplicate int    `json:"duplicate"`
 	Failed    int    `json:"failed"`
+	Enriching bool   `json:"enriching"`
+}
+
+type importRunResponse struct {
+	ID          string  `json:"id"`
+	AccountID   string  `json:"account_id,omitempty"`
+	Status      string  `json:"status"`
+	Parsed      int32   `json:"parsed"`
+	Inserted    int32   `json:"inserted"`
+	Duplicate   int32   `json:"duplicate"`
+	Failed      int32   `json:"failed"`
+	StartedAt   string  `json:"started_at,omitempty"`
+	FinishedAt  string  `json:"finished_at,omitempty"`
+	ErrorDetail *string `json:"error_detail,omitempty"`
 }
 
 // validateTxnDate accepts YYYY-MM-DD or RFC3339.
@@ -115,7 +139,7 @@ func (s *Server) handleImport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Minute)
+	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Minute)
 	defer cancel()
 
 	userID := UserIDFromContext(r.Context())
@@ -166,21 +190,8 @@ func (s *Server) handleImport(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Build enricher unless skipped.
-	var enricher *importer.Enricher
-	if !req.NoEnrich && s.importCfg.LLMProvider != nil {
-		cats, err := s.importCfg.CatStore.List(ctx)
-		if err != nil {
-			slog.WarnContext(ctx, "import: failed to load categories, enrichment will be uncategorised", bwglogger.Error(err))
-		}
-		catInfos := make([]importer.CategoryInfo, len(cats))
-		for i, c := range cats {
-			catInfos[i] = importer.CategoryInfo{Slug: c.Slug, Description: c.Description}
-		}
-		enricher = importer.NewEnricher(s.importCfg.LLMProvider, s.importCfg.TaggingModel, catInfos)
-	}
-
-	imp := importer.NewImporter(s.importCfg.TxnStore, s.importCfg.RunStore, s.importCfg.CatStore, enricher)
+	// Insertion-only pass — always synchronous and fast (no LLM calls).
+	imp := importer.NewImporter(s.importCfg.TxnStore, s.importCfg.RunStore, s.importCfg.CatStore, nil)
 	res, err := imp.Run(ctx, importer.RunParams{
 		User:      user,
 		AccountID: account.ID,
@@ -203,12 +214,44 @@ func (s *Server) handleImport(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// If enrichment is requested and an LLM is configured, run it in the background.
+	// Insertion is already committed, so enrichment is best-effort.
+	enriching := false
+	if !req.NoEnrich && s.importCfg.LLMProvider != nil {
+		cats, err := s.importCfg.CatStore.List(ctx)
+		if err != nil {
+			slog.WarnContext(ctx, "import: failed to load categories, skipping enrichment", bwglogger.Error(err))
+		} else {
+			catInfos := make([]importer.CategoryInfo, len(cats))
+			for i, c := range cats {
+				catInfos[i] = importer.CategoryInfo{Slug: c.Slug, Description: c.Description}
+			}
+			enricher := importer.NewEnricher(s.importCfg.LLMProvider, s.importCfg.TaggingModel, catInfos)
+			impEnrich := importer.NewImporter(s.importCfg.TxnStore, s.importCfg.RunStore, s.importCfg.CatStore, enricher)
+			accountID := account.ID
+			runID := res.RunID
+			if err := s.importCfg.RunStore.UpdateStatus(ctx, runID, sqlcgen.ImportStatusEnumEnriching); err != nil {
+				slog.WarnContext(ctx, "import: failed to set enriching status", bwglogger.Error(err))
+			}
+			go func() {
+				bgCtx := context.Background()
+				slog.InfoContext(bgCtx, "background enrichment started",
+					slog.String("run_id", runID.String()),
+					slog.Int("rows", len(rows)),
+				)
+				impEnrich.EnrichRows(bgCtx, runID, accountID, rows)
+			}()
+			enriching = true
+		}
+	}
+
 	slog.InfoContext(r.Context(), "import complete",
 		slog.String("user_id", userID),
 		slog.String("account_id", req.AccountID),
 		slog.String("run_id", res.RunID.String()),
 		slog.Int("inserted", res.Inserted),
 		slog.Int("duplicate", res.Duplicate),
+		slog.Bool("enriching", enriching),
 	)
 
 	w.Header().Set("Content-Type", "application/json")
@@ -219,5 +262,55 @@ func (s *Server) handleImport(w http.ResponseWriter, r *http.Request) {
 		Inserted:  res.Inserted,
 		Duplicate: res.Duplicate,
 		Failed:    res.Failed,
+		Enriching: enriching,
 	})
+}
+
+func (s *Server) handleGetImportRun(w http.ResponseWriter, r *http.Request) {
+	runIDStr := mux.Vars(r)["id"]
+	runID, err := uuid.Parse(runIDStr)
+	if err != nil {
+		http.Error(w, "invalid run ID", http.StatusBadRequest)
+		return
+	}
+
+	userID := UserIDFromContext(r.Context())
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		http.Error(w, "invalid user ID", http.StatusInternalServerError)
+		return
+	}
+
+	run, err := s.importCfg.RunGetter.Get(r.Context(), userUUID, runID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			http.Error(w, "not found", http.StatusNotFound)
+			return
+		}
+		slog.ErrorContext(r.Context(), "import run: get error", bwglogger.Error(err))
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	resp := importRunResponse{
+		ID:          run.ID.String(),
+		Status:      string(run.Status),
+		Parsed:      run.RowsParsed,
+		Inserted:    run.RowsInserted,
+		Duplicate:   run.RowsDuplicate,
+		Failed:      run.RowsFailed,
+		ErrorDetail: run.ErrorDetail,
+	}
+	if run.AccountID.Valid {
+		resp.AccountID = uuid.UUID(run.AccountID.Bytes).String()
+	}
+	if run.StartedAt.Valid {
+		resp.StartedAt = run.StartedAt.Time.Format(time.RFC3339)
+	}
+	if run.FinishedAt.Valid {
+		resp.FinishedAt = run.FinishedAt.Time.Format(time.RFC3339)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(resp)
 }

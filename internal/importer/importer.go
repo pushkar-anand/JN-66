@@ -19,11 +19,33 @@ import (
 	"github.com/pushkaranand/finagent/internal/store"
 )
 
+// transactionStore is the subset of store.TransactionStore used by the importer.
+type transactionStore interface {
+	IdempotencyKeyExists(ctx context.Context, key string) (bool, error)
+	GetIDByIdempotencyKey(ctx context.Context, key string) (uuid.UUID, error)
+	Insert(ctx context.Context, p store.InsertTransactionParams) (*sqlcgen.Transaction, error)
+	UpdateEnrichment(ctx context.Context, p store.EnrichmentParams) error
+}
+
+// importRunStore is the subset of store.ImportRunStore used by the importer.
+type importRunStore interface {
+	Create(ctx context.Context, p store.CreateImportRunParams) (*sqlcgen.ImportRun, error)
+	UpdateCounts(ctx context.Context, id uuid.UUID, parsed, inserted, duplicate, failed int) error
+	UpdateStatus(ctx context.Context, id uuid.UUID, status sqlcgen.ImportStatusEnum) error
+	Finish(ctx context.Context, id uuid.UUID, status sqlcgen.ImportStatusEnum, errDetail string) error
+}
+
+// categoryStore is the subset of store.CategoryStore used by the importer.
+type categoryStore interface {
+	List(ctx context.Context) ([]sqlcgen.Category, error)
+	GetBySlug(ctx context.Context, slug string) (*sqlcgen.Category, error)
+}
+
 // Importer runs a full import cycle for a batch of RawTransactions.
 type Importer struct {
-	txnStore *store.TransactionStore
-	runStore *store.ImportRunStore
-	catStore *store.CategoryStore
+	txnStore transactionStore
+	runStore importRunStore
+	catStore categoryStore
 	enricher *Enricher // may be nil if --no-enrich
 }
 
@@ -189,6 +211,61 @@ func (imp *Importer) Run(ctx context.Context, p RunParams) (*Result, error) {
 	_ = imp.runStore.Finish(ctx, run.ID, status, "")
 
 	return res, nil
+}
+
+// EnrichRows enriches already-inserted transactions identified by rows.
+// It resolves each row back to its DB transaction via idempotency key, calls the
+// enricher, and writes the result. Designed to be called from a background goroutine
+// after Run() has returned — the context must outlive the HTTP request.
+// Silently skips rows whose transaction cannot be found (e.g. rows that were
+// rejected by Insert). Marks the run partial/failed when LLM errors prevent enrichment.
+func (imp *Importer) EnrichRows(ctx context.Context, runID, accountID uuid.UUID, rows []parser.RawTransaction) {
+	if imp.enricher == nil {
+		return
+	}
+	total := len(rows)
+	enrichFailed := 0
+	for i, row := range rows {
+		key := idempotencyKey(accountID, row.Date, row.Amount, row.Description)
+		txnID, err := imp.txnStore.GetIDByIdempotencyKey(ctx, key)
+		if err != nil {
+			// Row was likely a failed insert; skip silently.
+			continue
+		}
+		slog.DebugContext(ctx, "enriching", "n", i+1, "total", total, "desc", truncateStr(row.Description, 50))
+		enriched, err := imp.enricher.Enrich(ctx, row)
+		if err != nil {
+			slog.WarnContext(ctx, "enrichment failed — leaving pending", "err", err, "txn", txnID)
+			enrichFailed++
+			continue
+		}
+		ep := store.EnrichmentParams{
+			TransactionID:         txnID.String(),
+			DescriptionNormalized: nilIfEmpty(enriched.DescriptionNormalized),
+		}
+		auto := sqlcgen.TaggingStatusEnumAuto
+		ep.TaggingStatus = &auto
+		if enriched.CategorySlug != "" {
+			if cat, err := imp.catStore.GetBySlug(ctx, enriched.CategorySlug); err == nil {
+				id := cat.ID.String()
+				ep.CategoryID = &id
+			} else {
+				slog.WarnContext(ctx, "unknown category slug from LLM", "slug", enriched.CategorySlug, "err", err)
+			}
+		}
+		if err := imp.txnStore.UpdateEnrichment(ctx, ep); err != nil {
+			slog.WarnContext(ctx, "update enrichment failed", "err", err, "txn", txnID)
+			enrichFailed++
+		}
+	}
+	slog.InfoContext(ctx, "background enrichment complete", "total", total, "failed", enrichFailed)
+	status := sqlcgen.ImportStatusEnumSuccess
+	if enrichFailed > 0 && enrichFailed == total {
+		status = sqlcgen.ImportStatusEnumFailed
+	} else if enrichFailed > 0 {
+		status = sqlcgen.ImportStatusEnumPartial
+	}
+	_ = imp.runStore.Finish(ctx, runID, status, "")
 }
 
 func truncateStr(s string, n int) string {

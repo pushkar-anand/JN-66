@@ -90,6 +90,7 @@ func New(listen string, handler channel.MessageHandler, userStore userLookup, db
 	}
 	if s.importCfg != nil {
 		protected.HandleFunc("/api/import", s.handleImport).Methods(http.MethodPost)
+		protected.HandleFunc("/api/import/{id}", s.handleGetImportRun).Methods(http.MethodGet)
 	}
 	if s.fdCfg != nil {
 		protected.HandleFunc("/api/fds", s.handleCreateFD).Methods(http.MethodPost)

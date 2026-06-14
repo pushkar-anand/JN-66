@@ -206,6 +206,7 @@ func run() error {
 			AccountStore: accountStore,
 			TxnStore:     txnStore,
 			RunStore:     runStore,
+			RunGetter:    runStore,
 			CatStore:     catStore,
 			LLMProvider:  llmProvider,
 			TaggingModel: cfg.LLM.Routing.TaggingModel,
