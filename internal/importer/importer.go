@@ -116,6 +116,12 @@ func (imp *Importer) Run(ctx context.Context, p RunParams) (*Result, error) {
 		}
 		if exists {
 			res.Duplicate++
+			slog.DebugContext(ctx, "duplicate transaction",
+				"date", row.Date.Format("2006-01-02"),
+				"amount_paise", row.Amount,
+				"direction", row.Direction,
+				"desc", row.Description,
+			)
 			if imp.enricher == nil {
 				continue
 			}
